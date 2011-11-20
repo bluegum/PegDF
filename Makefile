@@ -10,7 +10,7 @@ readpdf.o : readpdf.c
 
 pdf.o  : pdf.c
 
-pegdict.c  : pdf.peg
-	peg -o pdf.c pdf.peg
+pdf.c  : pdf.peg
+	peg -v -o pdf.c pdf.peg
 clean: 
-	rm *.o $(APP)
+	rm *.o $(APP) pdf.c

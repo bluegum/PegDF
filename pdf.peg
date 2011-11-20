@@ -1,19 +1,44 @@
+#Copyright (C) 2011 by Dakai Liu
+#
+#Permission is hereby granted, free of charge, to any person obtaining a copy
+#of this software and associated documentation files (the "Software"), to deal
+#in the Software without restriction, including without limitation the rights
+#to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+#copies of the Software, and to permit persons to whom the Software is
+#furnished to do so, subject to the following conditions:
+#
+#The above copyright notice and this permission notice shall be included in
+#all copies or substantial portions of the Software.
+#
+#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+#THE SOFTWARE.
+#
 #grammar
 start	<- MAGIC COMMENT* OBJ+ DELIM XREF DELIM TRAILER STARTXREF GOBBLE
 DICT	<- DELIM DB (KEY VALUE)* DE DELIM
 DB      <- '<<' DELIM {fprintf(stdout, "dictbegin\n");}
 DE	<- '>>' DELIM {fprintf(stdout, "dictend\n");}
-KEY	<- '/' ALPHA ALPHANUM* DELIM {printf("key+");}
+KEY	<- DELIM '/' ALPHA ALPHANUM* DELIM 
 VALUE	<- (
 	   REF
 	   / NUM
-	   / KEY      
+	   / KEY DELIM
 	   / DICT
 	   / ARRAY
+	   / STRING
 	   ) DELIM {printf("value\n");}
 ARRAY	   <- '[' DELIM (VALUE)* ']' DELIM { printf("array..\n"); }
-OBJ	<- DELIM [0-9]+ ' ' [0-9]+ ' '  'obj' DELIM   { printf("objbegin..\n"); }
-	(REF / DICT / NUM / ARRAY)* 
+
+STRING     <- STRBGN N* STREND { printf("string..\n"); }
+N     	   <- STRING / (!STRBGN !STREND Z*)
+Z	   <- [a-zA-Z0-9+_,./:\- ]
+OBJ	<- DELIM [-]? [0-9]+ ' ' [0-9]+ ' '  'obj' DELIM   { printf("objbegin..\n"); }
+	(DELIM REF / DELIM DICT / DELIM NUM /DELIM ARRAY)* DELIM
 	(STREAM)*
 	'endobj' DELIM { printf("objend..\n"); }
 
@@ -21,18 +46,20 @@ STREAM   <- 'stream'EOL (!'endstream' .)* 'endstream' DELIM {printf("stream...\n
 
 REF	 <- DELIM NUM NUM 'R' DELIM DELIM { printf("ref..\n"); }
 XREF	 <- 'xref' EOL NUM NUM (XREFTAB)*  {printf("xref...\n");}
-XREFTAB	 <- NUM NUM ('n'/'f') EOL {printf("xref_nnnn...\n");}
+XREFTAB	 <- NUM NUM ('n'/'f') DELIM {printf("xref_nnnn...\n");}
 
 
 TRAILER	 <- 'trailer' DELIM DICT DELIM {printf(" trailer...\n");}
 STARTXREF   <- 'startxref' DELIM NUM DELIM
 GOBBLE	    <- .*
-NUM	<- [0-9]+ DELIM
-ALPHA   <- [a-zA-Z]
-ALPHANUM <- [a-zA-Z0-9] 
+NUM	<- [-]?[0-9]+ DELIM
+ALPHA   <- [a-zA-Z_]
+ALPHANUM <- [a-zA-Z0-9+_,./:\-] 
 
 MAGIC	   <- '%'+[pP][dD][fF] (!EOL .)* EOL {printf("start PDF...\n");}
 COMMENT <-'%'+ (!EOL .)* EOL
 SPACE   <- [ \t]*
 EOL     <- '\n' / '\r\n' / '\r'
 DELIM	<- SPACE (EOL)*
+STRBGN  <- '('
+STREND	<- ')'
