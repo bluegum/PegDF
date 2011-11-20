@@ -1,0 +1,38 @@
+#grammar
+start	<- MAGIC COMMENT* OBJ+ DELIM XREF DELIM TRAILER STARTXREF GOBBLE
+DICT	<- DELIM DB (KEY VALUE)* DE DELIM
+DB      <- '<<' DELIM {fprintf(stdout, "dictbegin\n");}
+DE	<- '>>' DELIM {fprintf(stdout, "dictend\n");}
+KEY	<- '/' ALPHA ALPHANUM* DELIM {printf("key+");}
+VALUE	<- (
+	   REF
+	   / NUM
+	   / KEY      
+	   / DICT
+	   / ARRAY
+	   ) DELIM {printf("value\n");}
+ARRAY	   <- '[' DELIM (VALUE)* ']' DELIM { printf("array..\n"); }
+OBJ	<- DELIM [0-9]+ ' ' [0-9]+ ' '  'obj' DELIM   { printf("objbegin..\n"); }
+	(REF / DICT / NUM / ARRAY)* 
+	(STREAM)*
+	'endobj' DELIM { printf("objend..\n"); }
+
+STREAM   <- 'stream'EOL (!'endstream' .)* 'endstream' DELIM {printf("stream...\n");}
+
+REF	 <- DELIM NUM NUM 'R' DELIM DELIM { printf("ref..\n"); }
+XREF	 <- 'xref' EOL NUM NUM (XREFTAB)*  {printf("xref...\n");}
+XREFTAB	 <- NUM NUM ('n'/'f') EOL {printf("xref_nnnn...\n");}
+
+
+TRAILER	 <- 'trailer' DELIM DICT DELIM {printf(" trailer...\n");}
+STARTXREF   <- 'startxref' DELIM NUM DELIM
+GOBBLE	    <- .*
+NUM	<- [0-9]+ DELIM
+ALPHA   <- [a-zA-Z]
+ALPHANUM <- [a-zA-Z0-9] 
+
+MAGIC	   <- '%'+[pP][dD][fF] (!EOL .)* EOL {printf("start PDF...\n");}
+COMMENT <-'%'+ (!EOL .)* EOL
+SPACE   <- [ \t]*
+EOL     <- '\n' / '\r\n' / '\r'
+DELIM	<- SPACE (EOL)*
