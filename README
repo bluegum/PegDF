@@ -1,1 +1,4 @@
-A simple PEG grammar for pdf file parsing
+A simple PEG grammar for pdf parsing
+
+PEG(Parser Expression Grammer) has got just enough power to describe
+pdf syntax. I hope it covers the whole PDF specification.
