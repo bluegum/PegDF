@@ -19,40 +19,45 @@
 #THE SOFTWARE.
 #
 #grammar
-start	<- MAGIC COMMENT* OBJ+ DELIM XREF DELIM TRAILER STARTXREF GOBBLE
-DICT	<- DELIM DB (KEY VALUE)* DE DELIM
+start	<- MAGIC COMMENT* EOL* SPACE* OBJ+ DELIM XREF DELIM TRAILER STARTXREF GOBBLE
+DICT	<- DB (DELIM KEY DELIM(VALUE / KWORD / ID))* DE DELIM
 DB      <- '<<' DELIM {fprintf(stdout, "dictbegin\n");}
 DE	<- '>>' DELIM {fprintf(stdout, "dictend\n");}
-KEY	<-  DELIM '/' ALPHA [a-zA-Z0-9+_,.\-]* DELIM 
+KEY	<- '/' [a-zA-Z0-9_] [a-zA-Z0-9+_,.\-]* DELIM
 VALUE	<- (
 	   REF
+	   / NNUM
 	   / NUM
 	   / KEY
 	   / DICT
 	   / ARRAY
 	   / STRING
 	   / HEXSTR
+	   / KWORD
 	   ) DELIM {printf("value\n");}
 ARRAY	   <- '[' DELIM (VALUE)* ']' DELIM { printf("array..\n"); }
 
-STRING     <- STRBGN N* STREND { printf("string..\n"); }
-N     	   <- STRING / (!STRBGN !STREND Z*)
-Z	   <- (!STRBGN !STREND .)
+STRING     <- STRBGN  STRBODY* STREND { printf("string..\n"); }
+STRBODY	   <- (
+	      STRING
+	      / (ESCPAREN / (!STRBGN !STREND .))
+	      )
 
 HEXSTR	   <- '<' [0-9a-fA-F\n\r]* '>' DELIM
 
-OBJ	<- DELIM [-]? [0-9]+ ' ' [0-9]+ ' '  'obj' DELIM   { printf("objbegin..\n"); }
-	(DELIM REF 
-	/ DELIM DICT 
-	/ DELIM NUM 
-	/ DELIM ARRAY
+OBJ	<- [-]? [0-9]+ ' ' [0-9]+ ' '  'obj' DELIM   { printf("objbegin..\n"); }
+	DELIM (REF 
+	/ DICT 
+	/ NUM 
+	/ ARRAY
+	/ KEY
 	)* DELIM
 	(STREAM)*
 	'endobj' DELIM { printf("objend..\n"); }
 
-STREAM   <- 'stream'EOL (!'endstream' .)* 'endstream' DELIM {printf("stream...\n");}
+STREAM   <- 'stream'EOL* (!'endstream' .)* 'endstream' DELIM {printf("stream...\n");}
 
-REF	 <- DELIM NUM NUM 'R' DELIM DELIM { printf("ref..\n"); }
+REF	 <- NUM NUM 'R' DELIM { printf("ref..\n"); }
 XREF	 <- 'xref' EOL NUM NUM (XREFTAB)*  {printf("xref...\n");}
 XREFTAB	 <- NUM NUM ('n'/'f') DELIM {printf("xref_nnnn...\n");}
 
@@ -61,13 +66,20 @@ TRAILER	 <- 'trailer' DELIM DICT DELIM {printf(" trailer...\n");}
 STARTXREF   <- 'startxref' DELIM NUM DELIM
 GOBBLE	    <- .*
 NUM	<- [-]?[0-9]+ DELIM
+NNUM	<- [-]?[0-9.]+ DELIM
 ALPHA   <- [a-zA-Z_]
 ALPHANUM <- [a-zA-Z0-9+_,./:\-] 
 
 MAGIC	   <- '%'+[pP][dD][fF] (!EOL .)* EOL {printf("start PDF...\n");}
 COMMENT <-'%'+ (!EOL .)* EOL
-SPACE   <- [ \t]*
+SPACE   <- [ \t]
 EOL     <- '\n' / '\r\n' / '\r'
-DELIM	<- SPACE (EOL)*
+DELIM	<- (SPACE / EOL)*
 STRBGN  <- '('
 STREND	<- ')'
+ESCPAREN   <- (
+	      '\\' '('
+	      / '\\' ')'
+	      )
+KWORD	<- ( 'false' / 'true' / 'null') DELIM
+ID	<- (!SPACE !EOL .)* DELIM

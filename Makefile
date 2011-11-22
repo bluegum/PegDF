@@ -1,4 +1,4 @@
-CFLAGS += -g
+CFLAGS += -g -DYY_DEBUG
 
 APP = readpdf
 
