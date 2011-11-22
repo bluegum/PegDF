@@ -23,7 +23,7 @@ start	<- MAGIC COMMENT* EOL* SPACE* OBJ+ DELIM XREF DELIM TRAILER STARTXREF GOBB
 DICT	<- DB (DELIM KEY DELIM(VALUE / KWORD / ID))* DE DELIM
 DB      <- '<<' DELIM {fprintf(stdout, "dictbegin\n");}
 DE	<- '>>' DELIM {fprintf(stdout, "dictend\n");}
-KEY	<- '/' [a-zA-Z0-9_] [a-zA-Z0-9+_,.\-]* DELIM
+KEY	<- '/' [a-zA-Z0-9._] [a-zA-Z0-9+_,.\-]* DELIM
 VALUE	<- (
 	   REF
 	   / NNUM
@@ -51,6 +51,7 @@ OBJ	<- [-]? [0-9]+ ' ' [0-9]+ ' '  'obj' DELIM   { printf("objbegin..\n"); }
 	/ NUM 
 	/ ARRAY
 	/ KEY
+	/ STRING
 	)* DELIM
 	(STREAM)*
 	'endobj' DELIM { printf("objend..\n"); }
