@@ -1,4 +1,8 @@
-CFLAGS += -g -DYY_DEBUG
+CFLAGS += -g
+
+ifeq	"$(DEBUG)" "y"
+	CFLAGS += -DYY_DEBUG
+endif
 
 APP = readpdf
 
