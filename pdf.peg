@@ -46,7 +46,7 @@ STRBODY	   <- (
 HEXSTR	   <- '<' [0-9a-fA-F\n\r]* '>' DELIM
 
 OBJ	<- [-]? [0-9]+ ' ' [0-9]+ ' '  'obj' DELIM   { printf("objbegin..\n"); }
-	DELIM (REF 
+	(REF 
 	/ DICT 
 	/ NUM 
 	/ ARRAY
@@ -59,14 +59,22 @@ OBJ	<- [-]? [0-9]+ ' ' [0-9]+ ' '  'obj' DELIM   { printf("objbegin..\n"); }
 STREAM   <- 'stream'EOL* (!'endstream' .)* 'endstream' DELIM {printf("stream...\n");}
 
 REF	 <- NUM NUM 'R' DELIM { printf("ref..\n"); }
-XREF	 <- 'xref' DELIM NUM NUM (XREFTAB)*  {printf("xref...\n");}
-XREFTAB	 <- NUM NUM ('n'/'f') DELIM {printf("xref_nnnn...\n");}
+XREF	 <- 'xref' DELIM {printf("xref...%s", yytext); }
+	 POSITIVE 
+	 POSITIVE {xref_new(atoi(yytext));}
+	 DELIM
+	 XREFTAB*  
+XREFTAB	 <- NUM { g_xref_off = atoi(yytext); } 
+	 NUM { g_xref_gen = atoi(yytext); }
+	 ('n'/'f') {xref_add(g_xref_off, g_xref_gen, yytext[0]);}
+	 DELIM 
 
 
 TRAILER	 <- 'trailer' DELIM DICT DELIM {printf(" trailer...\n");}
 STARTXREF   <- 'startxref' DELIM NUM DELIM
 GOBBLE	    <- .*
-NUM	<- [-]?[0-9]+ DELIM
+POSITIVE    <- < [0-9]+ > SPACE*
+NUM	<- < [-]?[0-9]+ > DELIM
 NNUM	<- [-]?[0-9.]+ DELIM
 ALPHA   <- [a-zA-Z_]
 ALPHANUM <- [a-zA-Z0-9+_,./:\-] 

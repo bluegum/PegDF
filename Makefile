@@ -14,7 +14,10 @@ readpdf.o : readpdf.c
 
 pdf.o  : pdf.c
 
-pdf.c  : pdf.peg
-	peg -v -o pdf.c pdf.peg
+pdf.peg.c  : pdf.peg
+	peg -v -o pdf.peg.c pdf.peg
+
+pdf.c	: pdf.peg.c
+
 clean: 
-	rm *.o $(APP) pdf.c
+	rm *.o $(APP) pdf.peg.c

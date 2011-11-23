@@ -21,6 +21,7 @@ THE SOFTWARE.
 */
 
 #include <stdio.h>
+#include "readpdf.h"
 
 #ifdef YY_DEBUG
 #define YY_INPUT(buf, result, max)                      \
@@ -31,9 +32,47 @@ THE SOFTWARE.
 }
 #endif
 
+int stack[1024];
+int stackp= -1;
+xreftab_t g_xreftab;
+int g_xref_off;
+int g_xref_gen;
+
+int push(int n) { return stack[++stackp]= n; }
+int pop(void)   { return stack[stackp--]; }
+int xref_new(int n)
+{
+  if (n < 1)
+    {
+      n = 1;
+    }
+  g_xreftab.idx = 0;
+  g_xreftab.count = n;
+  g_xreftab.obj = malloc(n*sizeof(xrefentry_t));
+  return 0;
+}
+int xref_add(int off, int gen, char x)
+{
+  g_xreftab.obj[g_xreftab.idx].off = off;
+  g_xreftab.obj[g_xreftab.idx].gen = gen;
+  g_xreftab.obj[g_xreftab.idx].x = x;
+  g_xreftab.idx += 1;
+  if (g_xreftab.idx >= g_xreftab.count)
+    {
+      g_xreftab.idx = g_xreftab.count - 1;
+    }
+  return 0;
+}
+
+int xref_delete()
+{
+  printf("xref=%d\n", g_xreftab.idx);
+  free(g_xreftab.obj);
+  return 0;
+}
 int main(int argc, char **argv)
 {
   printf(yyparse() ? "success\n" : "failure\n");
-
+  xref_delete();
   return 0;
 }
