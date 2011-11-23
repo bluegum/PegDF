@@ -59,7 +59,7 @@ OBJ	<- [-]? [0-9]+ ' ' [0-9]+ ' '  'obj' DELIM   { printf("objbegin..\n"); }
 STREAM   <- 'stream'EOL* (!'endstream' .)* 'endstream' DELIM {printf("stream...\n");}
 
 REF	 <- NUM NUM 'R' DELIM { printf("ref..\n"); }
-XREF	 <- 'xref' EOL NUM NUM (XREFTAB)*  {printf("xref...\n");}
+XREF	 <- 'xref' DELIM NUM NUM (XREFTAB)*  {printf("xref...\n");}
 XREFTAB	 <- NUM NUM ('n'/'f') DELIM {printf("xref_nnnn...\n");}
 
 

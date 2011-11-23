@@ -1,6 +1,19 @@
 %PDF-1.4
 %¡³Å×
 
+1 0 obj 
+<< 
+/Type /Catalog 
+/Pages 2 0 R 
+/PageMode /UseNone 
+/ViewerPreferences << 
+/FitWindow true 
+/PageLayout /SinglePage 
+/NonFullScreenPageMode /UseNone 
+>> 
+>> 
+endobj 
+
 8 0 obj
 ( Introduction)
 endobj
@@ -50,8 +63,6 @@ endobj
 55 0 obj
    121212
 endobj
-
-
 xref
 22 0
 11 0 n
