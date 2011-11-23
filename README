@@ -1,4 +1,5 @@
-A simple PEG grammar for pdf parsing
+An experienmental PEG grammar pdf parser
 
-PEG(Parser Expression Grammer) has got just enough power to describe
-pdf syntax. I hope it covers the whole PDF specification.
+I hope PEG(Parser Expression Grammer) has got just enough power to describe
+pdf syntax. 
+peg/leg parser/generater is required to build PegDF.
