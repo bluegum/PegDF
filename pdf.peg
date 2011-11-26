@@ -27,18 +27,18 @@ start	<- MAGIC COMMENT* EOL* SPACE* OBJ+ DELIM XREF DELIM TRAILER STARTXREF GOBB
 DICT	<- DB (DELIM KEY DELIM(VALUE / KWORD / ID))* DE DELIM
 DB      <- '<<' DELIM {fprintf(stdout, "dictbegin\n");}
 DE	<- '>>' DELIM {fprintf(stdout, "dictend\n");}
-KEY	<- '/' [a-zA-Z0-9._] [a-zA-Z0-9+_,.\-]* DELIM
+KEY	<- '/' [a-zA-Z0-9#._] [a-zA-Z0-9#+_,.\-]* DELIM
 VALUE	<- (
 	   REF
 	   / REAL
-	   / NUM
+	   / NUM {pop();}
 	   / KEY
 	   / DICT
 	   / ARRAY
 	   / STRING
 	   / HEXSTR
 	   / KWORD
-	   ) DELIM {printf("value\n");}
+	   ) DELIM 
 ARRAY	   <- '[' DELIM (VALUE)* ']' DELIM { printf("array..\n"); }
 
 STRING     <- STRBGN  STRBODY* STREND { printf("string..\n"); }
@@ -49,10 +49,10 @@ STRBODY	   <- (
 
 HEXSTR	   <- '<' [0-9a-fA-F\n\r]* '>' DELIM
 
-OBJ	<- [-]? [0-9]+ ' ' [0-9]+ ' '  'obj' DELIM   { printf("objbegin..\n"); }
+OBJ	<- NUM  NUM   'obj' DELIM   { printf("objbegin..%d, %d\n", pop(),pop()); }
 	(REF 
 	/ DICT 
-	/ NUM 
+	/ NUM {pop();}
 	/ ARRAY
 	/ KEY
 	/ STRING
@@ -62,19 +62,19 @@ OBJ	<- [-]? [0-9]+ ' ' [0-9]+ ' '  'obj' DELIM   { printf("objbegin..\n"); }
 
 STREAM   <- 'stream'EOL* (!'endstream' .)* 'endstream' DELIM {printf("stream...\n");}
 
-REF	 <- NUM NUM 'R' DELIM { printf("ref..\n"); }
+REF	 <- NUM NUM 'R' DELIM { printf("ref..%d,%d\n", pop(), pop());}
 XREF	 <- 'xref' DELIM {printf("xref...%s", yytext); }
 	 POSITIVE 
 	 POSITIVE {xref_new(atoi(yytext));}
 	 DELIM
 	 XREFTAB*  
-XREFTAB	 <- NUM { g_xref_off = atoi(yytext); } 
-	 NUM { g_xref_gen = atoi(yytext); }
+XREFTAB	 <- NUM { g_xref_off = pop(); } 
+	 NUM { g_xref_gen = pop(); }
 	 ('n'/'f') {xref_add(g_xref_off, g_xref_gen, yytext[0]);}
 	 DELIM 
 
 TRAILER	        <- 'trailer' DELIM DICT DELIM {printf(" trailer...\n");}
-STARTXREF      	<- 'startxref' DELIM NUM DELIM
+STARTXREF      	<- 'startxref' DELIM NUM DELIM {printf("startxref...%d\n", pop());}
 
 GARBAGE		<- . !('xref'/ 
 		      	NUM NUM 'obj'
@@ -84,7 +84,7 @@ GARBAGE		<- . !('xref'/
 
 GOBBLE	       	<- .*
 POSITIVE       	<- < [0-9]+ > SPACE*
-NUM	       	<- < [-]?[0-9]+ > DELIM
+NUM	       	<- < [-]?[0-9]+ > DELIM {push(atoi(yytext));}
 REAL	       	<- [-]?[0-9.]+ DELIM
 ALPHA	       	<- [a-zA-Z_]
 ALPHANUM       	<- [a-zA-Z0-9+_,./:\-] 

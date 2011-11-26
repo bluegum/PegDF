@@ -21,16 +21,8 @@ THE SOFTWARE.
 */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "readpdf.h"
-
-#ifdef YY_DEBUG
-#define YY_INPUT(buf, result, max)                      \
-{                                                       \
-  int c= getchar();                                     \
-  result= (EOF == c) ? 0 : (*(buf)= c, 1);              \
-  if (EOF != c) printf("<%c>\n", c);                    \
-}
-#endif
 
 int stack[1024];
 int stackp= -1;
@@ -40,6 +32,7 @@ int g_xref_gen;
 
 int push(int n) { return stack[++stackp]= n; }
 int pop(void)   { return stack[stackp--]; }
+
 int xref_new(int n)
 {
   if (n < 1)
@@ -70,9 +63,77 @@ int xref_delete()
   free(g_xreftab.obj);
   return 0;
 }
+
+FILE* infile;
+FILE* outfile;
+
 int main(int argc, char **argv)
 {
+  int i = 1;
+  char *in = NULL;
+  char *out = NULL;
+
+  infile = stdin;
+  outfile = stdout;
+
+  if (argc > 1)
+    {
+      while (i < argc)
+	{
+	  if (argv[i][0] == '-')
+	    {
+	      char opt = argv[i][1];
+	      switch (opt)
+		{
+		case 'o':
+		  {
+		    if (isspace(argv[i][2]))
+		      {
+			argv += 1;
+		      }
+		      out = argv;
+		  }
+		  break;
+		default:
+		  break;
+		}
+	    }
+	  else
+	    {
+	      in = argv[i];
+	    }
+	  i += 1;
+	}
+    }
+  if (in)
+    {
+      printf("reading = %s\n", in);
+      infile = fopen(in, "rb");
+      if (!infile)
+	{
+	  printf("Can not open %s.\n", in);
+	  return 1;
+	}
+    }
+  if (out)
+    {
+      printf("writing = %s\n", out);
+      outfile = fopen(out, "wb");
+      if (!outfile)
+	{
+	  printf("Can not open %s.\n", out);
+	  return 1;
+	}
+    }
   printf(yyparse() ? "success\n" : "failure\n");
   xref_delete();
+  if (infile != stdin)
+    {
+      fclose(infile);
+    }
+  if (outfile != stdout)
+    {
+      fclose(stdout);
+    }
   return 0;
 }
