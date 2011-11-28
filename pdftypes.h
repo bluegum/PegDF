@@ -19,36 +19,35 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
-#ifndef READPDF_H
-#define READPDF_H
+#ifndef PDFTYPES_H
+#define PDFTYPES_H
 
-typedef
-struct xrefentry_s
+typedef enum pdfsimpletypes
+  {
+    eObjMarker,
+    eDictMarker,
+    eInt,
+    eReal,
+    eKey,
+    eString,
+    eArray,
+    eDict,
+  } e_pdfsimpletypes;
+
+typedef struct pdftypes_s
 {
-  int off;
-  int gen;
-  char x;
-} xrefentry_t;
-
-typedef
-struct xreftab_s
-{
-  int idx;
-  int count;
-  xrefentry_t *obj;
-} xreftab_t;
-
-extern int g_xref_off;
-extern int g_xref_gen;
-
-extern int push_marker(e_pdfsimpletypes t);
-extern int push_i(e_pdfsimpletypes t, int n);
-extern int push_r(e_pdfsimpletypes t, float n);
-extern pdftypes_t pop(void);
-extern pdftypes_t pop_dict(void);
-
-extern void print_stack();
-extern int xref_new(int n);
-extern int xref_add(int off, int gen, char x);
+  e_pdfsimpletypes t;
+  union
+  {
+    int marker;
+    int i;
+    float r;
+    void *k;
+    void *s;
+    void *a;
+    void *d;
+  } value;
+      
+}pdftypes_t;
 
 #endif

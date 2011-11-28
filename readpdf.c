@@ -22,17 +22,48 @@ THE SOFTWARE.
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include "pdftypes.h"
 #include "readpdf.h"
 
-int stack[1024];
+pdftypes_t stack[1024];
 int stackp= -1;
 xreftab_t g_xreftab;
 int g_xref_off;
 int g_xref_gen;
 
-int push(int n) { return stack[++stackp]= n; }
-int pop(void)   { return stack[stackp--]; }
+int push_i(e_pdfsimpletypes t, int n) { stack[++stackp].t =t; stack[stackp].value.i = n; }
+int push_r(e_pdfsimpletypes t, float n) {  stack[++stackp].t = t; stack[stackp].value.r = n; }
+int push_marker(e_pdfsimpletypes t)
+{
+  stack[++stackp].t = t;
+}
+int push_key(char *s)
+{
+  stack[++stackp].value.k = malloc(strlen(s));
+  memcpy(stack[stackp].value.k, s, strlen(s));
+  stack[stackp].t = eKey;
+}
 
+pdftypes_t pop(void)   { if (stackp <= 0) stackp = 0;return stack[stackp--]; }
+
+pdftypes_t pop_dict(void)
+{
+  while (stack[stackp--].t != eDictMarker)
+    {
+      printf("--%d-- ", stack[stackp+1].t);
+    }
+  return pop();
+}
+
+void print_stack()
+{
+  printf("current stack: depth=%d\n", stackp);
+  while (stackp>=0)
+    {
+      printf("%d\n", stack[stackp--].t);
+    }
+}
 int xref_new(int n)
 {
   if (n < 1)
@@ -59,7 +90,7 @@ int xref_add(int off, int gen, char x)
 
 int xref_delete()
 {
-  printf("xref=%d\n", g_xreftab.idx);
+  //printf("xref=%d\n", g_xreftab.idx);
   free(g_xreftab.obj);
   return 0;
 }
@@ -125,7 +156,7 @@ int main(int argc, char **argv)
 	  return 1;
 	}
     }
-  printf(yyparse() ? "success\n" : "failure\n");
+  printf(yyparse() ? "\n\nsuccess\n" : "failure\n");
   xref_delete();
   if (infile != stdin)
     {

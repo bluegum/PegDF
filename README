@@ -1,5 +1,13 @@
 An experienmental PEG grammar pdf parser
 
 I hope PEG(Parser Expression Grammer) has got just enough power to describe
-pdf syntax. 
+pdf file structure syntax. 
 peg/leg parser/generater is required to build PegDF.
+
+Steps to build:
+1. download peg/leg source code.
+2. "cd peg-0.1.4"
+3. "make; make install"
+4. "cd PegDF"
+5. make
+6. ./readpdf -o outfile infile
