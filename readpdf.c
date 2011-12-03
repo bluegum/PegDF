@@ -53,6 +53,16 @@ pdftypes_t pop_dict(void)
       printf("pop-dict:%d--%d-- ", stackp, stack[stackp+1].t);
     }
 }
+pdftypes_t pop_obj(void)
+{
+  printf("%s", "pop-obj:\n");
+  while (stack[stackp--].t != eObjMarker)
+    {
+      printf("%d--%d--;", stackp, stack[stackp+1].t);
+    }
+  ;
+  printf("->%d, %d\n", pop().value.i, pop().value.i);
+}
 
 void print_stack()
 {

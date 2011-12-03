@@ -34,6 +34,7 @@ static int my_getchar()
 #ifdef YY_DEBUG
    if (EOF != c) printf("<%c>\n", c); 
 #endif
+   return c;
 }
 
 

@@ -21,8 +21,9 @@
 #pdf_peg_grammar
 #
 
+####################################
 #Productions
-
+####################################
 start	<- MAGIC COMMENT* EOL* SPACE* OBJ+ DELIM XREF DELIM TRAILER STARTXREF GOBBLE {print_stack();}
 DICT	<- DB (DELIM KEY DELIM(VALUE / KWORD / ID))* DE DELIM
 DB      <- '<<' DELIM {push_marker(eDictMarker);}
@@ -49,7 +50,7 @@ STRBODY	   <- (
 
 HEXSTR	   <- '<' [0-9a-fA-F\n\r]* '>' DELIM
 
-OBJ	<- NUM  NUM   'obj' DELIM   { push_marker(eObjMarker); printf("objbegin..%d, %d\n", pop().value.i, pop().value.i); }
+OBJ	<- NUM  NUM   'obj' DELIM   { push_marker(eObjMarker); printf("objbegin..\n"); }
 	(REF 
 	/ DICT 
 	/ NUM {pop();}
@@ -58,7 +59,7 @@ OBJ	<- NUM  NUM   'obj' DELIM   { push_marker(eObjMarker); printf("objbegin..%d,
 	/ STRING
 	)* DELIM
 	STREAM*
-	'endobj'  GARBAGE* DELIM {pop(); printf("objend..\n"); }
+	'endobj'  {pop_obj();} GARBAGE* DELIM 
 
 STREAM   <- 'stream'EOL* (!'endstream' .)* 'endstream' DELIM {printf("stream...\n");}
 
