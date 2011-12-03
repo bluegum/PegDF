@@ -84,8 +84,8 @@ GARBAGE		<- . !('xref'/
 #####################################
 GOBBLE	       	<- .*
 POSITIVE       	<- < [0-9]+ > SPACE*
-NUM	       	<- < [-]?[0-9]+ > DELIM {push_i(eInt,atoi(yytext));}
-REAL	       	<- [-]?[0-9.]+ DELIM
+NUM	       	<- < [-]?[0-9]+ > DELIM {push(eInt,atoi(yytext));}
+REAL	       	<- [-]?[0-9.]+ DELIM {push(eReal,atof(yytext));}
 ALPHA	       	<- [a-zA-Z_]
 ALPHANUM       	<- [a-zA-Z0-9#+_,.:\-]
 MAGIC		<- '%'+[pP][dD][fF] (!EOL .)* EOL {printf("start PDF...\n");}

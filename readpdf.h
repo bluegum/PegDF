@@ -42,8 +42,7 @@ extern int g_xref_off;
 extern int g_xref_gen;
 
 extern int push_marker(e_pdfsimpletypes t);
-extern int push_i(e_pdfsimpletypes t, int n);
-extern int push_r(e_pdfsimpletypes t, float n);
+extern int push(e_pdfsimpletypes t, int n);
 extern pdftypes_t pop(void);
 extern pdftypes_t pop_dict(void);
 

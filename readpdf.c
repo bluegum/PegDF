@@ -32,8 +32,7 @@ xreftab_t g_xreftab;
 int g_xref_off;
 int g_xref_gen;
 
-int push_i(e_pdfsimpletypes t, int n) { stack[++stackp].t =t; stack[stackp].value.i = n; }
-int push_r(e_pdfsimpletypes t, float n) {  stack[++stackp].t = t; stack[stackp].value.r = n; }
+int push(e_pdfsimpletypes t, int n) { stack[++stackp].t =t; stack[stackp].value.i = n; }
 int push_marker(e_pdfsimpletypes t)
 {
   stack[++stackp].t = t;
@@ -45,15 +44,14 @@ int push_key(char *s)
   stack[stackp].t = eKey;
 }
 
-pdftypes_t pop(void)   { if (stackp <= 0) stackp = 0;return stack[stackp--]; }
+pdftypes_t pop(void)   { printf("pop=%d, %d\n",stackp, stack[stackp].t);return stack[stackp--]; }
 
 pdftypes_t pop_dict(void)
 {
   while (stack[stackp--].t != eDictMarker)
     {
-      printf("--%d-- ", stack[stackp+1].t);
+      printf("pop-dict:%d--%d-- ", stackp, stack[stackp+1].t);
     }
-  return pop();
 }
 
 void print_stack()
