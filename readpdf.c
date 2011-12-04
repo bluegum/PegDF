@@ -44,7 +44,7 @@ int push_key(char *s)
   stack[stackp].t = eKey;
 }
 
-pdftypes_t pop(void)   { printf("pop=%d, %d\n",stackp, stack[stackp].t);return stack[stackp--]; }
+pdftypes_t pop(void)   { return stack[stackp--]; }
 
 pdftypes_t pop_dict(void)
 {
@@ -76,15 +76,17 @@ int xref_new(int n)
 {
   if (n < 1)
     {
-      n = 1;
+      return 1;
     }
   g_xreftab.idx = 0;
   g_xreftab.count = n;
   g_xreftab.obj = malloc(n*sizeof(xrefentry_t));
+  printf("Created xref table of %d entries\n", n);
   return 0;
 }
 int xref_add(int off, int gen, char x)
 {
+  printf("xref_entry:%d,%d,%c\n", off, gen, x);
   g_xreftab.obj[g_xreftab.idx].off = off;
   g_xreftab.obj[g_xreftab.idx].gen = gen;
   g_xreftab.obj[g_xreftab.idx].x = x;

@@ -24,7 +24,7 @@
 ####################################
 #Productions
 ####################################
-start	<- MAGIC COMMENT* EOL* SPACE* OBJ+ DELIM XREF DELIM TRAILER STARTXREF GOBBLE {print_stack();}
+start	<- MAGIC COMMENT* EOL* SPACE* OBJ+ DELIM (XREF DELIM TRAILER)+ STARTXREF GOBBLE {print_stack();}
 DICT	<- DB (DELIM KEY DELIM(VALUE / KWORD / ID))* DE DELIM
 DB      <- '<<' DELIM {push_marker(eDictMarker);}
 DE	<- '>>' DELIM {pop_dict();}
@@ -69,11 +69,9 @@ XREF	 <- 'xref' DELIM {printf("xref...%s", yytext); }
 	 POSITIVE {xref_new(atoi(yytext));}
 	 DELIM
 	 XREFTAB*  
-XREFTAB	 <- NUM { g_xref_off = pop().value.i; } 
-	 NUM { g_xref_gen = pop().value.i; }
-	 ('n'/'f') {xref_add(g_xref_off, g_xref_gen, yytext[0]);}
-	 DELIM 
-
+XREFTAB	 <- NUM NUM XREF_ENTRY_FLAG 
+	 DELIM {xref_add(pop().value.i, pop().value.i, pop().value.i);}
+	 
 TRAILER	        <- 'trailer' DELIM DICT DELIM {printf(" trailer...\n");}
 STARTXREF      	<- 'startxref' DELIM NUM DELIM {printf("startxref...%d\n", pop().value.i);}
 
@@ -100,5 +98,7 @@ ESCPAREN	<- (
 	      	   '\\' '('
 		   / '\\' ')'
 	      	   )
+XREF_ENTRY_FLAG <- 'n' {push(eInt, 'n');}
+		   /'f' {push(eInt, 'f');}
 KWORD		<- ( 'false' / 'true' / 'null') DELIM
 ID		<- (!SPACE !EOL .)* DELIM
