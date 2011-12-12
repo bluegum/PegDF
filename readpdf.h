@@ -46,6 +46,7 @@ extern int push(e_pdfsimpletypes t, int n);
 extern pdftypes_t pop(void);
 extern pdftypes_t pop_dict(void);
 extern pdftypes_t pop_obj(void);
+extern pdftypes_t pop_array(void);
 
 extern void print_stack();
 extern int xref_new(int n);

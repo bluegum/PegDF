@@ -8,7 +8,7 @@ APP = readpdf
 
 all : $(APP)
 
-readpdf : pdf.o readpdf.o
+readpdf : pdf.o readpdf.o tst.o dict.o
 
 pdf.peg.c  : pdf.peg
 	peg -v -o pdf.peg.c pdf.peg

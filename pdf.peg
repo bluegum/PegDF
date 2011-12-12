@@ -28,11 +28,11 @@ start	<- MAGIC COMMENT* EOL* SPACE* OBJ+ DELIM (XREF DELIM TRAILER)+ STARTXREF G
 DICT	<- DB (DELIM KEY DELIM(VALUE / KWORD / ID))* DE DELIM
 DB      <- '<<' DELIM {push_marker(eDictMarker);}
 DE	<- '>>' DELIM {pop_dict();}
-KEY	<- '/' ALPHANUM+ DELIM {push_key(yytext);}
+KEY	<- '/' < ALPHANUM+>  DELIM {push_key(yytext);} 
 VALUE	<- (
 	   REF
 	   / REAL
-	   / NUM {pop();}
+	   / NUM  {pop();}
 	   / KEY
 	   / DICT
 	   / ARRAY
@@ -40,7 +40,8 @@ VALUE	<- (
 	   / HEXSTR
 	   / KWORD
 	   ) DELIM 
-ARRAY	   <- '[' DELIM (VALUE)* ']' DELIM { printf("array..\n"); }
+ARRAY	   <- '[' { push_marker(eArrayMarker); }
+	   DELIM (VALUE)* ']' DELIM { pop_array(); }
 
 STRING     <- STRBGN  STRBODY* STREND { printf("string..\n"); }
 STRBODY	   <- (

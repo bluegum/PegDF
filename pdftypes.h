@@ -26,6 +26,7 @@ typedef enum pdfsimpletypes
   {
     eObjMarker,
     eDictMarker,
+    eArrayMarker,
     eInt,
     eReal,
     eKey,
