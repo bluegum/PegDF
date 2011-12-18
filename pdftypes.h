@@ -22,7 +22,10 @@ THE SOFTWARE.
 #ifndef PDFTYPES_H
 #define PDFTYPES_H
 
-typedef enum pdfsimpletypes
+typedef struct pdf_obj_s pdf_obj;
+typedef struct pdf_xref_s pdf_xref;
+
+typedef enum pdf_kind
   {
     eObjMarker,
     eDictMarker,
@@ -33,22 +36,37 @@ typedef enum pdfsimpletypes
     eString,
     eArray,
     eDict,
-  } e_pdfsimpletypes;
+  } e_pdf_kind;
 
-typedef struct pdftypes_s
+struct pdf_obj_s
 {
-  e_pdfsimpletypes t;
-  union
-  {
-    int marker;
-    int i;
-    float r;
-    void *k;
-    void *s;
-    void *a;
-    void *d;
-  } value;
-      
-}pdftypes_t;
+   e_pdf_kind t;
+   int refs;
+   union
+   {
+      int marker;
+      int b;
+      int i;
+      float f;
+      struct {
+	 unsigned short len;
+	 char *buf;
+      } s;
+      char *k;
+      struct {
+	 int len;
+	 pdf_obj *items;
+      } a;
+      struct {
+	 void *dict;
+      } d;
+      struct {
+	 int num;
+	 int gen;
+	 pdf_xref *xref;
+	 pdf_obj *obj;
+      } r;
+   } value;
+};
 
 #endif

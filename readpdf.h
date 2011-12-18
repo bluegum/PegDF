@@ -22,16 +22,14 @@ THE SOFTWARE.
 #ifndef READPDF_H
 #define READPDF_H
 
-typedef
-struct xrefentry_s
+typedef struct xrefentry_s
 {
   int off;
   int gen;
   char x;
 } xrefentry_t;
 
-typedef
-struct xreftab_s
+typedef struct xreftab_s
 {
   int idx;
   int count;
@@ -41,12 +39,12 @@ struct xreftab_s
 extern int g_xref_off;
 extern int g_xref_gen;
 
-extern int push_marker(e_pdfsimpletypes t);
-extern int push(e_pdfsimpletypes t, int n);
-extern pdftypes_t pop(void);
-extern pdftypes_t pop_dict(void);
-extern pdftypes_t pop_obj(void);
-extern pdftypes_t pop_array(void);
+extern int push_marker(e_pdf_kind t);
+extern int push(e_pdf_kind t, int n);
+extern pdf_obj pop(void);
+extern pdf_obj pop_dict(void);
+extern pdf_obj pop_obj(void);
+extern pdf_obj push_array(void);
 
 extern void print_stack();
 extern int xref_new(int n);

@@ -26,14 +26,14 @@
 #include "pdftypes.h"
 #include "readpdf.h"
 
-pdftypes_t stack[1024];
+pdf_obj stack[1024];
 int stackp= -1;
 xreftab_t g_xreftab;
 int g_xref_off;
 int g_xref_gen;
 
-int push(e_pdfsimpletypes t, int n) { stack[++stackp].t =t; stack[stackp].value.i = n; }
-int push_marker(e_pdfsimpletypes t)
+int push(e_pdf_kind t, int n) { stack[++stackp].t =t; stack[stackp].value.i = n; }
+int push_marker(e_pdf_kind t)
 {
    stack[++stackp].t = t;
 }
@@ -44,9 +44,9 @@ int push_key(char *s)
    stack[stackp].t = eKey;
 }
 
-pdftypes_t pop(void)   { return stack[stackp--]; }
+pdf_obj pop(void)   { return stack[stackp--]; }
 
-pdftypes_t pop_dict(void)
+pdf_obj pop_dict(void)
 {
    int i = 0;
    printf("pop-dict:-- <<");
@@ -60,17 +60,25 @@ pdftypes_t pop_dict(void)
    }
    printf(">>\n");
 }
-pdftypes_t pop_array(void)
+pdf_obj push_array(void)
 {
-   int i = 0;
+   int i = stackp;
+   pdf_obj o, p;
+   int k = 0;
    printf("pop-array: [");
-   while (stack[stackp--].t != eArrayMarker)
+   while (stack[i--].t != eArrayMarker);
+   o.t = eArray;
+   o.value.a.len = stackp-i-1;
+   o.value.a.items = malloc(sizeof(pdf_obj)*(o.value.a.len));
+   for ( p = pop(); p.t != eArrayMarker;)
    {
-      printf("-%d-", stack[stackp+1].t);
-   }
+      o.value.a.items[k] = p;
+      p = pop();
+   } 
+   stack[stackp--] = o;
    printf("]\n");
 }
-pdftypes_t pop_obj(void)
+pdf_obj pop_obj(void)
 {
    printf("%s", "pop-obj:\n");
    while (stack[stackp--].t != eObjMarker)
@@ -149,7 +157,7 @@ int main(int argc, char **argv)
 		  {
 		     argv += 1;
 		  }
-		  out = argv;
+		  out = *argv;
 	       }
 	       break;
 	       default:

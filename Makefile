@@ -8,12 +8,21 @@ APP = readpdf
 
 all : $(APP)
 
+pdf_peg.c  : pdf.peg
+	peg -v -o $(@) $(<)
+
+pdf.c	: pdf_peg.c
+
 readpdf : pdf.o readpdf.o tst.o dict.o
 
-pdf.peg.c  : pdf.peg
-	peg -v -o pdf.peg.c pdf.peg
-
-pdf.c	: pdf.peg.c
+test	:	readpdf
+	@./readpdf examples/simpledict.pdf
+	@if [ "$$?" -eq 0 ] ;\
+	then \
+		echo "passed test"; \
+	else \
+		echo "failed test"; \
+	fi
 
 clean: 
-	rm *.o $(APP) pdf.peg.c
+	-rm *.o $(APP) pdf_peg.c
