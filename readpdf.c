@@ -65,7 +65,7 @@ pdf_obj push_array(void)
    int i = stackp;
    pdf_obj o, p;
    int k = 0;
-   printf("pop-array: [");
+   printf("push-array: [");
    while (stack[i--].t != eArrayMarker);
    o.t = eArray;
    o.value.a.len = stackp-i-1;
