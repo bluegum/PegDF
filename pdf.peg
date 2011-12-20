@@ -48,8 +48,8 @@ STRING     <- STRBGN {push_marker(eString);}
 STR	   <- (STRELEM  STR 
 	   /STRELEM
 	   )
-STRELEM    <- (<STRALPHA+> {printf("x=%s\n", yytext);}  STR
-  	      / <STRALPHA+> {printf("y=%s\n", yytext);}
+STRELEM    <- (<STRALPHA+>   STR
+  	      / <STRALPHA+> 
 	      / '(' STRELEM  ')'
 	      / '(' ')'
      	      )
