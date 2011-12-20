@@ -1,7 +1,21 @@
 An experienmental PEG grammar pdf parser
 
-I hope PEG(Parser Expression Grammer) has got just enough power to describe
-pdf file structure syntax. 
+PEG(Parser Expression Grammer) provided a succinct and expressive way
+for parsing tasks. In fact it is so cool, makes yacc/lex look
+so overkill on many small languages.
+
+Pdf file structure syntax is considered a set rather elementary 
+syntasis, mostly involving dictionary paring, map pairing, and
+literal string parsing. In these experiment, PEG grammar proved
+to be very powerful for PDF constructs parsing. However,
+performance could be better if some of the syntactical rules
+made a little slopier and more compentent semantic handlers
+to take some syntax analying role. For example, a nested PDF
+string can be described by PDF in a formal way, and semantic
+hooks need to flatten the tree, which is not the most
+efficient method.
+
+This project is writting in the original PEG syntax.
 peg/leg parser/generater is required to build PegDF.
 
 Steps to build:
