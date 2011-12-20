@@ -45,15 +45,21 @@ ARRAY	   <- '[' { push_marker(eArrayMarker); }
 
 STRING     <- STRBGN {push_marker(eString);}
 	      STR* STREND DELIM 
-STR	   <- (STRELEM  STR 
-	   /STRELEM
-	   )
-STRELEM    <- (<STRALPHA+>   STR
-  	      / <STRALPHA+> 
-	      / '(' STRELEM  ')'
+#string temporary rule
+STR	   <- (
+	      STRE  STR 
+	      /STRE
+	      )
+#string element
+STRE       <- (
+	      <STRA+>   STR
+  	      / <STRA+> 
+	      / '(' STRE  ')'
 	      / '(' ')'
      	      )
-STRALPHA   <- (ESCPAREN / (!STRBGN !STREND .))
+#string alphabet
+STRA       <- (ESCPAREN / (!STRBGN !STREND .))
+
 HEXSTR	   <- '<' [0-9a-fA-F\n\r]* '>' DELIM
 
 OBJ	<- NUM  NUM   'obj' DELIM   { push_marker(eObjMarker); printf("objbegin..\n"); }
