@@ -2,13 +2,13 @@
 #include <stdlib.h>
 #include "dict.h"
 
-dict_t* dict_new(char *key, void *val)
+dict* dict_new(char *key, void *val)
 {
-   dict_t * d = malloc(sizeof(dict_t));
+   dict * d = malloc(sizeof(dict));
    d->dict = tst_insert(0, key, val);
   return d;
 }
-dict_t* dict_insert(dict_t* d, char *key, void *val)
+dict* dict_insert(dict* d, char *key, void *val)
 {
    if (d)
    {
@@ -19,11 +19,11 @@ dict_t* dict_insert(dict_t* d, char *key, void *val)
    }
    return NULL;
 }
-void*   dict_get(dict_t* d, char *key)
+void*   dict_get(dict* d, char *key)
 {
   return NULL;
 }
-void*   dict_remove(dict_t* d, char *key)
+void*   dict_remove(dict* d, char *key)
 {
   return NULL;
 }
@@ -40,7 +40,7 @@ dict_print_key(char *key, void *val)
    printf("dict_print_key: %s\n", key);
 }
 
-void    dict_destroy(dict_t* d)
+void    dict_destroy(dict* d)
 {
    if (d)
    {
@@ -54,7 +54,7 @@ void    dict_destroy(dict_t* d)
   return;
 }
 
-void dict_show(dict_t* d)
+void dict_show(dict* d)
 {
    if (d)
    {

@@ -41,6 +41,7 @@ extern int g_xref_gen;
 
 extern int push_marker(e_pdf_kind t);
 extern int push(e_pdf_kind t, int n);
+extern int push_ref(e_pdf_kind t, int gen, int r);
 extern pdf_obj pop(void);
 extern pdf_obj pop_dict(void);
 extern pdf_obj pop_obj(void);

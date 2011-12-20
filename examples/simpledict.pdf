@@ -3,6 +3,7 @@
 
 1 0 obj 
 << 
+/CharSet( aa(bb))
 /Type /Catalog 
 /Pages 2 0 R 
 /PageMode /UseNone 
@@ -11,6 +12,7 @@
 /PageLayout /SinglePage 
 /NonFullScreenPageMode /UseNone 
 >> 
+/Kids [3 0 R]
 >> 
 endobj 
 
@@ -21,7 +23,7 @@ garbage..
 endobj
 
  10 0 obj <<
-   /Producer (cairo 1.8.8 (http://cairographics.org))
+   /Producer (cairo 1.8.8 (http://cairographics.org) testing)
 /D [1642 0 R /XYZ 90 720 null]
 /C false
 /G true

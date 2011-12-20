@@ -1,4 +1,4 @@
-CFLAGS += -g
+CFLAGS += -g -Wall
 
 ifeq	"$(DEBUG)" "y"
 	CFLAGS += -DYY_DEBUG

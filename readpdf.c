@@ -49,16 +49,30 @@ pdf_obj pop(void)   { return stack[stackp--]; }
 pdf_obj pop_dict(void)
 {
    int i = 0;
+   pdf_obj o, *a = NULL;
+   dict* d = dict_new(NULL, NULL);
    printf("pop-dict:-- <<");
+
+   o.t = eDict;
+   o.value.d.dict = d;
    while (stack[stackp--].t != eDictMarker)
    {
       if (i%2)
       {
 	 printf("%s|", (char*)(stack[stackp+1].value.k));
+	 dict_insert(d, stack[stackp+1].value.k, a);
+      }
+      else
+      {
+	 a = malloc(sizeof(pdf_obj));
+	 *a = stack[stackp+1];
       }
       i += 1;
    }
    printf(">>\n");
+   stackp += 1;
+   stack[stackp] = o;
+   return o;
 }
 pdf_obj push_array(void)
 {
@@ -70,7 +84,8 @@ pdf_obj push_array(void)
    o.t = eArray;
    o.value.a.len = stackp-i-1;
    o.value.a.items = malloc(sizeof(pdf_obj)*(o.value.a.len));
-   for ( p = pop(); p.t != eArrayMarker;)
+   
+   for (k = o.value.a.len - 1, p = pop(); p.t != eArrayMarker;)
    {
       o.value.a.items[k] = p;
       p = pop();
@@ -78,6 +93,14 @@ pdf_obj push_array(void)
    stack[stackp--] = o;
    printf("]\n");
 }
+
+int push_ref(e_pdf_kind t, int gen, int r)
+{
+   stack[++stackp].t =t; 
+   stack[stackp].value.r.gen = gen;
+   stack[stackp].value.r.num = r;
+}
+
 pdf_obj pop_obj(void)
 {
    printf("%s", "pop-obj:\n");

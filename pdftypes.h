@@ -21,6 +21,7 @@ THE SOFTWARE.
 */
 #ifndef PDFTYPES_H
 #define PDFTYPES_H
+#include "dict.h"
 
 typedef struct pdf_obj_s pdf_obj;
 typedef struct pdf_xref_s pdf_xref;
@@ -30,8 +31,10 @@ typedef enum pdf_kind
     eObjMarker,
     eDictMarker,
     eArrayMarker,
+    eBool,
     eInt,
     eReal,
+    eRef,
     eKey,
     eString,
     eArray,
@@ -58,7 +61,7 @@ struct pdf_obj_s
 	 pdf_obj *items;
       } a;
       struct {
-	 void *dict;
+	 dict *dict;
       } d;
       struct {
 	 int num;

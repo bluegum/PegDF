@@ -28,7 +28,7 @@ start	<- MAGIC COMMENT* EOL* SPACE* OBJ+ DELIM (XREF DELIM TRAILER)+ STARTXREF G
 DICT	<- DB (DELIM KEY DELIM(VALUE / KWORD / ID))* DE DELIM
 DB      <- '<<' DELIM {push_marker(eDictMarker);}
 DE	<- '>>' DELIM {pop_dict();}
-KEY	<- '/' < ALPHANUM+>  DELIM {push_key(yytext);} 
+KEY	<- '/' < ALPHANUM+ >  DELIM {push_key(yytext);} 
 VALUE	<- (
 	   REF
 	   / REAL
@@ -43,12 +43,17 @@ VALUE	<- (
 ARRAY	   <- '[' { push_marker(eArrayMarker); }
 	   DELIM (VALUE)* ']' DELIM { push_array();  }
 
-STRING     <- STRBGN  STRBODY* STREND { printf("string..\n"); }
-STRBODY	   <- (
-	      STRING
-	      / (ESCPAREN / (!STRBGN !STREND .))
-	      )
-
+STRING     <- STRBGN {push_marker(eString);}
+	      STR* STREND DELIM 
+STR	   <- (STRELEM  STR 
+	   /STRELEM
+	   )
+STRELEM    <- (<STRALPHA+> {printf("x=%s\n", yytext);}  STR
+  	      / <STRALPHA+> {printf("y=%s\n", yytext);}
+	      / '(' STRELEM  ')'
+	      / '(' ')'
+     	      )
+STRALPHA   <- (ESCPAREN / (!STRBGN !STREND .))
 HEXSTR	   <- '<' [0-9a-fA-F\n\r]* '>' DELIM
 
 OBJ	<- NUM  NUM   'obj' DELIM   { push_marker(eObjMarker); printf("objbegin..\n"); }
@@ -64,7 +69,7 @@ OBJ	<- NUM  NUM   'obj' DELIM   { push_marker(eObjMarker); printf("objbegin..\n"
 
 STREAM   <- 'stream'EOL* (!'endstream' .)* 'endstream' DELIM {printf("stream...\n");}
 
-REF	 <- NUM NUM 'R' DELIM { printf("ref..%d,%d\n", pop().value.i, pop().value.i);}
+REF	 <- NUM NUM 'R' DELIM { push_ref(eRef, pop().value.i, pop().value.i);}
 XREF	 <- 'xref' DELIM {printf("xref...%s", yytext); }
 	 POSITIVE 
 	 POSITIVE {xref_new(atoi(yytext));}
@@ -85,7 +90,7 @@ GARBAGE		<- . !('xref'/
 GOBBLE	       	<- .*
 POSITIVE       	<- < [0-9]+ > SPACE*
 NUM	       	<- < [-]?[0-9]+ > DELIM {push(eInt,atoi(yytext));}
-REAL	       	<- [-]?[0-9.]+ DELIM {push(eReal,atof(yytext));}
+REAL	       	<- < [-]?[0-9.]+ > DELIM {push(eReal,atof(yytext));}
 ALPHANUM       	<- [a-zA-Z0-9#+_,.:\-]
 MAGIC		<- '%'+[pP][dD][fF] (!EOL .)* EOL {printf("start PDF...\n");}
 COMMENT		<-'%'+ (!EOL .)* EOL
@@ -100,5 +105,7 @@ ESCPAREN	<- (
 	      	   )
 XREF_ENTRY_FLAG <- 'n' {push(eInt, 'n');}
 		   /'f' {push(eInt, 'f');}
-KWORD		<- ( 'false' / 'true' / 'null') DELIM
+KWORD		<- ( 'false' {push(eBool, 0);}
+		/ 'true'  { push (eBool, 1); }
+		/ 'null') DELIM
 ID		<- (!SPACE !EOL .)* DELIM
