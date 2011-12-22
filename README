@@ -5,8 +5,8 @@ for parsing tasks. In fact it is so cool, makes yacc/lex look
 so overkill on many small languages.
 
 Pdf file structure syntax is considered a set rather elementary 
-syntasis, mostly involving dictionary paring, map pairing, and
-literal string parsing. In these experiment, PEG grammar proved
+syntasis, mostly involving map parsing, map entry pairing, and
+literal string parsing, etc. In these experiment, PEG grammar proved
 to be very powerful for PDF constructs parsing. However,
 performance could be better if some of the syntactical rules
 made a little slopier and more compentent semantic handlers
@@ -25,3 +25,8 @@ Steps to build:
 4. "cd PegDF"
 5. make
 6. ./readpdf -o outfile infile
+
+enjoy.
+
+TODO:
+	formalize API for semantic functions

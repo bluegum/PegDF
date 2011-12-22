@@ -46,6 +46,8 @@ extern pdf_obj pop(void);
 extern pdf_obj pop_dict(void);
 extern pdf_obj pop_obj(void);
 extern pdf_obj push_array(void);
+extern pdf_obj push_literal(char *s);
+extern void print_literal();
 
 extern void print_stack();
 extern int xref_new(int n);

@@ -17,12 +17,13 @@
 #LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 #OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 #THE SOFTWARE.
+
 #
-#pdf_peg_grammar
+#                             pdf_peg_grammar
 #
 
 ####################################
-#Productions
+# Productions
 ####################################
 start	<- MAGIC COMMENT* EOL* SPACE* OBJ+ DELIM (XREF DELIM TRAILER)+ STARTXREF GOBBLE {print_stack();}
 DICT	<- DB (DELIM KEY DELIM(VALUE / KWORD / ID))* DE DELIM
@@ -43,8 +44,8 @@ VALUE	<- (
 ARRAY	   <- '[' { push_marker(eArrayMarker); }
 	   DELIM (VALUE)* ']' DELIM { push_array();  }
 
-STRING     <- STRBGN {push_marker(eString);}
-	      STR* STREND DELIM 
+STRING     <- STRBGN {push_literal(NULL);}
+	      STR* STREND DELIM {print_literal();}
 #string temporary rule
 STR	   <- (
 	      STRE  STR 
@@ -52,17 +53,17 @@ STR	   <- (
 	      )
 #string element
 STRE       <- (
-	      <STRA+>   STR
-  	      / <STRA+> 
-	      / '(' STRE  ')'
-	      / '(' ')'
+	       <STRA+>  {push_literal(yytext);} STR 
+  	      / <STRA+> {push_literal(yytext);}
+	      / '(' {push_literal("(");} STRE  ')' {push_literal(")");}
+	      / '(' ')' {push_literal("()");}
      	      )
 #string alphabet
 STRA       <- (ESCPAREN / (!STRBGN !STREND .))
 
 HEXSTR	   <- '<' [0-9a-fA-F\n\r]* '>' DELIM
 
-OBJ	<- NUM  NUM   'obj' DELIM   { push_marker(eObjMarker); printf("objbegin..\n"); }
+OBJ	<- NUM  NUM  'obj' DELIM   { push_marker(eObjMarker); printf("objbegin..\n"); }
 	(REF 
 	/ DICT 
 	/ NUM {pop();}
@@ -91,7 +92,7 @@ GARBAGE		<- . !('xref'/
 		      	NUM NUM 'obj'
 			) 
 #####################################
-#Terminals
+# Terminals
 #####################################
 GOBBLE	       	<- .*
 POSITIVE       	<- < [0-9]+ > SPACE*
@@ -99,9 +100,9 @@ NUM	       	<- < [-]?[0-9]+ > DELIM {push(eInt,atoi(yytext));}
 REAL	       	<- < [-]?[0-9.]+ > DELIM {push(eReal,atof(yytext));}
 ALPHANUM       	<- [a-zA-Z0-9#+_,.:\-]
 MAGIC		<- '%'+[pP][dD][fF] (!EOL .)* EOL {printf("start PDF...\n");}
-COMMENT		<-'%'+ (!EOL .)* EOL
-SPACE		<- [ \t]
-EOL		<- '\n' / '\r\n' / '\r'
+COMMENT		<- '%'+ (!EOL .)* EOL
+SPACE		<- ' ' / '\t' / EOL
+EOL		<- '\r\n' / '\r' / '\n'
 DELIM		<- (SPACE / EOL)*
 STRBGN		<- '('
 STREND		<- ')'

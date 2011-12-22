@@ -1,4 +1,5 @@
 CFLAGS += -g -Wall
+LDFLAGS += -lz
 
 ifeq	"$(DEBUG)" "y"
 	CFLAGS += -DYY_DEBUG

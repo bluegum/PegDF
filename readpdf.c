@@ -23,8 +23,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "pdftypes.h"
 #include "readpdf.h"
+
+
+extern int yyparse();
 
 pdf_obj stack[1024];
 int stackp= -1;
@@ -79,7 +83,9 @@ pdf_obj push_array(void)
    int i = stackp;
    pdf_obj o, p;
    int k = 0;
+#ifdef DEBUG
    printf("push-array: [");
+#endif
    while (stack[i--].t != eArrayMarker);
    o.t = eArray;
    o.value.a.len = stackp-i-1;
@@ -91,7 +97,51 @@ pdf_obj push_array(void)
       p = pop();
    } 
    stack[stackp--] = o;
+#ifdef DEBUG
    printf("]\n");
+#endif
+   return o;
+}
+
+pdf_obj push_literal(char *s)
+{
+   if (!s)
+   {
+       pdf_obj o;
+       o.value.s.len = 0;
+       o.value.s.buf = NULL;
+       stack[++stackp] = o;
+   }
+   else
+   {
+       pdf_obj *o;
+       o = &stack[stackp];
+       if (o->value.s.len)
+       {
+           char *p = malloc(o->value.s.len + strlen(s));
+           memcpy(p, o->value.s.buf, o->value.s.len);
+           memcpy(p + o->value.s.len, s, strlen(s));
+           free(o->value.s.buf);
+           o->value.s.len += strlen(s);
+           o->value.s.buf = p;
+       }
+       else
+       {
+           /* new string */
+           o->value.s.len = strlen(s);
+           o->value.s.buf = malloc(o->value.s.len);
+           memcpy(o->value.s.buf, s, o->value.s.len);
+       }
+   }
+   return stack[stackp];
+}
+
+void print_literal()
+{
+    int i;
+    pdf_obj o = stack[stackp];
+    for ( i = 0; i < o.value.s.len; i++) printf("%c", o.value.s.buf[i]);
+    printf("\n");
 }
 
 int push_ref(e_pdf_kind t, int gen, int r)
@@ -103,13 +153,12 @@ int push_ref(e_pdf_kind t, int gen, int r)
 
 pdf_obj pop_obj(void)
 {
+#ifdef DEBUG
    printf("%s", "pop-obj:\n");
-   while (stack[stackp--].t != eObjMarker)
-   {
-      printf("%d--%d--;", stackp, stack[stackp+1].t);
-   }
-   ;
-   printf("->%d, %d\n", pop().value.i, pop().value.i);
+#endif
+   while (stack[stackp--].t != eObjMarker);
+   pop(); // gen num
+   return pop(); // obj num
 }
 
 void print_stack()
