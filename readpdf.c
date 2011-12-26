@@ -96,13 +96,26 @@ pdf_obj push_array(void)
       o.value.a.items[k] = p;
       p = pop();
    } 
-   stack[stackp--] = o;
+   stack[++stackp] = o;
 #ifdef DEBUG
    printf("]\n");
 #endif
    return o;
 }
-
+pdf_obj push_hexliteral(char *s)
+{
+   pdf_obj o;
+   o.t = eString;
+   o.value.s.len = 0;
+   if (s)
+   {
+      o.value.s.len = strlen(s);
+      o.value.s.buf = malloc(strlen(s));
+      memcpy(o.value.s.buf, s, strlen(s));
+   }
+   stack[++stackp] = o;
+   return o;
+}
 pdf_obj push_literal(char *s)
 {
    if (!s)
@@ -138,10 +151,12 @@ pdf_obj push_literal(char *s)
 
 void print_literal()
 {
+#ifdef DEBUG
     int i;
     pdf_obj o = stack[stackp];
     for ( i = 0; i < o.value.s.len; i++) printf("%c", o.value.s.buf[i]);
     printf("\n");
+#endif
 }
 
 int push_ref(e_pdf_kind t, int gen, int r)

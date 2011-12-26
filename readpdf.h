@@ -39,6 +39,7 @@ typedef struct xreftab_s
 extern int g_xref_off;
 extern int g_xref_gen;
 
+extern int push_key(char *s);
 extern int push_marker(e_pdf_kind t);
 extern int push(e_pdf_kind t, int n);
 extern int push_ref(e_pdf_kind t, int gen, int r);
@@ -48,6 +49,7 @@ extern pdf_obj pop_obj(void);
 extern pdf_obj push_array(void);
 extern pdf_obj push_literal(char *s);
 extern void print_literal();
+extern pdf_obj push_hexliteral(char *s);
 
 extern void print_stack();
 extern int xref_new(int n);

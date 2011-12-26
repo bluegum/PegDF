@@ -25,11 +25,11 @@
 ####################################
 # Productions
 ####################################
-start	<- MAGIC COMMENT* EOL* SPACE* OBJ+ DELIM (XREF DELIM TRAILER)+ STARTXREF GOBBLE {print_stack();}
-DICT	<- DB (DELIM KEY DELIM(VALUE / KWORD / ID))* DE DELIM
+start	<- MAGIC COMMENT* EOL* SPACE* OBJ+ DELIM (XREF TRAILER)* STARTXREF GOBBLE {print_stack();}
+DICT	<- DB ( KEY (VALUE / KWORD / ID))* DE 
 DB      <- '<<' DELIM {push_marker(eDictMarker);}
 DE	<- '>>' DELIM {pop_dict();}
-KEY	<- '/' < ALPHANUM+ >  DELIM {push_key(yytext);} 
+KEY	<- DELIM '/' < ALPHANUM+ >  DELIM {push_key(yytext);} 
 VALUE	<- (
 	   REF
 	   / REAL
@@ -41,11 +41,12 @@ VALUE	<- (
 	   / HEXSTR
 	   / KWORD
 	   ) DELIM 
-ARRAY	   <- '[' { push_marker(eArrayMarker); }
-	   DELIM (VALUE)* ']' DELIM { push_array();  }
-
+ARRAY	   <- '[' DELIM { push_marker(eArrayMarker); }
+	      (VALUE)* 
+	      ']'  DELIM { push_array();  }
+	   
 STRING     <- STRBGN {push_literal(NULL);}
-	      STR* STREND DELIM {print_literal();}
+	      STR* STREND  {print_literal();}
 #string temporary rule
 STR	   <- (
 	      STRE  STR 
@@ -61,7 +62,7 @@ STRE       <- (
 #string alphabet
 STRA       <- (ESCPAREN / (!STRBGN !STREND .))
 
-HEXSTR	   <- '<' [0-9a-fA-F\n\r]* '>' DELIM
+HEXSTR	   <- '<' < [0-9a-fA-F\n\r]* > '>' DELIM {push_hexliteral(yytext);}
 
 OBJ	<- NUM  NUM  'obj' DELIM   { push_marker(eObjMarker); printf("objbegin..\n"); }
 	(REF 
@@ -81,14 +82,14 @@ XREF	 <- 'xref' DELIM {printf("xref...%s", yytext); }
 	 POSITIVE 
 	 POSITIVE {xref_new(atoi(yytext));}
 	 DELIM
-	 XREFTAB*  
+	 XREFTAB*  DELIM
 XREFTAB	 <- NUM NUM XREF_ENTRY_FLAG 
 	 DELIM {xref_add(pop().value.i, pop().value.i, pop().value.i);}
 	 
 TRAILER	        <- 'trailer' DELIM DICT DELIM {printf(" trailer...\n");}
-STARTXREF      	<- 'startxref' DELIM NUM DELIM {printf("startxref...%d\n", pop().value.i);}
+STARTXREF      	<- DELIM 'startxref' DELIM NUM DELIM {printf("startxref...%d\n", pop().value.i);}
 
-GARBAGE		<- . !('xref'/ 
+GARBAGE		<- . !('startxref' / 'xref'/ 
 		      	NUM NUM 'obj'
 			) 
 #####################################
@@ -98,14 +99,14 @@ GOBBLE	       	<- .*
 POSITIVE       	<- < [0-9]+ > SPACE*
 NUM	       	<- < [-]?[0-9]+ > DELIM {push(eInt,atoi(yytext));}
 REAL	       	<- < [-]?[0-9.]+ > DELIM {push(eReal,atof(yytext));}
-ALPHANUM       	<- [a-zA-Z0-9#+_,.:\-]
+ALPHANUM       	<- [a-zA-Z0-9#+_,.:~\-]
 MAGIC		<- '%'+[pP][dD][fF] (!EOL .)* EOL {printf("start PDF...\n");}
 COMMENT		<- '%'+ (!EOL .)* EOL
 SPACE		<- ' ' / '\t' / EOL
 EOL		<- '\r\n' / '\r' / '\n'
 DELIM		<- (SPACE / EOL)*
 STRBGN		<- '('
-STREND		<- ')'
+STREND		<- ')' DELIM
 ESCPAREN	<- (
 	      	   '\\' '('
 		   / '\\' ')'
