@@ -121,6 +121,7 @@ pdf_obj push_literal(char *s)
    if (!s)
    {
        pdf_obj o;
+       o.t = eString;
        o.value.s.len = 0;
        o.value.s.buf = NULL;
        stack[++stackp] = o;

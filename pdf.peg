@@ -32,8 +32,8 @@ DE	<- '>>' DELIM {pop_dict();}
 KEY	<- DELIM '/' < ALPHANUM+ >  DELIM {push_key(yytext);} 
 VALUE	<- (
 	   REF
+	   / NUM
 	   / REAL
-	   / NUM  {pop();}
 	   / KEY
 	   / DICT
 	   / ARRAY
@@ -67,10 +67,12 @@ HEXSTR	   <- '<' < [0-9a-fA-F\n\r]* > '>' DELIM {push_hexliteral(yytext);}
 OBJ	<- NUM  NUM  'obj' DELIM   { push_marker(eObjMarker); printf("objbegin..\n"); }
 	(REF 
 	/ DICT 
-	/ NUM {pop();}
+	/ NUM
+	/ REAL
 	/ ARRAY
 	/ KEY
 	/ STRING
+	/ HEXSTR
 	)* DELIM
 	STREAM*
 	'endobj'  {pop_obj();} GARBAGE* DELIM 
@@ -97,8 +99,8 @@ GARBAGE		<- . !('startxref' / 'xref'/
 #####################################
 GOBBLE	       	<- .*
 POSITIVE       	<- < [0-9]+ > SPACE*
-NUM	       	<- < [-]?[0-9]+ > DELIM {push(eInt,atoi(yytext));}
-REAL	       	<- < [-]?[0-9.]+ > DELIM {push(eReal,atof(yytext));}
+NUM	       	<- < [-+]?[0-9]+ !['.'] > DELIM {push(eInt,atoi(yytext));}
+REAL	       	<- < [-+]?[0-9]* '.' [0-9]+ > DELIM {push(eReal,atof(yytext));}
 ALPHANUM       	<- [a-zA-Z0-9#+_,.:~\-]
 MAGIC		<- '%'+[pP][dD][fF] (!EOL .)* EOL {printf("start PDF...\n");}
 COMMENT		<- '%'+ (!EOL .)* EOL
