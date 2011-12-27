@@ -185,21 +185,25 @@ void print_stack()
       printf("%d\n", stack[stackp--].t);
    }
 }
-int xref_new(int n)
+int xref_new(int off, int n)
 {
    if (n < 1)
    {
       return 1;
    }
-   g_xreftab.idx = 0;
+   g_xreftab.idx = off;
    g_xreftab.count = n;
    g_xreftab.obj = malloc(n*sizeof(xrefentry_t));
+#ifdef DEBUG
    printf("Created xref table of %d entries\n", n);
+#endif
    return 0;
 }
 int xref_append(int off, int gen, pdf_obj x)
 {
+#ifdef DEBUG
    printf("xref_entry:%d,%d,%c\n", off, gen, x.value.i);
+#endif
    g_xreftab.obj[g_xreftab.idx].off = off;
    g_xreftab.obj[g_xreftab.idx].gen = gen;
    g_xreftab.obj[g_xreftab.idx].x = x.value.i;

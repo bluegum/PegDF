@@ -64,7 +64,7 @@ STRA       <- (ESCPAREN / (!STRBGN !STREND .))
 
 HEXSTR	   <- '<' < [0-9a-fA-F\n\r]* > '>' DELIM {push_hexliteral(yytext);}
 
-OBJ	<- NUM  NUM  'obj' DELIM   { push_marker(eObjMarker); printf("objbegin..\n"); }
+OBJ	<- NUM  NUM  'obj' DELIM   { push_marker(eObjMarker); }
 	(REF 
 	/ DICT 
 	/ NUM
@@ -77,14 +77,17 @@ OBJ	<- NUM  NUM  'obj' DELIM   { push_marker(eObjMarker); printf("objbegin..\n")
 	STREAM*
 	'endobj'  {pop_obj();} GARBAGE* DELIM 
 
-STREAM   <- 'stream'EOL* (!'endstream' .)* 'endstream' DELIM {printf("stream...\n");}
+STREAM   <- 'stream' EOL* {printf("stream...%d\n", yypos);}
+	 (!'endstream' .)* 'endstream' DELIM 
 
 REF	 <- NUM NUM 'R' DELIM { push_ref(eRef, pop().value.i, pop().value.i);}
 XREF	 <- 'xref' DELIM {printf("xref...%s", yytext); }
-	 POSITIVE 
-	 POSITIVE {xref_new(atoi(yytext));}
+	 (
+	 POSITIVE {push(eInt,atoi(yytext));}
+	 POSITIVE {xref_new(pop().value.i, atoi(yytext));}
 	 DELIM
 	 XREFTAB*  DELIM
+	 )+
 XREFTAB	 <- < [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9] > {push(eInt,atoi(yytext));}
 	    ' ' 
 	    < [0-9][0-9][0-9][0-9][0-9] > {push(eInt,atoi(yytext));}

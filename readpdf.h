@@ -52,7 +52,7 @@ extern void print_literal();
 extern pdf_obj push_hexliteral(char *s);
 
 extern void print_stack();
-extern int xref_new(int n);
+extern int xref_new(int off, int n);
 extern int xref_append(int off, int gen, pdf_obj x);
 
 #endif
