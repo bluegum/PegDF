@@ -197,12 +197,12 @@ int xref_new(int n)
    printf("Created xref table of %d entries\n", n);
    return 0;
 }
-int xref_add(int off, int gen, char x)
+int xref_append(int off, int gen, pdf_obj x)
 {
-   printf("xref_entry:%d,%d,%c\n", off, gen, x);
+   printf("xref_entry:%d,%d,%c\n", off, gen, x.value.i);
    g_xreftab.obj[g_xreftab.idx].off = off;
    g_xreftab.obj[g_xreftab.idx].gen = gen;
-   g_xreftab.obj[g_xreftab.idx].x = x;
+   g_xreftab.obj[g_xreftab.idx].x = x.value.i;
    g_xreftab.idx += 1;
    if (g_xreftab.idx >= g_xreftab.count)
    {

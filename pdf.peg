@@ -86,7 +86,7 @@ XREF	 <- 'xref' DELIM {printf("xref...%s", yytext); }
 	 DELIM
 	 XREFTAB*  DELIM
 XREFTAB	 <- NUM NUM XREF_ENTRY_FLAG 
-	 DELIM {xref_add(pop().value.i, pop().value.i, pop().value.i);}
+	 DELIM {pdf_obj cat=pop(); int gen= pop().value.i; int off=pop().value.i; xref_append(off, gen, cat);}
 	 
 TRAILER	        <- 'trailer' DELIM DICT DELIM {printf(" trailer...\n");}
 STARTXREF      	<- DELIM 'startxref' DELIM NUM DELIM {printf("startxref...%d\n", pop().value.i);}
@@ -113,8 +113,10 @@ ESCPAREN	<- (
 	      	   '\\' '('
 		   / '\\' ')'
 	      	   )
-XREF_ENTRY_FLAG <- 'n' {push(eInt, 'n');}
-		   /'f' {push(eInt, 'f');}
+XREF_ENTRY_FLAG <- (
+		   < 'n' >
+		   / < 'f' >
+		   ) {push(eInt, yytext[0]);}
 KWORD		<- ( 'false' {push(eBool, 0);}
 		/ 'true'  { push (eBool, 1); }
 		/ 'null') DELIM
