@@ -26,7 +26,7 @@
 #include <ctype.h>
 #include "pdftypes.h"
 #include "readpdf.h"
-
+#include "pdfindex.h"
 
 extern int yyparse();
 
@@ -167,14 +167,27 @@ int push_ref(e_pdf_kind t, int gen, int r)
    stack[stackp].value.r.num = r;
 }
 
-pdf_obj pop_obj(void)
+pdf_obj * 
+dup_pdf_obj(pdf_obj *o)
 {
+   pdf_obj *n = malloc(sizeof(pdf_obj));
+   memcpy(n, o, sizeof(pdf_obj));
+   return n;
+}
+
+int pop_obj(void)
+{
+  int n, gen;
+  pdf_obj *o;
 #ifdef DEBUG
    printf("%s", "pop-obj:\n");
+   printf ("object..\n");
 #endif
+   o = dup_pdf_obj(&stack[stackp]);
    while (stack[stackp--].t != eObjMarker);
-   pop(); // gen num
-   return pop(); // obj num
+   gen = pop().value.i; // gen num
+   n = pop().value.i; // obj num
+   return pdf_obj_insert(n, gen, o);
 }
 
 void print_stack()

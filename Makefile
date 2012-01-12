@@ -14,7 +14,7 @@ pdf_peg.c  : pdf.peg
 
 pdf.c	: pdf_peg.c
 
-readpdf : pdf.o readpdf.o tst.o dict.o
+readpdf : pdf.o readpdf.o tst.o dict.o bplustree.o pdfindex.o
 
 test	:	readpdf
 	@./readpdf examples/simpledict.pdf

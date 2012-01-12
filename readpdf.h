@@ -45,7 +45,7 @@ extern int push(e_pdf_kind t, int n);
 extern int push_ref(e_pdf_kind t, int gen, int r);
 extern pdf_obj pop(void);
 extern pdf_obj pop_dict(void);
-extern pdf_obj pop_obj(void);
+extern int pop_obj(void);
 extern pdf_obj push_array(void);
 extern pdf_obj push_literal(char *s);
 extern void print_literal();
