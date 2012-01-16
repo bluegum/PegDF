@@ -1,35 +1,35 @@
 #ifndef BPLUSTREE_H
 #define BPLUSTREE_H
 
-#define BP_LEAF_LINEAR
-#define BP_ORDER_INNER 20
-#define BP_ORDER_LEAF 200
+#define BPT_LEAF_LINEAR
+#define BPT_ORDER_INNER 4
+#define BPT_ORDER_LEAF 8
 
-typedef struct s_bp_node bp_node;
-struct s_bp_node
+typedef struct s_bpt_node bpt_node;
+struct s_bpt_node
 {
    int leaf;
    int *k;
-#ifdef BP_LEAF_LINEAR
+#ifdef BPT_LEAF_LINEAR
    int low;
 #endif
    int cnt;
    union {
-      bp_node * n;
+      bpt_node * n;
       void *d;
    } *v;
-   bp_node *next;
+   bpt_node *next;
 } ;
 
 typedef struct
 {
-   bp_node *root;
-} bp_tree;
-extern bp_node *bp_insert_leaf(bp_node *r, int i, void *d);
-extern bp_node *bp_insert_leaf_linear(bp_node *r, int i, void *d);
-extern void bp_destroy(bp_tree *t);
-extern int bp_insert(bp_tree *t, int i, void *d);
-extern bp_node* bp_search(bp_tree *t, int i);
-extern bp_tree* bp_new_tree();
+   bpt_node *root;
+} bpt_tree;
+
+extern void bpt_destroy(bpt_tree *t);
+extern int bpt_insert(bpt_tree *t, int i, void *d);
+extern bpt_node* bpt_search(bpt_tree *t, int i);
+extern bpt_tree* bpt_new_tree();
+extern void bpt_walk(bpt_tree* t);
 
 #endif

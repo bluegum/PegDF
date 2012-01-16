@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "bplustree.h"
@@ -5,7 +6,7 @@
 typedef struct pdf_map
 {
    int generation;
-   bp_tree *head; 
+   bpt_tree *head; 
    struct pdf_map * next;
 } pdf_map;
 
@@ -26,7 +27,7 @@ pdf_map_destroy(pdf_map *m)
    for (; i!=0; i=i->next)
    {
       /* delete obj tree */
-      bp_destroy(i->head);
+      bpt_destroy(i->head);
    }
 }
 
@@ -40,11 +41,11 @@ pdf_map_insert(int gen)
    }
    if (!m)
    {
-      m = pdf_map_create;
+      m = pdf_map_create();
    }
    if (!m->head)
    {
-      m->head = bp_new_tree();
+      m->head = bpt_new_tree();
    }
    return m;
 }
@@ -59,7 +60,7 @@ int
 pdf_obj_insert(int n, int gen, void *d)
 {
    pdf_map *m = pdf_map_insert(gen);
-   bp_insert(m->head, n, d);
+   bpt_insert(m->head, n, d);
    return 0;
 }
 
@@ -67,5 +68,22 @@ void *
 pdf_obj_find(int n, int gen)
 {
    pdf_map *m = pdf_map_find(gen);
-   return bp_search(m->head, n);
+   return bpt_search(m->head, n);
 }
+
+void
+pdf_obj_walk()
+{
+   pdf_map * m = &a_pdf_map;
+   for (;m; m = m->next)
+   {
+      printf("walk generation %d...\n", m->generation);
+      bpt_walk(m->head);
+   }
+}
+
+void
+pdf_obj_free()
+{
+}
+

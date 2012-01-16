@@ -297,6 +297,7 @@ int main(int argc, char **argv)
       }
    }
    printf(yyparse() ? "\n\nsuccess\n" : "failure\n");
+   pdf_obj_walk();
    xref_delete();
    if (infile != stdin)
    {
