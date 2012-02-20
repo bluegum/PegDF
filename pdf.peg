@@ -121,6 +121,7 @@ STREND		<- ')' DELIM
 ESCPAREN	<- (
 	      	   '\\' '('
 		   / '\\' ')'
+		   / '\\\\'
 	      	   )
 XREF_ENTRY_FLAG <- (
 		   < 'n' >
