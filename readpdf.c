@@ -27,10 +27,11 @@
 #include "pdftypes.h"
 #include "readpdf.h"
 #include "pdfindex.h"
+#include "dict.h"
 
 extern int yyparse();
 
-pdf_obj stack[1024];
+pdf_obj stack[1024], root_obj;
 int stackp= -1;
 xreftab_t g_xreftab;
 int g_xref_off;
@@ -190,6 +191,13 @@ int pop_obj(void)
    return pdf_obj_insert(n, gen, o);
 }
 
+int read_trailer(void)
+{
+  root_obj = pop();
+  dict_show(root_obj.value.d.dict);
+  return 0;
+}
+
 void print_stack()
 {
    printf("current stack: depth=%d\n", stackp);
@@ -296,7 +304,18 @@ int main(int argc, char **argv)
 	 return 1;
       }
    }
-   printf(yyparse() ? "\n\nsuccess\n" : "failure\n");
+   root_obj.t = eLimit;
+   root_obj.value.marker = 0;
+   /* parse magic */
+   yyparse(); 
+   /* parse the rest */
+   while (1)
+   {
+      if (yyparse() == 0)
+      {
+	 break;
+      }
+   }
    pdf_obj_walk();
    xref_delete();
    if (infile != stdin)

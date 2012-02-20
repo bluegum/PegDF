@@ -39,6 +39,7 @@ typedef enum pdf_kind
     eString,
     eArray,
     eDict,
+    eLimit
   } e_pdf_kind;
 
 struct pdf_obj_s

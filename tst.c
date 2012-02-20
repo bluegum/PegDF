@@ -204,14 +204,14 @@ void nearsearch(Tptr p, char *s, int d)
 
 static char frame[1024];
 static char *f = frame;
-void tst_traverse(Tptr p, tst_hook callback)
+void tst_traverse_node(Tptr p, tst_hook callback)
 {
    if (!p) {return;}
-   tst_traverse(p->lokid, callback);
+   tst_traverse_node(p->lokid, callback);
    if (p->splitchar)
    {
       *f++ = p->splitchar;
-      tst_traverse(p->eqkid, callback);
+      tst_traverse_node(p->eqkid, callback);
       f--;
    }
    else
@@ -220,9 +220,13 @@ void tst_traverse(Tptr p, tst_hook callback)
       *f = 0;
       callback(t, p->eqkid);
    }
-   tst_traverse(p->hikid, callback);
+   tst_traverse_node(p->hikid, callback);
 }
-
+void tst_traverse(Tptr p, tst_hook callback)
+{
+   if (!p) {return;}
+   tst_traverse_node(p->hikid, callback);
+}
 Tptr tst_init()
 {
    return  tst_insert(0, 0, 0);

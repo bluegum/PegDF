@@ -25,7 +25,9 @@
 ####################################
 # Productions
 ####################################
-start	<- MAGIC COMMENT* EOL* SPACE* OBJ+ DELIM (XREF TRAILER)* STARTXREF GOBBLE {print_stack();}
+start	<- MAGIC COMMENT* EOL* SPACE* 
+	   / OBJ
+	   / DELIM (XREF TRAILER)* STARTXREF GOBBLE {print_stack();}
 DICT	<- DB ( KEY (VALUE / KWORD / ID))* DE 
 DB      <- '<<' DELIM {push_marker(eDictMarker);}
 DE	<- '>>' DELIM {pop_dict();}
@@ -95,7 +97,7 @@ XREFTAB	 <- < [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9] > {push(eInt,at
 	    XREF_ENTRY_FLAG 
 	    (SP CR/SP LF/CR LF) {pdf_obj cat=pop(); int gen= pop().value.i; int off=pop().value.i; xref_append(off, gen, cat);}
 	 
-TRAILER	        <- 'trailer' DELIM DICT DELIM {printf(" trailer...\n");}
+TRAILER	        <- 'trailer' DELIM DICT DELIM {printf(" trailer...\n"); read_trailer();}
 STARTXREF      	<- DELIM 'startxref' DELIM NUM DELIM {printf("startxref...%d\n", pop().value.i);}
 
 GARBAGE		<- . !('startxref' / 'xref'/ 

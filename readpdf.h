@@ -50,6 +50,7 @@ extern pdf_obj push_array(void);
 extern pdf_obj push_literal(char *s);
 extern void print_literal();
 extern pdf_obj push_hexliteral(char *s);
+extern int read_trailer(void);
 
 extern void print_stack();
 extern int xref_new(int off, int n);

@@ -2,8 +2,8 @@
 #define BPLUSTREE_H
 
 #define BPT_LEAF_LINEAR
-#define BPT_ORDER_INNER 4
-#define BPT_ORDER_LEAF 8
+#define BPT_ORDER_INNER 16
+#define BPT_ORDER_LEAF 32
 
 typedef struct s_bpt_node bpt_node;
 struct s_bpt_node
