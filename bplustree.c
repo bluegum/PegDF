@@ -89,7 +89,7 @@ bpt_insert_leaf(bpt_node *r, int i, void *d)
    assert(r->leaf);
 
    s.split = 0;
-   if (r->low + BPT_ORDER_LEAF < i || r->low > i)
+   if (r->low + BPT_ORDER_LEAF <= i || r->low > i)
    {
       /* split leaf */
       n = bpt_new_node(1); /* new leaf */
@@ -138,94 +138,91 @@ bpt_insert_leaf(bpt_node *r, int i, void *d)
 bpt_split
 bpt_split_inner(bpt_node *r, bpt_split *k)
 {
-   int i, j, m;
+   int i, j;
    bpt_node *n, *n1 = 0;
-   int mid = (r->cnt+1)/2;
+   int mid = (r->cnt)/2;
    bpt_split s;
+   bpt_node *left, *right;
+
    s.split = 1;
    n = bpt_new_node(0);
-   for (i = 0, j = 0; i < r->cnt; i++, j++)
+#if 0
+   if ((r->cnt)%2)
    {
-      if (i > mid)
-      {
-	 break;
-      }
-      if (k->n < r->k[i])
-      {
-	 n1 = r;
-      }
+      if (k->n > r->k[mid])
+	 mid += 1;
    }
-   if (!n1)
-   {
-      n1 = n;
-   }
-   n->v[j].n = r->v[i].n;
-   n->cnt = mid;
-   r->cnt -= mid;
-   /* find k belongs to which into n1 */
-   for (i = 0; i < n1->cnt; i++)
-   {
-      if (k->n > n1->k[i])
-      {
-	 break;
-      }
-   }
-   if (i == n1->cnt)
-   {
-      /* insert into the first */
-      i = 0;
-   }
-   n1->cnt = mid;
+#endif
    /* shuffle half into new node */
-   for(j=mid, m = 1; j > 0; j--, m++)
+   for(j=mid, i = 0; j < BPT_ORDER_INNER; j++, i++)
    {
-      n->k[n->cnt-m] = r->k[r->cnt-m-1];
-      n->v[n->cnt-m+1].n = r->v[r->cnt-m].n;
+      n->k[i] = r->k[j];
+      n->v[i] = r->v[j];
    }
-   n->v[0].n = r->v[i+1].n;
-   /* insert k into n1 */
-   for (i = 0; i < n1->cnt; i++)
+   n->cnt = i;
+   n->v[i] = r->v[j];
+   n->v[j].n = r->v[i].n;
+   r->cnt -= i;
+   /* find k belongs to n1 */
+   if (k->n < n->k[0])
    {
-      if (k->n > n1->k[i])
-      {
-	 break;
-      }
-   }
-   if (i == n1->cnt)
-   {
-      /* insert into the first */
-      i = 0;
-   }
-   for (j = n1->cnt-1; j >= i; j--)
-   {
-      n1->k[j+1] = n1->k[0];
-      n1->v[j+2].n = n1->v[j+1].n;
-   }
-   n1->k[i] = k->n;
-   n1->v[i].n = k->left;
-   n1->cnt += 1;
-   /* pluck out a key from n1 */
-   if (bpt_lower(n1) < bpt_lower(n))
-   {
-      s.n = n1->k[n1->cnt-1];
-      s.left = n1;
-      s.right = n;
-      n->v[0].n = n1->v[n1->cnt].n;
+      n1 = r;
    }
    else
    {
-      s.n = n1->k[0];
-      s.left = n;
-      s.right = n1;
-      n->v[n->cnt].n = n1->v[0].n;
-      /* n1 shuffle back by 1 element */
-      for (i = 0; i < n1->cnt-1; i++)
+      n1 = n;
+   }
+   /* find k in n1 */
+   for (i = 0; i < n1->cnt; i++)
+   {
+      if (k->n < n1->k[i])
       {
-	 n1->k[i] = n1->k[i+1];
-	 n1->v[i].n = n1->v[i+1].n;
+	 break;
       }
    }
-   n1->cnt -= 1;
+   /* shuffle the rest of n1 by 1 */
+   for (j = BPT_ORDER_INNER-1; j > i; j--)
+   {
+      n1->k[j] = n1->k[j-1];
+      n1->v[j+1].n = n1->v[j].n;
+   }
+   /* insert */
+   n1->k[i] = k->n;
+   n1->v[i].n = k->left;
+   n1->v[i+1].n = k->right;
+   n1->cnt += 1;
+   /* pluck out a key from n1 */
+   n = (n1==n)?(r):(n);
+   if (bpt_lower(n1) < bpt_lower(n))
+   {
+      left = n1;
+      right = n;
+   }
+   else
+   {
+      left = n;
+      right = n1;
+   }
+   if (left->cnt > right->cnt)
+   {
+      s.n = left->k[left->cnt-1];
+      right->v[0] = left->v[left->cnt];
+      left->cnt -= 1;
+   }
+   else
+   {
+      s.n = right->k[0];
+      /* right shuffle back by 1 element */
+      for (i = 0; i < right->cnt-1; i++)
+      {
+	 right->k[i] = right->k[i+1];
+	 right->v[i].n = right->v[i+1].n;
+      }
+      right->v[i] = right->v[i+1];
+      right->cnt -= 1;
+   }
+   s.left = left;
+   s.right = right;
    s.split = 1;
    return s;
 }
@@ -245,15 +242,11 @@ bpt_insert_inner(bpt_node *r, int i, void *d)
    }
 
    for (k = 0; i > n->k[k] && k < r->cnt; k++);
-
-   if (k <= BPT_ORDER_INNER && k < r->cnt && k > 0)
-   {
-      n = n->v[k-1].n;
-   }
+   if (n->k[k] == i)
+      n = n->v[k+1].n;
    else
-   {
       n = n->v[k].n;
-   }
+
    if (n->leaf)
    {
       s = bpt_insert_leaf(n, i, d);
@@ -293,26 +286,10 @@ bpt_insert_inner(bpt_node *r, int i, void *d)
 	 }
 	 else
 	 {
-	    if (s.n > r->k[m-1])
-	    {
-	       if (s.n < bpt_lower(r->v[m].n))
-	       {
-		  r->k[m] = s.n;
-		  r->v[m+1].n = r->v[m].n;
-		  r->v[m].n = s.left;
-	       }
-	       else
-	       {
-		  r->k[m] = s.n;
-		  r->v[m+1].n = s.right;
-	       }
-	    }
-	    else
-	    {
-	       r->k[m] = s.n;
-	       r->v[m+1].n = r->v[m].n;
-	       r->v[m].n = s.left;
-	    }
+	    /* insert into the last slot */
+	    r->k[m] = s.n;
+	    r->v[m].n = s.left;
+	    r->v[m+1].n = s.right;
 	 }
 	 s.split = 0;
 	 r->cnt += 1;
