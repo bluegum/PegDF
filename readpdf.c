@@ -92,7 +92,7 @@ pdf_obj push_array(void)
    o.value.a.len = stackp-i-1;
    o.value.a.items = malloc(sizeof(pdf_obj)*(o.value.a.len));
    
-   for (k = o.value.a.len - 1, p = pop(); p.t != eArrayMarker;)
+   for (k = o.value.a.len - 1, p = pop(); p.t != eArrayMarker; k--)
    {
       o.value.a.items[k] = p;
       p = pop();

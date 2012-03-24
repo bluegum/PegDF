@@ -300,24 +300,34 @@ bpt_insert_inner(bpt_node *r, int i, void *d)
 }
 
 bpt_node*
-bpt_search(bpt_tree *t, int i)
+bpt_search_node(bpt_node *n, int i)
 {
-  bpt_node *n;
-   if (!t || t->root == NULL)
-   {
-      return 0;
-   }
-   n = t->root;
    if (n->leaf)
      {
        return n->v[i-n->low].d;
      }
    else
      {
-       return 0;
+       int k;
+       for (k = 0; k < n->cnt; k++)
+	 {
+	   if (i < n->k[k])
+	     {
+	       return bpt_search_node(n->v[k].d, i);
+	     }
+	 }
+       return bpt_search_node(n->v[k].d, i);
      }
 }
-
+bpt_node*
+bpt_search(bpt_tree *t, int i)
+{
+   if (!t || t->root == NULL)
+   {
+      return 0;
+   }
+   return bpt_search_node(t->root, i);
+}
 int bpt_upper(bpt_node *n)
 {
    if (n->leaf)

@@ -72,8 +72,10 @@ struct pdf_doc_s
   void *collection;
   int needsrendering; // boolean
   // page tree
-  pdf_page *pages;
+  pdf_page **pages;
   int count;
+  // internal
+  int pageidx;
 };
 
 typedef enum pdf_filter_e pdf_filter;

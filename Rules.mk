@@ -11,6 +11,8 @@ all:		targets
 
 dir	:= pdfdoc
 include		$(dir)/module.mk
+dir	:= pdfdraw
+include		$(dir)/module.mk
 
 
 # General directory independent rules
