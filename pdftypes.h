@@ -26,6 +26,12 @@ THE SOFTWARE.
 typedef struct pdf_obj_s pdf_obj;
 typedef struct pdf_xref_s pdf_xref;
 
+struct pdf_xref_s
+{
+  int num;
+  int gen;
+};
+
 typedef enum pdf_kind
   {
     eObjMarker,
@@ -64,12 +70,7 @@ struct pdf_obj_s
       struct {
 	 dict *dict;
       } d;
-      struct {
-	 int num;
-	 int gen;
-	 pdf_xref *xref;
-	 pdf_obj *obj;
-      } r;
+     pdf_xref r;
    } value;
 };
 

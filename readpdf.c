@@ -161,7 +161,7 @@ void print_literal()
 #endif
 }
 
-int push_ref(e_pdf_kind t, int gen, int r)
+int push_ref(e_pdf_kind t, int r, int gen)
 {
    stack[++stackp].t =t; 
    stack[stackp].value.r.gen = gen;
@@ -306,9 +306,9 @@ int main(int argc, char **argv)
    }
    root_obj.t = eLimit;
    root_obj.value.marker = 0;
-   /* parse magic */
+   // parse magic
    yyparse(); 
-   /* parse the rest */
+   // parse the rest
    while (1)
    {
       if (yyparse() == 0)
@@ -316,7 +316,8 @@ int main(int argc, char **argv)
 	 break;
       }
    }
-   pdf_obj_walk();
+   //pdf_obj_walk();
+   pdf_trailer_open(&root_obj);
    xref_delete();
    if (infile != stdin)
    {

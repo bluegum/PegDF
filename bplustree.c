@@ -302,11 +302,20 @@ bpt_insert_inner(bpt_node *r, int i, void *d)
 bpt_node*
 bpt_search(bpt_tree *t, int i)
 {
-   if (!t)
+  bpt_node *n;
+   if (!t || t->root == NULL)
    {
       return 0;
    }
-   return 0;
+   n = t->root;
+   if (n->leaf)
+     {
+       return n->v[i-n->low].d;
+     }
+   else
+     {
+       return 0;
+     }
 }
 
 int bpt_upper(bpt_node *n)

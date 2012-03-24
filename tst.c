@@ -55,7 +55,7 @@ Tptr tst_search(Tptr root, char *s)
 	 p = p->lokid;
       else if (*s == p->splitchar)  {
 	 if (*s++ == 0)
-	    return p;
+	    return p->eqkid;
 	 p = p->eqkid;
       } else
 	 p = p->hikid;

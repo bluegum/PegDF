@@ -21,7 +21,7 @@ dict* dict_insert(dict* d, char *key, void *val)
 }
 void*   dict_get(dict* d, char *key)
 {
-  return NULL;
+  return (void*) tst_search(d->dict, key);
 }
 void*   dict_remove(dict* d, char *key)
 {
