@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "bplustree.h"
+#include "pdfindex.h"
 
 typedef struct pdf_map
 {
@@ -64,11 +65,11 @@ pdf_obj_insert(int n, int gen, void *d)
    return 0;
 }
 
-void *
+pdf_obj *
 pdf_obj_find(int n, int gen)
 {
    pdf_map *m = pdf_map_find(gen);
-   return bpt_search(m->head, n);
+   return (pdf_obj*)bpt_search(m->head, n);
 }
 
 void

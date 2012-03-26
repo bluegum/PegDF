@@ -28,4 +28,35 @@ struct gs_bbox_s
         int x1, y1;
 };
 
+#include "pdftypes.h"
+
+struct pdf_extgstate_s
+{
+  float LW;
+  int LC;
+  int LJ;
+  float ML;
+  int *D;
+  char *RI;
+  int OP;
+  int op;
+  int OPM;
+  struct {pdf_obj * font; float size;} *Font;
+  void *BG;
+  void *BG2;
+  void *UCR;
+  void *UCR2;
+  void *TR;
+  void *TR2;
+  float FL;
+  float SM;
+  int SA;
+  void *BM;
+  void *SMask;
+  float CA;
+  float ca;
+  int AIS;
+  int TK;
+};
+
 #endif
