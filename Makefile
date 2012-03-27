@@ -25,6 +25,9 @@ endif
 APP = readpdf
 CLEAN = $(APP) pdf_peg.c
 
+COMMON_HEADERS := *.h
+#######
+
 all :
 
 # sub dirs
