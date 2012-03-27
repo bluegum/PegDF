@@ -20,7 +20,7 @@ typedef struct pdf_mask_s pdf_mask;
 typedef struct pdf_annots_s pdf_annots;
 // logical document structure
 typedef struct pdf_structtreeroot_s pdf_structtreeroot;
-typedef struct pdf_resource_s pdf_resource;
+typedef struct pdf_resources_s pdf_resources;
 
 struct pdf_mask_s
 {
@@ -54,7 +54,7 @@ struct pdf_annots_s
   pdf_obj *oc;
 };
 
-struct pdf_resource_s
+struct pdf_resources_s
 {
   pdf_extgstate *extgstate;
   void *colorspace;
@@ -62,7 +62,7 @@ struct pdf_resource_s
   void *shading;
   void *xobject;
   void *font;
-  void *procset;
+  char **procset;
   void *properties;
 };
 
@@ -70,7 +70,7 @@ struct pdf_page_s
 {
   pdf_obj *parent;
   char *lastmodified;
-  pdf_resource * resources;
+  pdf_resources * resources;
   gs_rect mediabox;
   pdf_stream *contents;
   int rotate;
@@ -198,5 +198,7 @@ struct pdf_structtreeroot_s
 
 // functions
 extern pdf_err pdf_info_print(pdf_info *info);
+extern pdf_resources* pdf_resources_load(pdf_obj *o);
+extern pdf_extgstate* pdf_extgstate_load(pdf_obj *o);
 
 #endif

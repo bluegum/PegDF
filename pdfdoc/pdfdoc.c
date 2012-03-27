@@ -12,11 +12,38 @@ pdf_to_int(pdf_obj *o)
     return 0; // should be NAN
   return o->value.i;
 }
+static inline int*
+pdf_to_int_array(pdf_obj *o)
+{
+  if (!o || o->t != eArray)
+    return 0; // should be NAN
+  return NULL;
+}
+
+static inline float
+pdf_to_float(pdf_obj *o)
+{
+  if (!o || (o->t != eInt && o->t != eReal))
+    return 0; // should be NAN
+  if (o->t == eInt)
+    return o->value.i;
+  else
+    return o->value.f;
+}
+
+static inline char*
+pdf_to_string(pdf_obj *o)
+{
+  if (!o || o->t != eString)
+    return 0; // should be NAN
+  return o->value.s.buf;
+}
+
 static inline gs_rect
 pdf_rect_resolve(pdf_obj *o)
 {
   gs_rect r={0,0,0,0};
-  if (!o || o->t != eArray || o->t != eRef)
+  if (!o || (o->t != eArray && o->t != eRef))
     return r;
   // should handle xref as obj as well.
   // should handle floating point value as well.
@@ -55,7 +82,7 @@ pdf_err pdf_page_load(pdf_obj *o, pdf_page **page)
   // parse tree dict
   p->parent = dict_get(d, "Parent");
   p->mediabox = pdf_rect_resolve(dict_get(d, "MediaBox"));
-  p->resources = dict_get(d, "Resources");
+  p->resources = pdf_resources_load(dict_get(d, "Resources"));
   // optionals
   p->contents = dict_get(d, "contents");
   v = dict_get(d, "Rotate");
@@ -164,6 +191,7 @@ pdf_doc* pdf_doc_load(pdf_obj *rdoc)
   doc = malloc(sizeof(pdf_doc));
   if (!doc)
     return NULL;
+  memset(doc, 0, sizeof(pdf_doc));
   doc->count = c->value.i;
   kids = dict_get(a->value.d.dict, "Kids");
   if (!kids || kids->t != eArray)
@@ -186,6 +214,7 @@ pdf_err  pdf_doc_print_info(pdf_doc *d)
 {
   if (d->info)
     pdf_info_print(d->info);
+  return pdf_ok;
 }
 
 void pdf_doc_done(pdf_doc *d)
@@ -275,6 +304,7 @@ pdf_err pdf_trailer_open(pdf_obj *trailer)
   pdf_trailer t;
   pdf_doc * d;
 
+  memset(&t, 0, sizeof(pdf_trailer));
   if (!trailer || trailer->t != eDict)
     return pdf_ok;
   root = dict_get(trailer->value.d.dict, "Root");
@@ -316,4 +346,68 @@ pdf_err pdf_trailer_open(pdf_obj *trailer)
   pdf_doc_print_info(d);
   pdf_doc_done(d);
   return pdf_ok;
+}
+
+pdf_resources*
+pdf_resources_load(pdf_obj *o)
+{
+  pdf_resources *r;
+  dict *d;
+  if (!o || (o->t != eDict && o->t != eRef))
+    return NULL;
+
+  if (o->t == eRef)
+    {
+      o = pdf_obj_find(o->value.r.num, o->value.r.gen);
+    }
+  r = malloc(sizeof(pdf_resources));
+  if (!r)
+    return NULL;
+  d = o->value.d.dict;
+  r->extgstate = pdf_extgstate_load(dict_get(d, "ExtGState"));
+  r->colorspace = dict_get(d, "ColorSpace");
+  r->pattern = dict_get(d, "Pattern");
+  r->shading = dict_get(d, "Shading");
+  r->xobject = dict_get(d, "XObject");
+  r->font = dict_get(d, "Font");
+  r->procset = dict_get(d, "ProcSet");
+  r->properties = dict_get(d, "Properties");
+  return r;
+}
+
+pdf_extgstate*
+pdf_extgstate_load(pdf_obj *o)
+{
+  pdf_extgstate *g;
+  dict *d;
+
+  if (!o || (o->t != eDict && o->t != eRef))
+    return NULL;
+
+  if (o->t == eRef)
+    {
+      o = pdf_obj_find(o->value.r.num, o->value.r.gen);
+    }
+  g = malloc(sizeof(pdf_extgstate));
+  if (!g)
+    return NULL;
+  memset(g, 0, sizeof(pdf_extgstate));
+  d = o->value.d.dict;
+  // Todo: check default value
+  g->LW = pdf_to_float(dict_get(d, "LW"));
+  g->LC = pdf_to_int(dict_get(d, "LC"));
+  g->LJ = pdf_to_int(dict_get(d, "LJ"));
+  g->ML = pdf_to_float(dict_get(d, "ML"));
+  g->LJ = pdf_to_int_array(dict_get(d, "LJ"));
+  g->RI = pdf_to_string(dict_get(d, "RI"));
+  g->OP = pdf_to_int(dict_get(d, "OP"));
+  g->OPM = pdf_to_int(dict_get(d, "OPM"));
+  g->op = pdf_to_int(dict_get(d, "op"));
+  // font
+  // bg
+  g->CA = pdf_to_float(dict_get(d, "CA"));
+  g->ca = pdf_to_float(dict_get(d, "ca"));
+  g->AIS = pdf_to_int(dict_get(d, "AIS"));
+  g->TK = pdf_to_int(dict_get(d, "TK"));
+  return g;
 }
