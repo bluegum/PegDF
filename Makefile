@@ -4,7 +4,7 @@ CF_ALL          = -g -Wall -I .
 LF_ALL          =
 LL_ALL          =
 
-CFLAGS += -g -Wall
+CFLAGS += $(CF_ALL)
 LDFLAGS += -lz
 ### Build tools
 #
@@ -23,7 +23,7 @@ ifeq	"$(DEBUG)" "y"
 endif
 
 APP = readpdf
-CLEAN = $(APP) pdf_peg.c
+CLEAN = $(APP) pdf.c pdf_parse.o readpdf.o tst.o dict.o bplustree.o pdfindex.o
 
 COMMON_HEADERS := *.h
 #######
@@ -41,12 +41,12 @@ all : $(APP)
 
 libraries: $(TGT_LIB)
 
-pdf_peg.c  : pdf.peg
+pdf.c  : pdf.peg
 	peg -v -o $(@) $(<)
 
-pdf.c	: pdf_peg.c
+pdf_parse.c pdf_parse.o:	pdf.c
 
-readpdf : pdf.o readpdf.o tst.o dict.o bplustree.o pdfindex.o $(TGT_LIB)
+readpdf : pdf_parse.o readpdf.o tst.o dict.o bplustree.o pdfindex.o $(TGT_LIB)
 
 test	:	readpdf
 	@./readpdf examples/simpledict.pdf

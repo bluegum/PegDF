@@ -44,4 +44,4 @@ static int my_getchar()
   result= (EOF == c) ? 0 : (*(buf)= c, 1);              \
 }
 
-#include "pdf_peg.c"
+#include "pdf.c"
