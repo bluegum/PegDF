@@ -54,6 +54,6 @@ extern int read_trailer(void);
 
 extern void print_stack();
 extern int xref_new(int off, int n);
-extern int xref_append(int off, int gen, pdf_obj x);
-
+extern int xref_append(pdf_obj x, int gen, int off);
+extern void pop_comment(char *s, int len);
 #endif

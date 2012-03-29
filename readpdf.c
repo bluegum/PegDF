@@ -30,6 +30,7 @@
 #include "dict.h"
 
 extern int yyparse();
+extern char *yytext;
 
 pdf_obj stack[1024], root_obj;
 int stackp= -1;
@@ -220,7 +221,7 @@ int xref_new(int off, int n)
 #endif
    return 0;
 }
-int xref_append(int off, int gen, pdf_obj x)
+int xref_append(pdf_obj x, int gen, int off)
 {
 #ifdef DEBUG
    printf("xref_entry:%d,%d,%c\n", off, gen, x.value.i);
@@ -241,6 +242,13 @@ int xref_delete()
    //printf("xref=%d\n", g_xreftab.idx);
    free(g_xreftab.obj);
    return 0;
+}
+
+static char* comment_string;
+
+void pop_comment(char *s, int len)
+{
+  comment_string = s;
 }
 
 FILE* infile;
@@ -307,7 +315,16 @@ int main(int argc, char **argv)
    root_obj.t = eLimit;
    root_obj.value.marker = 0;
    // parse magic
-   yyparse(); 
+   yyparse();
+   if (*comment_string == '%')
+     {
+       fprintf(stdout, "%s\n", comment_string);
+     }
+   else
+     {
+       fprintf(stderr, "%s\n", "Not a pdf file!");
+       goto done;
+     }
    // parse the rest
    while (1)
    {
@@ -319,6 +336,7 @@ int main(int argc, char **argv)
    //pdf_obj_walk();
    pdf_trailer_open(&root_obj);
    xref_delete();
+ done:
    if (infile != stdin)
    {
       fclose(infile);
