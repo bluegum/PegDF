@@ -28,6 +28,7 @@
 #include "readpdf.h"
 #include "pdfindex.h"
 #include "dict.h"
+#include "pdfdoc.h"
 
 extern int yyparse();
 extern char *yytext;
@@ -38,16 +39,25 @@ xreftab_t g_xreftab;
 int g_xref_off;
 int g_xref_gen;
 
-int push(e_pdf_kind t, int n) { stack[++stackp].t =t; stack[stackp].value.i = n; }
+int push(e_pdf_kind t, int n) { stack[++stackp].t =t; stack[stackp].value.i = n; return 0;}
 int push_marker(e_pdf_kind t)
 {
    stack[++stackp].t = t;
+   return 0;
 }
+
 int push_key(char *s)
 {
    stack[++stackp].value.k = malloc(strlen(s)+1);
    memcpy(stack[stackp].value.k, s, strlen(s)+1);
    stack[stackp].t = eKey;
+   return 0;
+}
+
+void free_key(pdf_obj *o)
+{
+  if (o)
+    free(o->value.k);
 }
 
 pdf_obj pop(void)   { return stack[stackp--]; }
@@ -80,6 +90,7 @@ pdf_obj pop_dict(void)
    stack[stackp] = o;
    return o;
 }
+
 pdf_obj push_array(void)
 {
    int i = stackp;
@@ -104,6 +115,13 @@ pdf_obj push_array(void)
 #endif
    return o;
 }
+
+void free_array(pdf_obj *o)
+{
+  if (o)
+    free(o->value.a.items);
+}
+
 pdf_obj push_hexliteral(char *s)
 {
    pdf_obj o;
@@ -162,11 +180,18 @@ void print_literal()
 #endif
 }
 
+void free_literal(pdf_obj *o)
+{
+  if (o && o->t == eString)
+    free(o->value.s.buf);
+}
+
 int push_ref(e_pdf_kind t, int r, int gen)
 {
    stack[++stackp].t =t; 
    stack[stackp].value.r.gen = gen;
    stack[stackp].value.r.num = r;
+   return 0;
 }
 
 pdf_obj * 
@@ -195,7 +220,7 @@ int pop_obj(void)
 int read_trailer(void)
 {
   root_obj = pop();
-  dict_show(root_obj.value.d.dict);
+  dict_dump(root_obj.value.d.dict);
   return 0;
 }
 
@@ -336,6 +361,7 @@ int main(int argc, char **argv)
    //pdf_obj_walk();
    pdf_trailer_open(&root_obj);
    xref_delete();
+   pdf_obj_free();
  done:
    if (infile != stdin)
    {

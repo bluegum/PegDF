@@ -1,6 +1,6 @@
 ### Build flags for all targets
 #
-CF_ALL          = -g -Wall -I .
+CF_ALL          = -g -Wall -I . -I pdfdoc
 LF_ALL          =
 LL_ALL          =
 
@@ -14,7 +14,7 @@ LINK            = $(CC) $(LF_ALL) $(LF_TGT) -o $@ $^ $(LL_TGT) $(LL_ALL)
 COMPLINK        = $(CC) $(CF_ALL) $(CF_TGT) $(LF_ALL) $(LF_TGT) -o $@ $< $(LL_TGT) $(LL_ALL)
 ARCHIVE			= $(AR) $(ARFLAGS) $@ $^
 #
-vpath %.h .
+vpath %.h . pdfdoc
 # GLOBALS TARGETS
 TGT_LIB	=
 

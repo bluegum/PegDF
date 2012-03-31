@@ -86,5 +86,7 @@ pdf_obj_walk()
 void
 pdf_obj_free()
 {
+   pdf_map * m = &a_pdf_map;
+   pdf_map_destroy(m);
 }
 

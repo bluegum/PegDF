@@ -39,6 +39,36 @@ struct pdf_group_s
   int k;
 };
 
+enum pdf_annotation_type_e
+  {
+    eText,
+    eLink,
+    eFreeText,
+    eLine,
+    eSquare,
+    eCircle, 
+    ePolygon,
+    ePolyLine,
+    eHighlight, 
+    eUnderline, 
+    eSquiggly, 
+    eStrikeOut, 
+    eStamp, 
+    eCaret, 
+    eInk, 
+    ePopup, 
+    eFileAttachment, 
+    eSound, 
+    eMovie, 
+    eWidget, 
+    eScreen, 
+    ePrinterMark, 
+    eTrapNet, 
+    eWatermark, 
+    e3D, 
+    eRedact,
+  };
+
 struct pdf_annots_s
 {
   void *subtype;
@@ -54,6 +84,8 @@ struct pdf_annots_s
   float *c;
   int structparent;
   pdf_obj *oc;
+  // private
+  pdf_annots *next;
 };
 
 struct pdf_resources_s
@@ -172,7 +204,8 @@ enum pdf_filter_e
     DCTDecode,
     JPXDecode,
     Crypt,
-    Limit
+    Limit,
+    Raw
   };
 
 struct pdf_stream_s
@@ -247,5 +280,7 @@ extern pdf_resources* pdf_resources_load(pdf_obj *o);
 extern pdf_extgstate* pdf_extgstate_load(pdf_obj *o);
 extern pdf_annots* pdf_annots_load(pdf_obj* o);
 extern pdf_stream* pdf_stream_load(pdf_obj* o);
+extern pdf_err pdf_stream_free(pdf_stream *s);
+extern pdf_err pdf_annots_free(pdf_annots *a);
 
 #endif

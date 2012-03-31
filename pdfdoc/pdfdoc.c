@@ -35,7 +35,7 @@ pdf_err pdf_page_load(pdf_obj *o, pdf_page **page)
   p->mediabox = pdf_rect_resolve(dict_get(d, "MediaBox"));
   p->resources = pdf_resources_load(dict_get(d, "Resources"));
   // optionals
-  p->contents = pdf_stream_load(dict_get(d, "contents"));
+  p->contents = pdf_stream_load(dict_get(d, "Contents"));
   v = dict_get(d, "Rotate");
   if (v)
     p->rotate = v->value.i;
@@ -49,6 +49,16 @@ pdf_err pdf_page_load(pdf_obj *o, pdf_page **page)
 
 pdf_err pdf_page_free(pdf_page *page)
 {
+  if (!page)
+    return pdf_ok;
+  if (page->contents)
+    {
+      pdf_stream_free(page->contents);
+    }
+  if (page->annots)
+    {
+      pdf_annots_free(page->annots);
+    }
   free(page);
   return pdf_ok;
 }
@@ -363,30 +373,72 @@ pdf_extgstate_load(pdf_obj *o)
   return g;
 }
 
+static inline char*
+pdf_key_resolve(pdf_obj*o)
+{
+  if (!o || o->t != eKey)
+    return NULL;
+  return o->value.k;
+}
+
 pdf_annots*
 pdf_annots_load(pdf_obj* o)
 {
-  pdf_annots *a;
+  pdf_obj *t;
+  pdf_annots *a, *first, *last = 0;
   dict *d;
-  if (!o || (o->t != eDict && o->t != eRef))
+  int i;
+
+  if (!o || (o->t != eArray && o->t != eRef))
     return NULL;
 
   if (o->t == eRef)
+    o = pdf_obj_find(o->value.r.num, o->value.r.gen);
+
+  for (i = 0; i < o->value.a.len; i++)
     {
-      o = pdf_obj_find(o->value.r.num, o->value.r.gen);
+      pdf_obj *t = &o->value.a.items[i]; 
+      if (t->t == eRef)
+	{
+	  t = pdf_obj_find(t->value.r.num, t->value.r.gen);
+	}
+      a = malloc(sizeof(pdf_annots));
+      if (!a)
+	return NULL;
+      memset(a, 0, sizeof(pdf_annots));
+      d = t->value.d.dict;
+      // load annotation node
+      a->subtype = pdf_key_resolve(dict_get(d, "SubType"));
+      a->rect = pdf_rect_resolve(dict_get(d, "Rect"));
+      // make linked list
+      if (last)
+	last->next = a;
+      if (i == 0)
+	{
+	  first = a;
+	}
+      last = a;
     }
-  a = malloc(sizeof(pdf_annots));
-  if (!a)
-    return NULL;
-  memset(a, 0, sizeof(pdf_annots));
-  d = o->value.d.dict;
-  return a;
+  return first;
+}
+
+pdf_err
+pdf_annots_free(pdf_annots *a)
+{
+  pdf_annots *t;
+  while (a)
+    {
+      t = a->next;
+      free(a);
+      a = t;
+    }
+  return pdf_ok;
 }
 
 pdf_stream*
 pdf_stream_load(pdf_obj* o)
 {
-  pdf_stream *s;
+  pdf_stream *s, *last;
   pdf_obj *oo;
   int i, n;
 
@@ -400,7 +452,7 @@ pdf_stream_load(pdf_obj* o)
   if (o->t == eArray)
     {
       n = o->value.a.len;
-      oo = o->value.a.items;
+      oo = &o->value.a.items[0];
     }
   else if (o->t == eDict)
     {
@@ -409,24 +461,113 @@ pdf_stream_load(pdf_obj* o)
     }
   else
     return NULL;
-
-  for (i = 0; i < n; i++)
+  last = NULL;
+  for (i = 0; i < n && oo; i++, oo++)
     {
       pdf_stream *t = malloc(sizeof(pdf_stream));
-      pdf_obj *x;
+      pdf_obj *x, *xx, *y;
+      int m, mm;
       if (!t)
 	return NULL;
       memset(t, 0, sizeof(pdf_stream));
       if (i == 0)
 	s = t;
       // fill stream info
-      x = dict_get(oo->value.d.dict, "Length");
-      if (!x)
+      y = oo;
+      if (y->t == eRef)
+	y = pdf_obj_find(y->value.r.num, y->value.r.gen);
+      if (!y || y->t != eDict)
+	break;
+      x = dict_get(y->value.d.dict, "Length");
+      if (!x || x->t != eInt)
 	{
 	  fprintf(stderr, "%s\n", "Invalid stream.");
 	  break;
 	}
       t->length = x->value.i;
+      x = dict_get(y->value.d.dict, "Filter");
+      if (x && x->t == eArray)
+	{
+	  mm = x->value.a.len;
+	  xx = x->value.a.items;
+	}
+      if (x && x->t == eKey)
+	{
+	  mm = 1;
+	  xx = x;
+	}
+      t->filter = malloc(mm * sizeof(pdf_filter));
+      if (!t->filter)
+	break;
+      for (m = 0; m < mm; m++, xx++)
+	{
+	  if (xx->t != eKey)
+	    {
+	      break;
+	    }
+	  if (strcmp(xx->value.k, "FlateDecode") == 0)
+	    {
+	      t->filter[m] = FlateDecode;
+	    }
+	  else if (strcmp(xx->value.k, "ASCIIHexDecode") == 0)
+	    {
+	      t->filter[m] = ASCIIHexDecode;
+	    }
+	  else if (strcmp(xx->value.k, "ASCII85Decode") == 0)
+	    {
+	      t->filter[m] = ASCII85Decode;
+	    }
+	  else if (strcmp(xx->value.k, "LZWDecode") == 0)
+	    {
+	      t->filter[m] = LZWDecode;
+	    }
+	  else if (strcmp(xx->value.k, "RunLengthDecode") == 0)
+	    {
+	      t->filter[m] = RunLengthDecode;
+	    }
+	  else if (strcmp(xx->value.k, "CCITTFaxDecode") == 0)
+	    {
+	      t->filter[m] = CCITTFaxDecode;
+	    }
+	  else if (strcmp(xx->value.k, "JBIG2Decode") == 0)
+	    {
+	      t->filter[m] = JBIG2Decode;
+	    }
+	  else if (strcmp(xx->value.k, "DCTDecode") == 0)
+	    {
+	      t->filter[m] = DCTDecode;
+	    }
+	  else if (strcmp(xx->value.k, "JPXDecode") == 0)
+	    {
+	      t->filter[m] = JPXDecode;
+	    }
+	  else if (strcmp(xx->value.k, "Crypt") == 0)
+	    {
+	      t->filter[m] = Crypt;
+	    }
+	  else
+	    {
+	      t->filter[m] = Raw;
+	    }
+	}
+      if (last)
+	last->next = t;
+      last = t;
     }
   return s;
+}
+
+pdf_err
+pdf_stream_free(pdf_stream *s)
+{
+  pdf_stream *t = s;
+  while (s)
+    {
+      if (s->filter)
+	free(s->filter);
+      t = s->next;
+      free(s);
+      s = t;
+    }
+  return pdf_ok;
 }

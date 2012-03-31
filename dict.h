@@ -13,6 +13,6 @@ extern dict*   dict_insert(dict*, char *key, void *val);
 extern void*   dict_get(dict*, char *key);
 extern void*   dict_remove(dict*, char *key);
 extern void    dict_destroy(dict*);
-extern void    dict_show(dict* d);
+extern void    dict_dump(dict* d);
 
 #endif

@@ -23,6 +23,8 @@ THE SOFTWARE.
 #include <stdlib.h>
 #include "pdftypes.h"
 #include "readpdf.h"
+#include "pdfindex.h"
+#include "dict.h"
 
 extern FILE* infile;
 extern FILE* outfile;

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "pdftypes.h"
 #include "dict.h"
 
 dict* dict_new(char *key, void *val)
@@ -35,9 +36,12 @@ dict_free_val(char *key, void *val)
 }
 
 static void
-dict_print_key(char *key, void *val)
+dict_print_keyval(char *key, void *val)
 {
-   printf("dict_print_key: %s\n", key);
+  if (!val)
+    printf("dict_print_key: %s\n", key);
+  else
+    printf("%s:%d\n", key, ((pdf_obj*)val)->t);
 }
 
 void    dict_destroy(dict* d)
@@ -54,13 +58,13 @@ void    dict_destroy(dict* d)
   return;
 }
 
-void dict_show(dict* d)
+void dict_dump(dict* d)
 {
    if (d)
    {
       if (d->dict)
       {
-	 tst_traverse(d->dict, dict_print_key);
+	 tst_traverse(d->dict, dict_print_keyval);
       }
    }
 }

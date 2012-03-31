@@ -400,6 +400,14 @@ bpt_insert(bpt_tree *t, int i, void *d)
 void
 bpt_destroy_leaf(bpt_node *n)
 {
+  int i;
+  for (i = 0; i < BPT_ORDER_LEAF; i++)
+    {
+      if (n->v[i].d)
+	{
+	  free(n->v[i].d);
+	}
+    }
 #ifndef BPT_LEAF_LINEAR
    free(n->k);
 #endif
