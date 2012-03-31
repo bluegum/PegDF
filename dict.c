@@ -24,15 +24,15 @@ void*   dict_get(dict* d, char *key)
 {
   return (void*) tst_search(d->dict, key);
 }
-void*   dict_remove(dict* d, char *key)
-{
-  return NULL;
-}
 
 static void
 dict_free_val(char *key, void *val)
 {
-   printf("dict_free_val on entry: %s\n", key);
+  extern void pdf_obj_delete(void *o);
+  pdf_obj_delete(val);
+  if (val)
+    free(val);
+  //printf("dict_free_val on entry: %s\n", key);
 }
 
 static void
@@ -44,7 +44,7 @@ dict_print_keyval(char *key, void *val)
     printf("%s:%d\n", key, ((pdf_obj*)val)->t);
 }
 
-void    dict_destroy(dict* d)
+void  dict_free(dict* d)
 {
    if (d)
    {

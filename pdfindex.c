@@ -21,17 +21,6 @@ pdf_map_create()
    return m;
 }
 
-void
-pdf_map_destroy(pdf_map *m)
-{
-   pdf_map *i = m;
-   for (; i!=0; i=i->next)
-   {
-      /* delete obj tree */
-      bpt_destroy(i->head);
-   }
-}
-
 pdf_map *
 pdf_map_insert(int gen)
 {
@@ -83,10 +72,53 @@ pdf_obj_walk()
    }
 }
 
+
+void free_array(pdf_obj *o)
+{
+  if (o)
+    free(o->value.a.items);
+}
+
+// Remove a single obj
+void
+pdf_obj_delete(pdf_obj *o)
+{
+  if (!o)
+    return;
+  switch(o->t)
+    {
+    case eDict:
+      dict_free(o->value.d.dict);
+      break;
+    case eString:
+      free(o->value.s.buf);
+      break;
+    case eKey:
+      free(o->value.k);
+      break;
+    case eArray:
+      free_array(o);
+      break;
+    default:
+      break;
+    }
+}
+
 void
 pdf_obj_free()
 {
    pdf_map * m = &a_pdf_map;
-   pdf_map_destroy(m);
+   pdf_map *i = m;
+   for (; i!=0; i=i->next)
+   {
+      /* delete obj tree nodes */
+      bpt_delete_node(i->head);
+   }
+   i = m;
+   for (; i!=0; i=i->next)
+   {
+      /* delete obj tree */
+      bpt_destroy(i->head);
+   }
 }
 

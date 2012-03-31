@@ -26,10 +26,13 @@ typedef struct
    bpt_node *root;
 } bpt_tree;
 
+typedef void (*bpt_callback)(bpt_node *n);
+
 extern void bpt_destroy(bpt_tree *t);
 extern int bpt_insert(bpt_tree *t, int i, void *d);
 extern bpt_node* bpt_search(bpt_tree *t, int i);
 extern bpt_tree* bpt_new_tree();
 extern void bpt_walk(bpt_tree* t);
+extern void bpt_delete_node(bpt_tree* t);
 
 #endif

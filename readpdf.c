@@ -54,12 +54,6 @@ int push_key(char *s)
    return 0;
 }
 
-void free_key(pdf_obj *o)
-{
-  if (o)
-    free(o->value.k);
-}
-
 pdf_obj pop(void)   { return stack[stackp--]; }
 
 pdf_obj pop_dict(void)
@@ -114,12 +108,6 @@ pdf_obj push_array(void)
    printf("]\n");
 #endif
    return o;
-}
-
-void free_array(pdf_obj *o)
-{
-  if (o)
-    free(o->value.a.items);
 }
 
 pdf_obj push_hexliteral(char *s)
@@ -178,12 +166,6 @@ void print_literal()
     for ( i = 0; i < o.value.s.len; i++) printf("%c", o.value.s.buf[i]);
     printf("\n");
 #endif
-}
-
-void free_literal(pdf_obj *o)
-{
-  if (o && o->t == eString)
-    free(o->value.s.buf);
 }
 
 int push_ref(e_pdf_kind t, int r, int gen)

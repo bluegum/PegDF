@@ -448,11 +448,26 @@ bpt_destroy(bpt_tree *t)
 }
 
 static void
-bpt_walk_node(bpt_node* n)
+bpt_walk_node(bpt_node* n, bpt_callback c)
 {
    int i;
    if (!n)
       return;
+   c(n);
+   if (!n->leaf)
+   {
+      for (i = 0; i < n->cnt; i++)
+      {
+	 bpt_walk_node(n->v[i].n, c);
+      }
+      bpt_walk_node(n->v[i].n, c);
+   }
+}
+
+static void
+bpt_print_node(bpt_node *n)
+{
+  int i;
    if (n->leaf)
    {
       printf("leaf:  ");
@@ -470,20 +485,46 @@ bpt_walk_node(bpt_node* n)
 #endif
       printf("\n");
    }
-   else
+  else
    {
-      for (i = 0; i < n->cnt; i++)
-      {
-	 printf("inner:  %d\n", n->k[i]);
-	 bpt_walk_node(n->v[i].n);
-      }
-      bpt_walk_node(n->v[i].n);
+     printf("inner: \n");
    }
 }
+
+static void
+bpt_delete_leaf(bpt_node *n)
+{
+  int i;
+   if (n->leaf)
+   {
+#ifdef BPT_LEAF_LINEAR
+      for (i = 0; i < BPT_ORDER_LEAF; i++)
+      {
+	 if (n->v[i].n)
+	   pdf_obj_delete(n->v[i].n);
+      }
+#else
+      for (i = 0; i < n->cnt; i++)
+      {
+	 printf("%d..", n->k[i]);
+      }
+#endif
+   }
+}
+
 void
 bpt_walk(bpt_tree* t)
 {
    if (!t)
       return;
-   bpt_walk_node(t->root);
+   bpt_walk_node(t->root, bpt_print_node);
+}
+
+
+void
+bpt_delete_node(bpt_tree* t)
+{
+   if (!t)
+      return;
+   bpt_walk_node(t->root, bpt_delete_leaf);
 }
