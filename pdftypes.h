@@ -74,4 +74,81 @@ struct pdf_obj_s
    } value;
 };
 
+
+typedef struct gs_matrix_s gs_matrix;
+typedef struct gs_point_s gs_point;
+typedef struct gs_rect_s gs_rect;
+typedef struct gs_bbox_s gs_bbox;
+
+struct gs_matrix_s
+{
+        float a, b, c, d, e, f;
+};
+
+struct gs_point_s
+{
+        float x, y;
+};
+
+struct gs_rect_s
+{
+        float x0, y0;
+        float x1, y1;
+};
+
+struct gs_bbox_s
+{
+        int x0, y0;
+        int x1, y1;
+};
+
+static inline int
+pdf_to_int(pdf_obj *o)
+{
+  if (!o || o->t != eInt)
+    return 0; // should be NAN
+  return o->value.i;
+}
+static inline int*
+pdf_to_int_array(pdf_obj *o)
+{
+  if (!o || o->t != eArray)
+    return 0; // should be NAN
+  return NULL;
+}
+
+static inline float
+pdf_to_float(pdf_obj *o)
+{
+  if (!o || (o->t != eInt && o->t != eReal))
+    return 0; // should be NAN
+  if (o->t == eInt)
+    return o->value.i;
+  else
+    return o->value.f;
+}
+
+static inline char*
+pdf_to_string(pdf_obj *o)
+{
+  if (!o || o->t != eString)
+    return 0; // should be NAN
+  return o->value.s.buf;
+}
+
+static inline gs_rect
+pdf_rect_resolve(pdf_obj *o)
+{
+  gs_rect r={0,0,0,0};
+  if (!o || (o->t != eArray && o->t != eRef))
+    return r;
+  // should handle xref as obj as well.
+  // should handle floating point value as well.
+  r.x0 = o->value.a.items[0].value.i;
+  r.y0 = o->value.a.items[1].value.i;
+  r.x1 = o->value.a.items[2].value.i;
+  r.y1 = o->value.a.items[3].value.i;
+  return r;
+}
+
 #endif

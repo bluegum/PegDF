@@ -29,12 +29,12 @@ start	<- COMMENT EOL* SPACE*
 	   / OBJ
 	   / DELIM (XREF TRAILER)* STARTXREF GOBBLE {print_stack();}
 DICT	<- DB 
-	( KEY (VALUE / KWORD / ID)
-	/ COMMENT EOL* SPACE* 
+	( KEY COMMENT* (VALUE / KWORD / ID)
+	/ COMMENT  
 	)* DE 
 DB      <- '<<' DELIM {push_marker(eDictMarker);}
 DE	<- '>>' DELIM {pop_dict();}
-KEY	<- DELIM '/' < ALPHANUM+ >  DELIM {push_key(yytext);} 
+KEY	<- DELIM '/' < ALPHANUM+ > DELIM  {push_key(yytext);} 
 VALUE	<- (
 	   REF
 	   / NUM
@@ -115,7 +115,7 @@ POSITIVE       	<- < [0-9]+ > SPACE*
 NUM	       	<- < [-+]?[0-9]+ !['.'] > DELIM {push(eInt,atoi(yytext));}
 REAL	       	<- < [-+]?[0-9]* '.' [0-9]+ > DELIM {push(eReal,atof(yytext));}
 ALPHANUM       	<- [a-zA-Z0-9#+_,.:~\-]
-COMMENT		<- < '%'+ (!EOL .)* EOL > {pop_comment(yytext, yytextlen);}
+COMMENT		<- < '%'+ (!EOL .)* EOL DELIM > {pop_comment(yytext, yytextlen);}
 SPACE		<- ' ' / '\t' / EOL
 EOL		<- '\r\n' / '\r' / '\n'
 DELIM		<- (SPACE / EOL)*

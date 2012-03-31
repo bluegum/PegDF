@@ -10,9 +10,11 @@ DEPS_$(d)	:= $(SRCS_$(d):%.c=%.d)
 
 #include 	$(DEPS_$(d))
 
+HDRS_$(d)	:= $(d)/*.h
+
 CLEAN		:= $(CLEAN) $(OBJS_$(d)) $(DEPS_$(d))
 
 TGT_LIB		:= $(TGT_LIB) $(LOCAL_LIB)
 
-$(LOCAL_LIB) : $(OBJS_$(d)) $(COMMON_HEADERS)
+$(LOCAL_LIB) : $(OBJS_$(d)) $(COMMON_HEADERS) $(HDRS_$(d))
 	$(ARCHIVE)

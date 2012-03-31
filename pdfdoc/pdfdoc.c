@@ -5,55 +5,6 @@
 #include "pdftypes.h"
 #include "pdfindex.h"
 
-static inline int
-pdf_to_int(pdf_obj *o)
-{
-  if (!o || o->t != eInt)
-    return 0; // should be NAN
-  return o->value.i;
-}
-static inline int*
-pdf_to_int_array(pdf_obj *o)
-{
-  if (!o || o->t != eArray)
-    return 0; // should be NAN
-  return NULL;
-}
-
-static inline float
-pdf_to_float(pdf_obj *o)
-{
-  if (!o || (o->t != eInt && o->t != eReal))
-    return 0; // should be NAN
-  if (o->t == eInt)
-    return o->value.i;
-  else
-    return o->value.f;
-}
-
-static inline char*
-pdf_to_string(pdf_obj *o)
-{
-  if (!o || o->t != eString)
-    return 0; // should be NAN
-  return o->value.s.buf;
-}
-
-static inline gs_rect
-pdf_rect_resolve(pdf_obj *o)
-{
-  gs_rect r={0,0,0,0};
-  if (!o || (o->t != eArray && o->t != eRef))
-    return r;
-  // should handle xref as obj as well.
-  // should handle floating point value as well.
-  r.x0 = o->value.a.items[0].value.i;
-  r.y0 = o->value.a.items[1].value.i;
-  r.x1 = o->value.a.items[2].value.i;
-  r.y1 = o->value.a.items[3].value.i;
-  return r;
-}
-
 static inline pdf_group*
 pdf_group_load(pdf_obj *o)
 {
@@ -84,12 +35,12 @@ pdf_err pdf_page_load(pdf_obj *o, pdf_page **page)
   p->mediabox = pdf_rect_resolve(dict_get(d, "MediaBox"));
   p->resources = pdf_resources_load(dict_get(d, "Resources"));
   // optionals
-  p->contents = dict_get(d, "contents");
+  p->contents = pdf_stream_load(dict_get(d, "contents"));
   v = dict_get(d, "Rotate");
   if (v)
     p->rotate = v->value.i;
   p->group = pdf_group_load(dict_get(d, "Group"));
-  p->annots = dict_get(d, "Annots");
+  p->annots = pdf_annots_load(dict_get(d, "Annots"));
   p->metadata = dict_get(d, "Metadata");
   p->pieceinfo = dict_get(d, "PieceInfo");
   p->lastmodified = dict_get(d, "LastModified");
@@ -139,7 +90,7 @@ pdf_err pdf_page_tree_load(pdf_doc *d, pdf_obj *o)
     }
   for (i = 0; i < kids->value.a.len; i++)
     {
-      pdf_obj a, *b;
+      pdf_obj a;
       a = kids->value.a.items[i];
       if (a.t == eRef)
 	{
@@ -398,7 +349,7 @@ pdf_extgstate_load(pdf_obj *o)
   g->LC = pdf_to_int(dict_get(d, "LC"));
   g->LJ = pdf_to_int(dict_get(d, "LJ"));
   g->ML = pdf_to_float(dict_get(d, "ML"));
-  g->LJ = pdf_to_int_array(dict_get(d, "LJ"));
+  g->D = pdf_to_int_array(dict_get(d, "D"));
   g->RI = pdf_to_string(dict_get(d, "RI"));
   g->OP = pdf_to_int(dict_get(d, "OP"));
   g->OPM = pdf_to_int(dict_get(d, "OPM"));
@@ -410,4 +361,72 @@ pdf_extgstate_load(pdf_obj *o)
   g->AIS = pdf_to_int(dict_get(d, "AIS"));
   g->TK = pdf_to_int(dict_get(d, "TK"));
   return g;
+}
+
+pdf_annots*
+pdf_annots_load(pdf_obj* o)
+{
+  pdf_annots *a;
+  dict *d;
+  if (!o || (o->t != eDict && o->t != eRef))
+    return NULL;
+
+  if (o->t == eRef)
+    {
+      o = pdf_obj_find(o->value.r.num, o->value.r.gen);
+    }
+  a = malloc(sizeof(pdf_annots));
+  if (!a)
+    return NULL;
+  memset(a, 0, sizeof(pdf_annots));
+  d = o->value.d.dict;
+  return a;
+}
+
+pdf_stream*
+pdf_stream_load(pdf_obj* o)
+{
+  pdf_stream *s;
+  pdf_obj *oo;
+  int i, n;
+
+  if (!o || (o->t != eDict && o->t != eRef && o->t != eArray))
+    return NULL;
+
+  if (o->t == eRef)
+    {
+      o = pdf_obj_find(o->value.r.num, o->value.r.gen);
+    }
+  if (o->t == eArray)
+    {
+      n = o->value.a.len;
+      oo = o->value.a.items;
+    }
+  else if (o->t == eDict)
+    {
+      n = 1;
+      oo = o;
+    }
+  else
+    return NULL;
+
+  for (i = 0; i < n; i++)
+    {
+      pdf_stream *t = malloc(sizeof(pdf_stream));
+      pdf_obj *x;
+      if (!t)
+	return NULL;
+      memset(t, 0, sizeof(pdf_stream));
+      if (i == 0)
+	s = t;
+      // fill stream info
+      x = dict_get(oo->value.d.dict, "Length");
+      if (!x)
+	{
+	  fprintf(stderr, "%s\n", "Invalid stream.");
+	  break;
+	}
+      t->length = x->value.i;
+    }
+  return s;
 }

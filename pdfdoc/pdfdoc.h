@@ -21,6 +21,8 @@ typedef struct pdf_annots_s pdf_annots;
 // logical document structure
 typedef struct pdf_structtreeroot_s pdf_structtreeroot;
 typedef struct pdf_resources_s pdf_resources;
+typedef struct pdf_thread_s pdf_thread;
+typedef struct pdf_bead_s pdf_bead;
 
 struct pdf_mask_s
 {
@@ -57,7 +59,7 @@ struct pdf_annots_s
 struct pdf_resources_s
 {
   pdf_extgstate *extgstate;
-  void *colorspace;
+  pdf_cspace *colorspace;
   void *pattern;
   void *shading;
   void *xobject;
@@ -182,6 +184,27 @@ struct pdf_stream_s
   void *ffilter;
   void *fdecodeparms;
   int dl;
+  // private
+  int offset;
+  pdf_stream *next;
+};
+
+/*
+ * XObject
+ */
+
+typedef struct pdf_xobject_s pdf_xobject;
+
+struct pdf_xobject_s
+{
+        int refs;
+        gs_matrix matrix;
+        gs_rect bbox;
+        int isolated;
+        int knockout;
+        int transparency;
+        pdf_obj *resources;
+  //fz_buffer *contents;
 };
 
 // logical document layout
@@ -196,9 +219,33 @@ struct pdf_structtreeroot_s
   void *classmap;
 };
 
+struct pdf_pagelabel_s
+{
+  enum {D, R, r, A, a} s;
+  char *p;
+  int st;
+};
+
+struct pdf_thread_s
+{
+  pdf_bead *f;
+  pdf_info *i;
+};
+
+struct pdf_bead_s
+{
+  pdf_thread *t; // thread
+  pdf_bead *n; // next bead
+  pdf_bead *v; // prev bead
+  pdf_page *p; // page it belongs to
+  gs_rect r;
+};
+
 // functions
 extern pdf_err pdf_info_print(pdf_info *info);
 extern pdf_resources* pdf_resources_load(pdf_obj *o);
 extern pdf_extgstate* pdf_extgstate_load(pdf_obj *o);
+extern pdf_annots* pdf_annots_load(pdf_obj* o);
+extern pdf_stream* pdf_stream_load(pdf_obj* o);
 
 #endif
