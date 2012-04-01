@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "tst.h"
+#include "pdfmem.h"
 
 typedef struct tnode {
    unsigned char splitchar;
@@ -11,7 +12,7 @@ typedef struct tnode {
 Tptr tst_insert(Tptr p, char *s, void *val)
 {
    if (p == 0) {
-      p = (Tptr) malloc(sizeof(Tnode));
+      p = (Tptr) pdf_malloc(sizeof(Tnode));
       if (s)
       {
 	 p->splitchar = *s;
@@ -37,12 +38,20 @@ Tptr tst_insert(Tptr p, char *s, void *val)
 }
 
 void tst_cleanup(Tptr p)
-{   if (p) {
-      tst_cleanup(p->lokid);
-      if (p->splitchar) tst_cleanup(p->eqkid);
-      tst_cleanup(p->hikid);
-      free(p);
-   }
+{
+  if (!p)
+    return;
+
+  tst_cleanup(p->lokid);
+  if (p->splitchar)
+    tst_cleanup(p->eqkid);
+  else
+    {
+      pdf_free(p);
+      return;
+    }
+  tst_cleanup(p->hikid);
+  pdf_free(p);
 }
 
 /* iterative search */
@@ -120,7 +129,7 @@ void * tst_delete(Tptr p, char *s)
 	    {
 	       Tptr tt = last_p->eqkid;
 	       last_p->eqkid = last_p->eqkid->hikid;
-	       free(tt);
+	       pdf_free(tt);
 	    }
 	    else
 	    {
@@ -204,6 +213,12 @@ void nearsearch(Tptr p, char *s, int d)
 
 static char frame[1024];
 static char *f = frame;
+
+void tst_print_reset()
+{
+  f = frame;
+}
+
 void tst_traverse_node(Tptr p, tst_hook callback)
 {
    if (!p) {return;}
@@ -226,6 +241,10 @@ void tst_traverse(Tptr p, tst_hook callback)
 {
    if (!p) {return;}
    tst_traverse_node(p->hikid, callback);
+   *f++ = p->splitchar;
+   tst_traverse_node(p->eqkid, callback);
+   f--;
+   tst_traverse_node(p->lokid, callback);
 }
 Tptr tst_init()
 {

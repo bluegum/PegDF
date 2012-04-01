@@ -4,6 +4,7 @@
 #include "pdfdoc.h"
 #include "pdftypes.h"
 #include "pdfindex.h"
+#include "pdfmem.h"
 
 static inline pdf_group*
 pdf_group_load(pdf_obj *o)
@@ -11,7 +12,7 @@ pdf_group_load(pdf_obj *o)
   pdf_group *g;
   if (!o || o->t != eDict)
     return NULL;
-  g = malloc(sizeof(pdf_group));
+  g = pdf_malloc(sizeof(pdf_group));
   if (!g)
     return NULL;
   memset(g, 0, sizeof(pdf_group));
@@ -27,7 +28,7 @@ pdf_err pdf_page_load(pdf_obj *o, pdf_page **page)
   dict *d = o->value.d.dict;
   pdf_obj *v;
 
-  *page = malloc(sizeof(pdf_page));
+  *page = pdf_malloc(sizeof(pdf_page));
   p = *page;
   memset(p, 0, sizeof(pdf_page));
   // parse tree dict
@@ -59,7 +60,7 @@ pdf_err pdf_page_free(pdf_page *page)
     {
       pdf_annots_free(page->annots);
     }
-  free(page);
+  pdf_free(page);
   return pdf_ok;
 }
 
@@ -149,7 +150,7 @@ pdf_doc* pdf_doc_load(pdf_obj *rdoc)
   c = dict_get(a->value.d.dict, "Count");
   if (!c || c->t != eInt)
     return NULL;
-  doc = malloc(sizeof(pdf_doc));
+  doc = pdf_malloc(sizeof(pdf_doc));
   if (!doc)
     return NULL;
   memset(doc, 0, sizeof(pdf_doc));
@@ -157,10 +158,11 @@ pdf_doc* pdf_doc_load(pdf_obj *rdoc)
   kids = dict_get(a->value.d.dict, "Kids");
   if (!kids || kids->t != eArray)
     {
-      free(doc);
+      pdf_free(doc);
       return NULL;
     }
-  doc->pages = malloc(sizeof(pdf_page*) * doc->count);
+  doc->pages = pdf_malloc(sizeof(pdf_page*) * doc->count);
+  memset(doc->pages, 0, (sizeof(pdf_page*) * doc->count));
   doc->pageidx = 0;
   pdf_page_tree_load(doc, kids);
   return doc;
@@ -185,8 +187,8 @@ void pdf_doc_done(pdf_doc *d)
     {
       pdf_page_free(d->pages[i]);
     }
-  free(d->pages);
-  free(d);
+  pdf_free(d->pages);
+  pdf_free(d);
 }
 
 typedef struct pdf_trailer_s pdf_trailer;
@@ -204,7 +206,7 @@ pdf_err pdf_info_load(pdf_obj *o, pdf_info **info)
 {
   pdf_obj *a;
   pdf_info *i;
-  *info = malloc(sizeof(pdf_info));
+  *info = pdf_malloc(sizeof(pdf_info));
   if (!*info)
     return pdf_ok;
   if (!o)
@@ -306,6 +308,7 @@ pdf_err pdf_trailer_open(pdf_obj *trailer)
   pdf_doc_process(d);
   pdf_doc_print_info(d);
   pdf_doc_done(d);
+  dict_free(trailer->value.d.dict);
   return pdf_ok;
 }
 
@@ -321,7 +324,7 @@ pdf_resources_load(pdf_obj *o)
     {
       o = pdf_obj_find(o->value.r.num, o->value.r.gen);
     }
-  r = malloc(sizeof(pdf_resources));
+  r = pdf_malloc(sizeof(pdf_resources));
   if (!r)
     return NULL;
   d = o->value.d.dict;
@@ -349,7 +352,7 @@ pdf_extgstate_load(pdf_obj *o)
     {
       o = pdf_obj_find(o->value.r.num, o->value.r.gen);
     }
-  g = malloc(sizeof(pdf_extgstate));
+  g = pdf_malloc(sizeof(pdf_extgstate));
   if (!g)
     return NULL;
   memset(g, 0, sizeof(pdf_extgstate));
@@ -402,7 +405,7 @@ pdf_annots_load(pdf_obj* o)
 	{
 	  t = pdf_obj_find(t->value.r.num, t->value.r.gen);
 	}
-      a = malloc(sizeof(pdf_annots));
+      a = pdf_malloc(sizeof(pdf_annots));
       if (!a)
 	return NULL;
       memset(a, 0, sizeof(pdf_annots));
@@ -429,7 +432,7 @@ pdf_annots_free(pdf_annots *a)
   while (a)
     {
       t = a->next;
-      free(a);
+      pdf_free(a);
       a = t;
     }
   return pdf_ok;
@@ -464,7 +467,7 @@ pdf_stream_load(pdf_obj* o)
   last = NULL;
   for (i = 0; i < n && oo; i++, oo++)
     {
-      pdf_stream *t = malloc(sizeof(pdf_stream));
+      pdf_stream *t = pdf_malloc(sizeof(pdf_stream));
       pdf_obj *x, *xx, *y;
       int m, mm;
       if (!t)
@@ -496,7 +499,7 @@ pdf_stream_load(pdf_obj* o)
 	  mm = 1;
 	  xx = x;
 	}
-      t->filter = malloc(mm * sizeof(pdf_filter));
+      t->filter = pdf_malloc(mm * sizeof(pdf_filter));
       if (!t->filter)
 	break;
       for (m = 0; m < mm; m++, xx++)
@@ -564,9 +567,9 @@ pdf_stream_free(pdf_stream *s)
   while (s)
     {
       if (s->filter)
-	free(s->filter);
+	pdf_free(s->filter);
       t = s->next;
-      free(s);
+      pdf_free(s);
       s = t;
     }
   return pdf_ok;

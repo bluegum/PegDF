@@ -3,6 +3,7 @@
 #include <string.h>
 #include "bplustree.h"
 #include "pdfindex.h"
+#include "pdfmem.h"
 
 typedef struct pdf_map
 {
@@ -16,7 +17,7 @@ static pdf_map a_pdf_map;
 pdf_map *
 pdf_map_create()
 {
-   pdf_map * m = malloc(sizeof(pdf_map));
+   pdf_map * m = pdf_malloc(sizeof(pdf_map));
    memset(m, 0, sizeof(pdf_map));
    return m;
 }
@@ -67,16 +68,24 @@ pdf_obj_walk()
    pdf_map * m = &a_pdf_map;
    for (;m; m = m->next)
    {
-      printf("walk generation %d...\n", m->generation);
+     //printf("walk generation %d...\n", m->generation);
       bpt_walk(m->head);
    }
 }
 
+void pdf_obj_delete(pdf_obj *o);
 
 void free_array(pdf_obj *o)
 {
-  if (o)
-    free(o->value.a.items);
+  if (o && o->t == eArray)
+    {
+      int i;
+      for (i = 0; i < o->value.a.len; i++)
+	{
+	  pdf_obj_delete(&o->value.a.items[i]);
+	}
+      pdf_free(o->value.a.items);
+    }
 }
 
 // Remove a single obj
@@ -91,10 +100,10 @@ pdf_obj_delete(pdf_obj *o)
       dict_free(o->value.d.dict);
       break;
     case eString:
-      free(o->value.s.buf);
+      pdf_free(o->value.s.buf);
       break;
     case eKey:
-      free(o->value.k);
+      pdf_free(o->value.k);
       break;
     case eArray:
       free_array(o);
@@ -119,6 +128,7 @@ pdf_obj_free()
    {
       /* delete obj tree */
       bpt_destroy(i->head);
+      pdf_free(i->head);
    }
 }
 

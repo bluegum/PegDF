@@ -1,7 +1,7 @@
 /*
   Copyright (C) 2011 by Dakai Liu
 
-  Permission is hereby granted, free of charge, to any person obtaining a copy
+  Permission is hereby granted, pdf_free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
   in the Software without restriction, including without limitation the rights
   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
@@ -29,6 +29,7 @@
 #include "pdfindex.h"
 #include "dict.h"
 #include "pdfdoc.h"
+#include "pdfmem.h"
 
 extern int yyparse();
 extern char *yytext;
@@ -48,7 +49,7 @@ int push_marker(e_pdf_kind t)
 
 int push_key(char *s)
 {
-   stack[++stackp].value.k = malloc(strlen(s)+1);
+   stack[++stackp].value.k = pdf_malloc(strlen(s)+1);
    memcpy(stack[stackp].value.k, s, strlen(s)+1);
    stack[stackp].t = eKey;
    return 0;
@@ -60,7 +61,7 @@ pdf_obj pop_dict(void)
 {
    int i = 0;
    pdf_obj o, *a = NULL;
-   dict* d = dict_new(NULL, NULL);
+   dict* d = dict_new();
    printf("pop-dict:-- <<");
 
    o.t = eDict;
@@ -71,10 +72,11 @@ pdf_obj pop_dict(void)
       {
 	 printf("%s|", (char*)(stack[stackp+1].value.k));
 	 dict_insert(d, stack[stackp+1].value.k, a);
+	 pdf_free(stack[stackp+1].value.k);
       }
       else
       {
-	 a = malloc(sizeof(pdf_obj));
+	 a = pdf_malloc(sizeof(pdf_obj));
 	 *a = stack[stackp+1];
       }
       i += 1;
@@ -96,7 +98,7 @@ pdf_obj push_array(void)
    while (stack[i--].t != eArrayMarker);
    o.t = eArray;
    o.value.a.len = stackp-i-1;
-   o.value.a.items = malloc(sizeof(pdf_obj)*(o.value.a.len));
+   o.value.a.items = pdf_malloc(sizeof(pdf_obj)*(o.value.a.len));
    
    for (k = o.value.a.len - 1, p = pop(); p.t != eArrayMarker; k--)
    {
@@ -118,7 +120,7 @@ pdf_obj push_hexliteral(char *s)
    if (s)
    {
       o.value.s.len = strlen(s);
-      o.value.s.buf = malloc(strlen(s));
+      o.value.s.buf = pdf_malloc(strlen(s));
       memcpy(o.value.s.buf, s, strlen(s));
    }
    stack[++stackp] = o;
@@ -140,10 +142,10 @@ pdf_obj push_literal(char *s)
        o = &stack[stackp];
        if (o->value.s.len)
        {
-           char *p = malloc(o->value.s.len + strlen(s));
+           char *p = pdf_malloc(o->value.s.len + strlen(s));
            memcpy(p, o->value.s.buf, o->value.s.len);
            memcpy(p + o->value.s.len, s, strlen(s));
-           free(o->value.s.buf);
+           pdf_free(o->value.s.buf);
            o->value.s.len += strlen(s);
            o->value.s.buf = p;
        }
@@ -151,7 +153,7 @@ pdf_obj push_literal(char *s)
        {
            /* new string */
            o->value.s.len = strlen(s);
-           o->value.s.buf = malloc(o->value.s.len);
+           o->value.s.buf = pdf_malloc(o->value.s.len);
            memcpy(o->value.s.buf, s, o->value.s.len);
        }
    }
@@ -179,7 +181,7 @@ int push_ref(e_pdf_kind t, int r, int gen)
 pdf_obj * 
 dup_pdf_obj(pdf_obj *o)
 {
-   pdf_obj *n = malloc(sizeof(pdf_obj));
+   pdf_obj *n = pdf_malloc(sizeof(pdf_obj));
    memcpy(n, o, sizeof(pdf_obj));
    return n;
 }
@@ -222,7 +224,7 @@ int xref_new(int off, int n)
    }
    g_xreftab.idx = off;
    g_xreftab.count = n;
-   g_xreftab.obj = malloc(n*sizeof(xrefentry_t));
+   g_xreftab.obj = pdf_malloc(n*sizeof(xrefentry_t));
 #ifdef DEBUG
    printf("Created xref table of %d entries\n", n);
 #endif
@@ -233,6 +235,8 @@ int xref_append(pdf_obj x, int gen, int off)
 #ifdef DEBUG
    printf("xref_entry:%d,%d,%c\n", off, gen, x.value.i);
 #endif
+   if (g_xreftab.idx >= g_xreftab.count)
+     return 0;
    g_xreftab.obj[g_xreftab.idx].off = off;
    g_xreftab.obj[g_xreftab.idx].gen = gen;
    g_xreftab.obj[g_xreftab.idx].x = x.value.i;
@@ -247,7 +251,7 @@ int xref_append(pdf_obj x, int gen, int off)
 int xref_delete()
 {
    //printf("xref=%d\n", g_xreftab.idx);
-   free(g_xreftab.obj);
+   pdf_free(g_xreftab.obj);
    return 0;
 }
 
@@ -344,6 +348,9 @@ int main(int argc, char **argv)
    pdf_trailer_open(&root_obj);
    xref_delete();
    pdf_obj_free();
+#ifdef DEBUG
+   print_mem_tracking();
+#endif
  done:
    if (infile != stdin)
    {

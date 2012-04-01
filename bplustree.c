@@ -3,6 +3,7 @@
 #include <string.h>
 #include <assert.h>
 #include "bplustree.h"
+#include "pdfmem.h"
 
 typedef struct
 {
@@ -20,7 +21,7 @@ static bpt_node*
 bpt_new_node(int leaf)
 {
    bpt_node *node;
-   node = malloc(sizeof(bpt_node));
+   node = pdf_malloc(sizeof(bpt_node));
    if (!node)
    {
       return NULL;
@@ -32,15 +33,15 @@ bpt_new_node(int leaf)
 #ifdef BPT_LEAF_LINEAR
       node->k = NULL;
 #else
-      node->k = malloc(sizeof(int)*BPT_ORDER_LEAF);
+      node->k = pdf_malloc(sizeof(int)*BPT_ORDER_LEAF);
 #endif
-      node->v = malloc(sizeof(void*)*BPT_ORDER_LEAF);
+      node->v = pdf_malloc(sizeof(void*)*BPT_ORDER_LEAF);
       memset(node->v, 0, (sizeof(void*)*BPT_ORDER_LEAF));
    }
    else
    {
-      node->k = malloc(sizeof(int)*BPT_ORDER_INNER);
-      node->v = malloc(sizeof(bpt_node*)*BPT_ORDER_INNER+1);
+      node->k = pdf_malloc(sizeof(int)*BPT_ORDER_INNER);
+      node->v = pdf_malloc(sizeof(bpt_node*)*BPT_ORDER_INNER+1);
       memset(node->v, 0, (sizeof(void*)*BPT_ORDER_INNER+1));
    }
    return node;
@@ -49,13 +50,13 @@ bpt_new_node(int leaf)
 bpt_tree*
 bpt_new_tree()
 {
-   bpt_tree *t = (bpt_tree*)malloc(sizeof(bpt_tree));
+   bpt_tree *t = (bpt_tree*)pdf_malloc(sizeof(bpt_tree));
    if (!t)
       return 0;
    t->root = bpt_new_node(1);
    if (!t->root)
    {
-      free(t);
+      pdf_free(t);
       return 0;
    }
    else
@@ -405,13 +406,13 @@ bpt_destroy_leaf(bpt_node *n)
     {
       if (n->v[i].d)
 	{
-	  free(n->v[i].d);
+	  pdf_free(n->v[i].d);
 	}
     }
 #ifndef BPT_LEAF_LINEAR
-   free(n->k);
+   pdf_free(n->k);
 #endif
-   free(n->v);
+   pdf_free(n->v);
 }
 
 void
@@ -425,8 +426,8 @@ bpt_destroy_inner(bpt_node *n)
       else
 	 bpt_destroy_inner(n->v[c].n);
    }
-   free(n->k);
-   free(n->v);
+   pdf_free(n->k);
+   pdf_free(n->v);
 }
 
 void
@@ -439,12 +440,13 @@ bpt_destroy(bpt_tree *t)
    if (t->root->leaf)
    {
       bpt_destroy_leaf(t->root);
-      return;
    }
    else
    {
       bpt_destroy_inner(t->root);
    }
+   pdf_free(t->root);
+   t->root = NULL;
 }
 
 static void

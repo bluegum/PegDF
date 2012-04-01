@@ -1,6 +1,6 @@
 ### Build flags for all targets
 #
-CF_ALL          = -g -Wall -I . -I pdfdoc
+CF_ALL          = -g -Wall -I . -I pdfdoc -DDEBUG
 LF_ALL          =
 LL_ALL          =
 
@@ -23,7 +23,7 @@ ifeq	"$(DEBUG)" "y"
 endif
 
 APP = readpdf
-CLEAN = $(APP) pdf.c pdf_parse.o readpdf.o tst.o dict.o bplustree.o pdfindex.o
+CLEAN = $(APP) pdf.c pdf_parse.o readpdf.o tst.o dict.o bplustree.o pdfindex.o pdfmem.o
 
 COMMON_HEADERS := *.h
 #######
@@ -46,7 +46,7 @@ pdf.c  : pdf.peg
 
 pdf_parse.c pdf_parse.o:	pdf.c
 
-readpdf : pdf_parse.o readpdf.o tst.o dict.o bplustree.o pdfindex.o $(TGT_LIB)
+readpdf : pdf_parse.o readpdf.o tst.o dict.o bplustree.o pdfindex.o pdfmem.o $(TGT_LIB)
 
 test	:	readpdf
 	@./readpdf examples/simpledict.pdf

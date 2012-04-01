@@ -8,7 +8,7 @@ typedef struct dict_s
   int n;
 } dict;
 
-extern dict*   dict_new(char *key, void *val);
+extern dict*   dict_new();
 extern dict*   dict_insert(dict*, char *key, void *val);
 extern void*   dict_get(dict*, char *key);
 extern void    dict_free(dict*);
