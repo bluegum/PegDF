@@ -282,5 +282,7 @@ extern pdf_annots* pdf_annots_load(pdf_obj* o);
 extern pdf_stream* pdf_stream_load(pdf_obj* o);
 extern pdf_err pdf_stream_free(pdf_stream *s);
 extern pdf_err pdf_annots_free(pdf_annots *a);
+extern pdf_err pdf_resources_free(pdf_resources*);
+extern pdf_err pdf_extgstate_free(pdf_extgstate*);
 
 #endif

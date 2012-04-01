@@ -83,7 +83,7 @@ OBJ	<- NUM  NUM  'obj' DELIM   { push_marker(eObjMarker); }
 	STREAM*
 	'endobj'  {pop_obj();} GARBAGE* DELIM 
 
-STREAM   <- 'stream' EOL* {printf("stream...%d\n", yyoff);}
+STREAM   <- 'stream' EOL* {/*printf("stream...%d\n", yyoff);*/}
 	 (!'endstream' .)* 'endstream' DELIM 
 
 REF	 <- NUM NUM 'R' DELIM { push_ref(eRef, pop().value.i, pop().value.i);}
@@ -102,7 +102,7 @@ XREFTAB	 <- < [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9] > {push(eInt,at
 	    (SP CR/SP LF/CR LF) {xref_append(pop(), pop().value.i, pop().value.i);}
 	 
 TRAILER	        <- 'trailer' DELIM DICT DELIM {printf(" trailer...\n"); read_trailer();}
-STARTXREF      	<- DELIM 'startxref' DELIM NUM DELIM {printf("startxref...%d\n", pop().value.i);}
+STARTXREF      	<- DELIM 'startxref' DELIM NUM DELIM {xref_start();}
 
 GARBAGE		<- . !('startxref' / 'xref'/ 
 		      	NUM NUM 'obj'

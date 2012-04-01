@@ -62,7 +62,8 @@ pdf_obj pop_dict(void)
    int i = 0;
    pdf_obj o, *a = NULL;
    dict* d = dict_new();
-   printf("pop-dict:-- <<");
+
+   //printf("pop-dict:-- <<");
 
    o.t = eDict;
    o.value.d.dict = d;
@@ -70,7 +71,7 @@ pdf_obj pop_dict(void)
    {
       if (i%2)
       {
-	 printf("%s|", (char*)(stack[stackp+1].value.k));
+	//printf("%s|", (char*)(stack[stackp+1].value.k));
 	 dict_insert(d, stack[stackp+1].value.k, a);
 	 pdf_free(stack[stackp+1].value.k);
       }
@@ -81,7 +82,7 @@ pdf_obj pop_dict(void)
       }
       i += 1;
    }
-   printf(">>\n");
+   //printf(">>\n");
    stackp += 1;
    stack[stackp] = o;
    return o;
@@ -233,7 +234,7 @@ int xref_new(int off, int n)
 int xref_append(pdf_obj x, int gen, int off)
 {
 #ifdef DEBUG
-   printf("xref_entry:%d,%d,%c\n", off, gen, x.value.i);
+  //printf("xref_entry:%d,%d,%c\n", off, gen, x.value.i);
 #endif
    if (g_xreftab.idx >= g_xreftab.count)
      return 0;
@@ -253,6 +254,14 @@ int xref_delete()
    //printf("xref=%d\n", g_xreftab.idx);
    pdf_free(g_xreftab.obj);
    return 0;
+}
+
+void
+xref_start()
+{
+  pdf_obj o = pop();
+  printf("startxref = %d\n", o.value.i);
+  return;
 }
 
 static char* comment_string;

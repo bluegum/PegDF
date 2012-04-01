@@ -21,6 +21,12 @@ pdf_group_load(pdf_obj *o)
   g->k = pdf_to_int(dict_get(o->value.d.dict, "K"));
   return g;
 }
+pdf_err
+pdf_group_free(pdf_group *g)
+{
+  pdf_free(g);
+  return pdf_ok;
+}
 
 pdf_err pdf_page_load(pdf_obj *o, pdf_page **page)
 {
@@ -56,9 +62,17 @@ pdf_err pdf_page_free(pdf_page *page)
     {
       pdf_stream_free(page->contents);
     }
+  if (page->resources)
+    {
+      pdf_resources_free(page->resources);
+    }
   if (page->annots)
     {
       pdf_annots_free(page->annots);
+    }
+  if (page->group)
+    {
+      pdf_group_free(page->group);
     }
   pdf_free(page);
   return pdf_ok;
@@ -116,7 +130,7 @@ pdf_err pdf_page_tree_walk(pdf_doc *d)
   int i;
   for (i = 0; i < d->count; i++)
     {
-#if 1
+#ifdef DEBUG
       printf("processing page#%d\n", i);
 #endif
     }
@@ -216,8 +230,11 @@ pdf_err pdf_info_load(pdf_obj *o, pdf_info **info)
     {
       o = pdf_obj_find(o->value.r.num, o->value.r.gen);
     }
-  if (!o)
-    return pdf_ok;
+  if (!o || o->t != eDict)
+    {
+      pdf_free(*info);
+      return pdf_ok;
+    }
   i = *info;
   a = dict_get(o->value.d.dict, "Title");
   if (a) i->title = a->value.s.buf;
@@ -303,11 +320,12 @@ pdf_err pdf_trailer_open(pdf_obj *trailer)
     }
   d = pdf_doc_load(root);
   if (!d)
-    return pdf_ok;
+    goto done;
   d->info = t.info; // pass info as member of doc
   pdf_doc_process(d);
   pdf_doc_print_info(d);
   pdf_doc_done(d);
+ done:
   dict_free(trailer->value.d.dict);
   return pdf_ok;
 }
@@ -339,6 +357,15 @@ pdf_resources_load(pdf_obj *o)
   return r;
 }
 
+pdf_err
+pdf_resources_free(pdf_resources *r)
+{
+  if (!r)
+    return pdf_ok;
+  if (r->extgstate)
+    pdf_extgstate_free(r);
+  return pdf_ok;
+}
 pdf_extgstate*
 pdf_extgstate_load(pdf_obj *o)
 {
@@ -374,6 +401,14 @@ pdf_extgstate_load(pdf_obj *o)
   g->AIS = pdf_to_int(dict_get(d, "AIS"));
   g->TK = pdf_to_int(dict_get(d, "TK"));
   return g;
+}
+
+pdf_err pdf_extgstate_free(pdf_extgstate*g)
+{
+  if (!g)
+    return pdf_ok;
+  pdf_free(g);
+  return pdf_ok;
 }
 
 static inline char*

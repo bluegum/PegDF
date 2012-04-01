@@ -47,8 +47,11 @@ void tst_cleanup(Tptr p)
     tst_cleanup(p->eqkid);
   else
     {
-      pdf_free(p);
-      return;
+      if (!p->hikid)
+	{
+	  pdf_free(p);
+	  return;
+	}
     }
   tst_cleanup(p->hikid);
   pdf_free(p);

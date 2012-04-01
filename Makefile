@@ -1,8 +1,15 @@
 ### Build flags for all targets
 #
-CF_ALL          = -g -Wall -I . -I pdfdoc -DDEBUG
+CF_ALL          = -g -Wall -I . -I pdfdoc 
 LF_ALL          =
 LL_ALL          =
+
+ifeq	"$(YYDEBUG)" "y"
+	CF_ALL += -DYY_DEBUG
+endif
+ifeq	"$(DEBUG)" "y"
+	CF_ALL +=  -DDEBUG
+endif
 
 CFLAGS += $(CF_ALL)
 LDFLAGS += -lz
@@ -17,10 +24,6 @@ ARCHIVE			= $(AR) $(ARFLAGS) $@ $^
 vpath %.h . pdfdoc
 # GLOBALS TARGETS
 TGT_LIB	=
-
-ifeq	"$(DEBUG)" "y"
-	CFLAGS += -DYY_DEBUG
-endif
 
 APP = readpdf
 CLEAN = $(APP) pdf.c pdf_parse.o readpdf.o tst.o dict.o bplustree.o pdfindex.o pdfmem.o

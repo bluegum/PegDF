@@ -56,4 +56,5 @@ extern void print_stack();
 extern int xref_new(int off, int n);
 extern int xref_append(pdf_obj x, int gen, int off);
 extern void pop_comment(char *s, int len);
+extern void xref_start();
 #endif
