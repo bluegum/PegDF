@@ -233,6 +233,7 @@ pdf_err pdf_info_load(pdf_obj *o, pdf_info **info)
   if (!o || o->t != eDict)
     {
       pdf_free(*info);
+      *info = NULL;
       return pdf_ok;
     }
   i = *info;
@@ -285,12 +286,14 @@ pdf_err pdf_trailer_open(pdf_obj *trailer)
   pdf_doc * d;
 
   memset(&t, 0, sizeof(pdf_trailer));
-  if (!trailer || trailer->t != eDict)
+  if (!trailer)
     return pdf_ok;
-  root = dict_get(trailer->value.d.dict, "Root");
+  if (trailer->t != eDict)
+      goto done;
 
+  root = dict_get(trailer->value.d.dict, "Root");
   if (!root || root->t != eRef)
-    return pdf_ok;
+      goto done;
 
   a = dict_get(trailer->value.d.dict, "Size");
   if (a && a->t == eInt)
@@ -312,7 +315,7 @@ pdf_err pdf_trailer_open(pdf_obj *trailer)
     {
       pdf_info_load(a, &t.info);
     }
-  a = dict_get(trailer->value.d.dict, "Id");
+  a = dict_get(trailer->value.d.dict, "ID");
   if (a && a->t == eArray)
     {
       t.id[0] = &a->value.a.items[0];
@@ -326,7 +329,10 @@ pdf_err pdf_trailer_open(pdf_obj *trailer)
   pdf_doc_print_info(d);
   pdf_doc_done(d);
  done:
-  dict_free(trailer->value.d.dict);
+  if (t.info)
+    pdf_free(t.info);
+  if (trailer->t == eDict)
+      dict_free(trailer->value.d.dict);
   return pdf_ok;
 }
 
@@ -363,7 +369,8 @@ pdf_resources_free(pdf_resources *r)
   if (!r)
     return pdf_ok;
   if (r->extgstate)
-    pdf_extgstate_free(r);
+    pdf_extgstate_free(r->extgstate);
+  pdf_free(r);
   return pdf_ok;
 }
 pdf_extgstate*
@@ -517,7 +524,7 @@ pdf_stream_load(pdf_obj* o)
       if (!y || y->t != eDict)
 	break;
       x = dict_get(y->value.d.dict, "Length");
-      if (!x || x->t != eInt)
+      if (!x || (x->t != eInt && x->t != eRef))
 	{
 	  fprintf(stderr, "%s\n", "Invalid stream.");
 	  break;

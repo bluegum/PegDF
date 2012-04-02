@@ -34,7 +34,8 @@
 extern int yyparse();
 extern char *yytext;
 
-pdf_obj stack[1024], root_obj;
+// large stack size for large array, ouch!
+pdf_obj stack[65536], root_obj;
 int stackp= -1;
 xreftab_t g_xreftab;
 int g_xref_off;
@@ -353,7 +354,10 @@ int main(int argc, char **argv)
 	 break;
       }
    }
+#ifdef DEBUG
+   print_mem_tracking();
    //pdf_obj_walk();
+#endif
    pdf_trailer_open(&root_obj);
    xref_delete();
    pdf_obj_free();

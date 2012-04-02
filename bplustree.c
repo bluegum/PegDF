@@ -503,7 +503,7 @@ bpt_delete_leaf(bpt_node *n)
       for (i = 0; i < BPT_ORDER_LEAF; i++)
       {
 	 if (n->v[i].n)
-	   pdf_obj_delete(n->v[i].n);
+	   pdf_obj_delete(n->v[i].d);
       }
 #else
       for (i = 0; i < n->cnt; i++)
