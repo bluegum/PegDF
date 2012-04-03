@@ -232,6 +232,7 @@ int xref_new(int off, int n)
 #endif
    return 0;
 }
+
 int xref_append(pdf_obj x, int gen, int off)
 {
 #ifdef DEBUG
@@ -272,8 +273,17 @@ void pop_comment(char *s, int len)
   comment_string = s;
 }
 
-FILE* infile;
-FILE* outfile;
+void pop_stream(int pos)
+{
+#ifdef DEBUG
+  printf("stream starts at %d.\n", pos);
+#endif
+}
+
+////////////////////////////////////////////////////
+// example application
+////////////////////////////////////////////////////
+pdf_parser pdf_parser_inst;
 
 int main(int argc, char **argv)
 {
@@ -281,8 +291,8 @@ int main(int argc, char **argv)
    char *in = NULL;
    char *out = NULL;
 
-   infile = stdin;
-   outfile = stdout;
+   pdf_parser_inst.infile = stdin;
+   pdf_parser_inst.outfile = stdout;
 
    if (argc > 1)
    {
@@ -316,8 +326,8 @@ int main(int argc, char **argv)
    if (in)
    {
       printf("reading = %s\n", in);
-      infile = fopen(in, "rb");
-      if (!infile)
+      pdf_parser_inst.infile = fopen(in, "rb");
+      if (!pdf_parser_inst.infile)
       {
 	 printf("Can not open %s.\n", in);
 	 return 1;
@@ -326,13 +336,14 @@ int main(int argc, char **argv)
    if (out)
    {
       printf("writing = %s\n", out);
-      outfile = fopen(out, "wb");
-      if (!outfile)
+      pdf_parser_inst.outfile = fopen(out, "wb");
+      if (!pdf_parser_inst.outfile)
       {
 	 printf("Can not open %s.\n", out);
 	 return 1;
       }
    }
+   pdf_parser_inst.file_position = 0;
    root_obj.t = eLimit;
    root_obj.value.marker = 0;
    // parse magic
@@ -365,13 +376,13 @@ int main(int argc, char **argv)
    print_mem_tracking();
 #endif
  done:
-   if (infile != stdin)
+   if (pdf_parser_inst.infile != stdin)
    {
-      fclose(infile);
+      fclose(pdf_parser_inst.infile);
    }
-   if (outfile != stdout)
+   if (pdf_parser_inst.outfile != stdout)
    {
-      fclose(stdout);
+      fclose(pdf_parser_inst.outfile);
    }
    return 0;
 }

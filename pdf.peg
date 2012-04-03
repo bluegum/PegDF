@@ -83,7 +83,7 @@ OBJ	<- NUM  NUM  'obj' DELIM   { push_marker(eObjMarker); }
 	STREAM*
 	'endobj'  {pop_obj();} GARBAGE* DELIM 
 
-STREAM   <- 'stream' EOL* {/*printf("stream...%d\n", yyoff);*/}
+STREAM   <- 'stream' EOL* {pop_stream( yyoff+pdf_parser_inst.file_position);}
 	 (!'endstream' .)* 'endstream' DELIM 
 
 REF	 <- NUM NUM 'R' DELIM { push_ref(eRef, pop().value.i, pop().value.i);}

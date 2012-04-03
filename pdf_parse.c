@@ -26,13 +26,13 @@ THE SOFTWARE.
 #include "pdfindex.h"
 #include "dict.h"
 
-extern FILE* infile;
-extern FILE* outfile;
+extern pdf_parser pdf_parser_inst;
 
 static int my_getchar()
 {
   int c;
-  c = getc(infile);
+  c = getc(pdf_parser_inst.infile);
+  pdf_parser_inst.file_position += 1;
 #ifdef YY_DEBUG
    if (EOF != c) printf("<%c>\n", c); 
 #endif
