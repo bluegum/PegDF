@@ -48,7 +48,7 @@ bpt_new_node(int leaf)
 }
 
 bpt_tree*
-bpt_new_tree()
+bpt_new_tree(int n)
 {
    bpt_tree *t = (bpt_tree*)pdf_malloc(sizeof(bpt_tree));
    if (!t)
@@ -61,6 +61,8 @@ bpt_new_tree()
    }
    else
    {
+     if (t->root->leaf)
+       t->root->low = n/BPT_ORDER_LEAF*BPT_ORDER_LEAF;
       return t;
    }
 }
@@ -419,12 +421,13 @@ void
 bpt_destroy_inner(bpt_node *n)
 {
    int c = 0;
-   for (; c < n->cnt; c++)
+   for (; c <= n->cnt; c++)
    {
-      if (n->v[c].n->leaf)
+     if (n->v[c].n->leaf)
 	 bpt_destroy_leaf(n->v[c].n);
       else
 	 bpt_destroy_inner(n->v[c].n);
+     pdf_free(n->v[c].n);
    }
    pdf_free(n->k);
    pdf_free(n->v);
@@ -458,11 +461,10 @@ bpt_walk_node(bpt_node* n, bpt_callback c)
    c(n);
    if (!n->leaf)
    {
-      for (i = 0; i < n->cnt; i++)
+      for (i = 0; i <= n->cnt; i++)
       {
 	 bpt_walk_node(n->v[i].n, c);
       }
-      bpt_walk_node(n->v[i].n, c);
    }
 }
 

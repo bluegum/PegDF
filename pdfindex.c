@@ -23,7 +23,7 @@ pdf_map_create()
 }
 
 pdf_map *
-pdf_map_insert(int gen)
+pdf_map_insert(int n, int gen)
 {
    pdf_map * m = &a_pdf_map;
    while (m->generation != gen)
@@ -36,7 +36,7 @@ pdf_map_insert(int gen)
    }
    if (!m->head)
    {
-      m->head = bpt_new_tree();
+      m->head = bpt_new_tree(n);
    }
    return m;
 }
@@ -50,7 +50,7 @@ pdf_map_find(int gen)
 int
 pdf_obj_insert(int n, int gen, void *d)
 {
-   pdf_map *m = pdf_map_insert(gen);
+  pdf_map *m = pdf_map_insert(n, gen);
    bpt_insert(m->head, n, d);
    return 0;
 }
