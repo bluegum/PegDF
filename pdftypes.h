@@ -21,10 +21,19 @@ THE SOFTWARE.
 */
 #ifndef PDFTYPES_H
 #define PDFTYPES_H
+#include <string.h>
+#include "pdfmem.h"
 #include "dict.h"
 
 typedef struct pdf_obj_s pdf_obj;
 typedef struct pdf_xref_s pdf_xref;
+
+
+typedef enum pdf_error_e
+  {
+    pdf_ok,
+    pdf_unknown
+  } pdf_err;
 
 struct pdf_xref_s
 {
@@ -149,6 +158,35 @@ pdf_rect_resolve(pdf_obj *o)
   r.x1 = o->value.a.items[2].value.i;
   r.y1 = o->value.a.items[3].value.i;
   return r;
+}
+
+static inline
+pdf_obj pdf_int_to_obj(int i)
+{
+    pdf_obj o;
+    o.t = eInt;
+    o.value.i = i;
+    return o;
+}
+
+static inline
+pdf_obj pdf_key_to_obj(char *s)
+{
+    pdf_obj o;
+    char *k;
+    k = pdf_malloc(strlen(s)+1);
+    if (k)
+    {
+        strcpy(k, s);
+        o.t = eKey;
+        o.value.k = k;
+    }
+    else
+    {
+        o.t = eLimit;
+        o.value.k = NULL;
+    }
+    return o;
 }
 
 #endif

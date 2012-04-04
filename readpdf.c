@@ -275,9 +275,17 @@ void pop_comment(char *s, int len)
 
 void pop_stream(int pos)
 {
+    pdf_obj v;
+    dict *d;
 #ifdef DEBUG
   printf("stream starts at %d.\n", pos);
 #endif
+    if (stack[stackp].t != eDict)
+        return;
+    d = stack[stackp].value.d.dict;
+    v = pdf_int_to_obj(pos);
+    // _SP_ stands for stream_position
+    dict_insert(d, "S_P", dup_pdf_obj(&v));
 }
 
 ////////////////////////////////////////////////////

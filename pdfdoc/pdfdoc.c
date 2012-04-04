@@ -94,7 +94,7 @@ pdf_err pdf_page_tree_load(pdf_doc *d, pdf_obj *o)
 	  if (strcmp(a->value.k, "Pages") == 0)
             {
 	      kids = dict_get(o->value.d.dict, "Kids");
-	      if (!kids || (kids->t != eArray) && (kids->t != eRef))
+	      if (!kids || ((kids->t != eArray) && (kids->t != eRef)))
 		return pdf_ok;
             }
 	  else if (strcmp(a->value.k, "Page") == 0)
@@ -138,6 +138,33 @@ pdf_err pdf_page_tree_load(pdf_doc *d, pdf_obj *o)
   return pdf_ok;
 }
 
+pdf_err pdf_parse_content_stream(pdf_stream *s)
+{
+  int i;
+  if (!s->filter)
+    return pdf_ok;
+  // construct filter train
+  for (i = 0; ; i++)
+    {
+      if (s->filter[i] == Limit)
+	break;
+    }
+  return pdf_ok;
+}
+
+pdf_err pdf_exec_page_content(pdf_page *p)
+{
+    pdf_stream *c;
+    if (!p)
+        return pdf_ok;
+
+    for (c = p->contents; c; c = c->next)
+    {
+      pdf_parse_content_stream(c);
+    }
+    return pdf_ok;
+}
+
 pdf_err pdf_page_tree_walk(pdf_doc *d)
 {
   int i;
@@ -146,6 +173,7 @@ pdf_err pdf_page_tree_walk(pdf_doc *d)
 #ifdef DEBUG
       printf("processing page#%d\n", i);
 #endif
+      pdf_exec_page_content(d->pages[i]);
     }
   return pdf_ok;
 }
@@ -442,7 +470,6 @@ pdf_key_resolve(pdf_obj*o)
 pdf_annots*
 pdf_annots_load(pdf_obj* o)
 {
-  pdf_obj *t;
   pdf_annots *a, *first, *last = 0;
   dict *d;
   int i;
@@ -496,131 +523,141 @@ pdf_annots_free(pdf_annots *a)
 pdf_stream*
 pdf_stream_load(pdf_obj* o)
 {
-  pdf_stream *s, *last;
-  pdf_obj *oo;
-  int i, n;
+    pdf_stream *s, *last;
+    pdf_obj *oo;
+    int i, n;
 
-  if (!o || (o->t != eDict && o->t != eRef && o->t != eArray))
-    return NULL;
+    if (!o || (o->t != eDict && o->t != eRef && o->t != eArray))
+        return NULL;
 
-  if (o->t == eRef)
+    if (o->t == eRef)
     {
-      o = pdf_obj_find(o->value.r.num, o->value.r.gen);
+        o = pdf_obj_find(o->value.r.num, o->value.r.gen);
     }
-  if (o->t == eArray)
+    if (o->t == eArray)
     {
-      n = o->value.a.len;
-      oo = &o->value.a.items[0];
+        n = o->value.a.len;
+        oo = &o->value.a.items[0];
     }
-  else if (o->t == eDict)
+    else if (o->t == eDict)
     {
-      n = 1;
-      oo = o;
+        n = 1;
+        oo = o;
     }
-  else
-    return NULL;
-  last = NULL;
-  for (i = 0; i < n && oo; i++, oo++)
+    else
+        return NULL;
+    last = NULL;
+    for (i = 0; i < n && oo; i++, oo++)
     {
-      pdf_stream *t = pdf_malloc(sizeof(pdf_stream));
-      pdf_obj *x, *xx, *y;
-      int m, mm;
-      if (!t)
-	return NULL;
-      memset(t, 0, sizeof(pdf_stream));
-      if (i == 0)
-	s = t;
-      // fill stream info
-      y = oo;
-      if (y->t == eRef)
-	y = pdf_obj_find(y->value.r.num, y->value.r.gen);
-      if (!y || y->t != eDict)
-	break;
-      x = dict_get(y->value.d.dict, "Length");
-      if (!x || (x->t != eInt && x->t != eRef))
+        pdf_stream *t = pdf_malloc(sizeof(pdf_stream));
+        pdf_obj *x, *xx, *y, *pos;
+        int m, mm;
+        if (!t)
+            return NULL;
+        memset(t, 0, sizeof(pdf_stream));
+        if (i == 0)
+            s = t;
+        // fill stream info
+        y = oo;
+        if (y->t == eRef)
+            y = pdf_obj_find(y->value.r.num, y->value.r.gen);
+        if (!y || y->t != eDict)
+            break;
+        /// internal struct. stream starting position in file.
+        pos = dict_get(y->value.d.dict, "S_P");
+        if (!pos || (pos->t != eInt && pos->t != eRef))
         {
-	  fprintf(stderr, "%s\n", "Invalid stream.");
-	  break;
+            fprintf(stderr, "%s\n", "Invalid stream.");
+            break;
         }
-      t->length = x->value.i;
-      x = dict_get(y->value.d.dict, "Filter");
-      if (!x)
+        t->offset = pos->value.i;
+        ///
+        x = dict_get(y->value.d.dict, "Length");
+        if (!x || (x->t != eInt && x->t != eRef))
         {
-	  continue;
+            fprintf(stderr, "%s\n", "Invalid stream.");
+            break;
         }
-      if (x->t == eArray)
+        t->length = x->value.i;
+        x = dict_get(y->value.d.dict, "Filter");
+        if (!x)
         {
-	  mm = x->value.a.len;
-	  xx = x->value.a.items;
+            continue;
         }
-      else if (x->t == eKey)
+        if (x->t == eArray)
         {
-	  mm = 1;
-	  xx = x;
+            mm = x->value.a.len;
+            xx = x->value.a.items;
         }
-      else
+        else if (x->t == eKey)
         {
-	  continue;
+            mm = 1;
+            xx = x;
         }
-      t->filter = pdf_malloc(mm * sizeof(pdf_filter));
-      if (!t->filter)
-	break;
-      for (m = 0; m < mm; m++, xx++)
+        else
         {
-	  if (xx->t != eKey)
+            continue;
+        }
+        t->filter = pdf_malloc((mm+1) * sizeof(pdf_filterkind)); //+1 for Limit
+        if (!t->filter)
+            break;
+        for (m = 0; m < mm; m++, xx++)
+        {
+            if (xx->t != eKey)
             {
-	      break;
+                break;
             }
-	  if (strcmp(xx->value.k, "FlateDecode") == 0)
+            if (strcmp(xx->value.k, "FlateDecode") == 0)
             {
-	      t->filter[m] = FlateDecode;
+                t->filter[m] = FlateDecode;
             }
-	  else if (strcmp(xx->value.k, "ASCIIHexDecode") == 0)
+            else if (strcmp(xx->value.k, "ASCIIHexDecode") == 0)
             {
-	      t->filter[m] = ASCIIHexDecode;
+                t->filter[m] = ASCIIHexDecode;
             }
-	  else if (strcmp(xx->value.k, "ASCII85Decode") == 0)
+            else if (strcmp(xx->value.k, "ASCII85Decode") == 0)
             {
-	      t->filter[m] = ASCII85Decode;
+                t->filter[m] = ASCII85Decode;
             }
-	  else if (strcmp(xx->value.k, "LZWDecode") == 0)
+            else if (strcmp(xx->value.k, "LZWDecode") == 0)
             {
-	      t->filter[m] = LZWDecode;
+                t->filter[m] = LZWDecode;
             }
-	  else if (strcmp(xx->value.k, "RunLengthDecode") == 0)
+            else if (strcmp(xx->value.k, "RunLengthDecode") == 0)
             {
-	      t->filter[m] = RunLengthDecode;
+                t->filter[m] = RunLengthDecode;
             }
-	  else if (strcmp(xx->value.k, "CCITTFaxDecode") == 0)
+            else if (strcmp(xx->value.k, "CCITTFaxDecode") == 0)
             {
-	      t->filter[m] = CCITTFaxDecode;
+                t->filter[m] = CCITTFaxDecode;
             }
-	  else if (strcmp(xx->value.k, "JBIG2Decode") == 0)
+            else if (strcmp(xx->value.k, "JBIG2Decode") == 0)
             {
-	      t->filter[m] = JBIG2Decode;
+                t->filter[m] = JBIG2Decode;
             }
-	  else if (strcmp(xx->value.k, "DCTDecode") == 0)
+            else if (strcmp(xx->value.k, "DCTDecode") == 0)
             {
-	      t->filter[m] = DCTDecode;
+                t->filter[m] = DCTDecode;
             }
-	  else if (strcmp(xx->value.k, "JPXDecode") == 0)
+            else if (strcmp(xx->value.k, "JPXDecode") == 0)
             {
-	      t->filter[m] = JPXDecode;
+                t->filter[m] = JPXDecode;
             }
-	  else if (strcmp(xx->value.k, "Crypt") == 0)
+            else if (strcmp(xx->value.k, "Crypt") == 0)
             {
-	      t->filter[m] = Crypt;
+                t->filter[m] = Crypt;
             }
-	  else
+            else
             {
-	      t->filter[m] = Raw;
+                t->filter[m] = Raw;
             }
         }
-      if (last)
-	last->next = t;
-      last = t;
+        t->filter[mm] = Limit; // terminate filter train
+        if (last)
+            last->next = t;
+        last = t;
     }
-  return s;
+    return s;
 }
 
 pdf_err

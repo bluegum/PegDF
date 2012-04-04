@@ -1,14 +1,9 @@
 #ifndef PDFDOC_H
 #define PDFDOC_H
-
+#include "pdftypes.h"
 #include "gsdraw.h"
 #include "pdfresource.h"
-
-typedef enum pdf_error_e
-  {
-    pdf_ok,
-    pdf_unknown
-  } pdf_err;
+#include "pdffilter.h"
 
 typedef struct pdf_page_s pdf_page;
 typedef struct pdf_doc_s pdf_doc;
@@ -190,28 +185,10 @@ struct pdf_doc_s
   pdf_info *info;
 };
 
-typedef enum pdf_filter_e pdf_filter;
-
-enum pdf_filter_e
-  {
-    ASCIIHexDecode, 
-    ASCII85Decode, 
-    LZWDecode,
-    FlateDecode,
-    RunLengthDecode,
-    CCITTFaxDecode,
-    JBIG2Decode,
-    DCTDecode,
-    JPXDecode,
-    Crypt,
-    Limit,
-    Raw
-  };
-
 struct pdf_stream_s
 {
   int length;
-  pdf_filter *filter; // terminated by Limit
+  pdf_filterkind *filter; // terminated by Limit
   void *decodeparms;
   void *f;
   void *ffilter;
@@ -284,5 +261,5 @@ extern pdf_err pdf_stream_free(pdf_stream *s);
 extern pdf_err pdf_annots_free(pdf_annots *a);
 extern pdf_err pdf_resources_free(pdf_resources*);
 extern pdf_err pdf_extgstate_free(pdf_extgstate*);
-
+extern pdf_err pdf_trailer_open(pdf_obj *trailer);
 #endif
