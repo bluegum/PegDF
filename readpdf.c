@@ -275,7 +275,6 @@ void pop_comment(char *s, int len)
 
 void pop_stream(int pos)
 {
-    pdf_obj v;
     dict *d;
     sub_stream *s;
 #ifdef DEBUG
@@ -284,10 +283,9 @@ void pop_stream(int pos)
     if (stack[stackp].t != eDict)
         return;
     d = stack[stackp].value.d.dict;
-    v = pdf_int_to_obj(pos);
     // S_O stands for stream_object
     // insert stream object
-    s = (pdf_parser_inst.create_stream)(pos, 0);
+    s = (pdf_parser_inst.create_stream)(pos+6, 0);
     dict_insert(d, "S_O", s);
 }
 

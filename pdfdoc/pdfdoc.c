@@ -43,7 +43,7 @@ pdf_err pdf_page_load(pdf_obj *o, pdf_page **page)
   p->mediabox = pdf_rect_resolve(dict_get(d, "MediaBox"));
   p->resources = pdf_resources_load(dict_get(d, "Resources"));
   // optionals
-  p->contents = pdf_streams_load(dict_get(d, "Contents"));
+  p->contents = dict_get(d, "Contents");
   v = dict_get(d, "Rotate");
   if (v)
     p->rotate = v->value.i;
@@ -59,10 +59,6 @@ pdf_err pdf_page_free(pdf_page *page)
 {
   if (!page)
     return pdf_ok;
-  if (page->contents)
-    {
-      pdf_streams_free(page->contents);
-    }
   if (page->resources)
     {
       pdf_resources_free(page->resources);
@@ -165,12 +161,20 @@ pdf_err pdf_exec_page_content(pdf_page *p)
 {
     pdf_stream *c;
     if (!p)
-        return pdf_ok;
-
-    for (c = p->contents; c; c = c->next)
+      return pdf_ok;
+    if (!p->contents)
+      return pdf_ok;
+    p->content_streams = pdf_streams_load(p->contents);
+    for (c = p->content_streams; c; c = c->next)
     {
       pdf_parse_content_stream(c);
     }
+    if (p->content_streams)
+      {
+	pdf_streams_free(p->content_streams);
+	p->content_streams = NULL;
+      }
+
     return pdf_ok;
 }
 

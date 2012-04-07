@@ -101,7 +101,7 @@ struct pdf_page_s
   char *lastmodified;
   pdf_resources * resources;
   gs_rect mediabox;
-  pdf_stream *contents;
+  pdf_obj *contents;
   int rotate;
   pdf_group *group;
   pdf_obj *thumb;
@@ -121,6 +121,8 @@ struct pdf_page_s
   void *pressteps;
   int userunit;
   void *vp;
+  // private
+  pdf_stream *content_streams;
 };
 
 typedef enum pdf_pagemode_e pdf_pagemode;

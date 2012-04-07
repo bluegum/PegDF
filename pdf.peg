@@ -28,6 +28,7 @@
 start	<- COMMENT EOL* SPACE* 
 	   / OBJ
 	   / DELIM (XREF TRAILER)* STARTXREF GOBBLE {print_stack();}
+	   / GARBAGE
 DICT	<- DB 
 	( KEY COMMENT* (VALUE / KWORD / ID)
 	/ COMMENT  
@@ -81,7 +82,7 @@ OBJ	<- NUM  NUM  'obj' DELIM   { push_marker(eObjMarker); }
 	/ HEXSTR
 	)* DELIM
 	STREAM*
-	'endobj'  {pop_obj();} GARBAGE* DELIM 
+	'endobj'  {pop_obj();}  DELIM 
 
 STREAM   <- 'stream' EOL* {pop_stream( pdf_parser_inst.file_position + yyoff - yypos);}
 	 (!'endstream' .)* 'endstream' DELIM 
