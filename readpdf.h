@@ -21,8 +21,9 @@ THE SOFTWARE.
 */
 #ifndef READPDF_H
 #define READPDF_H
-
+#include <stdio.h> // due to FILE, should be factored out ASAP
 typedef struct pdf_parser_s pdf_parser;
+typedef struct sub_stream_s sub_stream;
 
 typedef struct xrefentry_s
 {
@@ -43,6 +44,18 @@ struct pdf_parser_s
   FILE* infile;
   FILE* outfile;
   int file_position;
+  int (*seek)(int off);
+  int (*read)(unsigned char *, int);
+  int (*close)();
+  unsigned char* (*cache)(int len);
+  sub_stream* (*create_stream)(int, int);
+  int lock;
+};
+
+struct sub_stream_s
+{
+  int (*reset)(sub_stream*);
+  int (*read)(sub_stream*, unsigned char *, int);
 };
 
 extern int g_xref_off;
@@ -68,4 +81,8 @@ extern int xref_append(pdf_obj x, int gen, int off);
 extern void pop_comment(char *s, int len);
 extern void pop_stream(int pos);
 extern void xref_start();
+extern int stream_seek(int s);
+extern int stream_read(unsigned char*, int);
+extern void init_filestream_parser_instance(pdf_parser *p);
+
 #endif

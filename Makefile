@@ -1,7 +1,7 @@
 ### Build flags for all targets
 #
 CF_ALL          = -g -Wall -I . -I pdfdoc 
-LF_ALL          =
+LF_ALL          = -lz
 LL_ALL          =
 
 ifeq	"$(YYDEBUG)" "y"
@@ -11,8 +11,6 @@ ifeq	"$(DEBUG)" "y"
 	CF_ALL +=  -DDEBUG
 endif
 
-CFLAGS += $(CF_ALL)
-LDFLAGS += -lz
 ### Build tools
 #
 CC              = gcc
@@ -26,7 +24,7 @@ vpath %.h . pdfdoc
 TGT_LIB	=
 
 APP = readpdf
-CLEAN = $(APP) pdf.c pdf_parse.o readpdf.o tst.o dict.o bplustree.o pdfindex.o pdfmem.o
+CLEAN = $(APP) pdf.c pdf_parse.o readpdf.o tst.o dict.o bplustree.o pdfindex.o pdfmem.o substream.o
 
 COMMON_HEADERS := *.h
 #######
@@ -49,7 +47,7 @@ pdf.c  : pdf.peg
 
 pdf_parse.c pdf_parse.o:	pdf.c
 
-readpdf : pdf_parse.o readpdf.o tst.o dict.o bplustree.o pdfindex.o pdfmem.o $(TGT_LIB)
+readpdf : pdf_parse.o readpdf.o tst.o dict.o bplustree.o pdfindex.o pdfmem.o substream.o $(TGT_LIB)
 
 test	:	readpdf
 	@./readpdf examples/simpledict.pdf

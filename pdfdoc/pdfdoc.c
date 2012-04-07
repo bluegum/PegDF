@@ -5,6 +5,7 @@
 #include "pdftypes.h"
 #include "pdfindex.h"
 #include "pdfmem.h"
+#include "readpdf.h"
 
 static inline pdf_group*
 pdf_group_load(pdf_obj *o)
@@ -42,7 +43,7 @@ pdf_err pdf_page_load(pdf_obj *o, pdf_page **page)
   p->mediabox = pdf_rect_resolve(dict_get(d, "MediaBox"));
   p->resources = pdf_resources_load(dict_get(d, "Resources"));
   // optionals
-  p->contents = pdf_stream_load(dict_get(d, "Contents"));
+  p->contents = pdf_streams_load(dict_get(d, "Contents"));
   v = dict_get(d, "Rotate");
   if (v)
     p->rotate = v->value.i;
@@ -60,7 +61,7 @@ pdf_err pdf_page_free(pdf_page *page)
     return pdf_ok;
   if (page->contents)
     {
-      pdf_stream_free(page->contents);
+      pdf_streams_free(page->contents);
     }
   if (page->resources)
     {
@@ -141,14 +142,22 @@ pdf_err pdf_page_tree_load(pdf_doc *d, pdf_obj *o)
 pdf_err pdf_parse_content_stream(pdf_stream *s)
 {
   int i;
-  if (!s->filter)
+  pdf_filter *f;
+  unsigned char buf[16];
+  if (!s)
+    return pdf_ok;
+  if (!s->ffilter)
     return pdf_ok;
   // construct filter train
-  for (i = 0; ; i++)
+  f = s->ffilter;
+  do
     {
-      if (s->filter[i] == Limit)
-	break;
+      i = (f->read)(f, buf, 16);
+#ifdef DEBUG
+      printf("%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
+#endif
     }
+  while (i);
   return pdf_ok;
 }
 
@@ -404,6 +413,135 @@ pdf_resources_load(pdf_obj *o)
   return r;
 }
 
+pdf_stream*
+pdf_stream_load(pdf_obj* o)
+{
+  pdf_filter *last = NULL, *raw;
+  pdf_stream *s;
+  sub_stream *ss;
+  pdf_obj *x, *xx, *y;
+  int m, mm;
+  // fill stream info
+  y = o;
+  if (y->t == eRef)
+    y = pdf_obj_find(y->value.r.num, y->value.r.gen);
+  if (!y || y->t != eDict)
+    {
+      return NULL;
+    }
+  /// internal struct. raw stream object
+  ss = dict_get(y->value.d.dict, "S_O");
+  if (!ss)
+    return NULL;
+  x = dict_get(y->value.d.dict, "Length");
+  if (!x || (x->t != eInt && x->t != eRef))
+    {
+      fprintf(stderr, "%s\n", "Invalid stream.");
+      return NULL;
+    }
+  s = pdf_malloc(sizeof(pdf_stream));
+  if (!s)
+    return NULL;
+  memset(s, 0, sizeof(pdf_stream));
+  x = dict_get(y->value.d.dict, "Filter");
+  if (!x)
+    {
+      // make raw filter
+      goto make_raw_filter;
+    }
+  else
+    {
+      if (x->t == eArray)
+	{
+	  mm = x->value.a.len;
+	  xx = x->value.a.items;
+	}
+      else if (x->t == eKey)
+	{
+	  mm = 1;
+	  xx = x;
+	}
+    }
+
+  s->length = x->value.i;
+  for (m = 0; m < mm; m++, xx++)
+    {
+      pdf_filterkind t = Raw;
+      pdf_filter *f;
+      if (xx->t != eKey)
+	{
+	  break;
+	}
+      if (strcmp(xx->value.k, "FlateDecode") == 0)
+	{
+	 t = FlateDecode;
+	}
+      else if (strcmp(xx->value.k, "ASCIIHexDecode") == 0)
+	{
+	  t = ASCIIHexDecode;
+	}
+      else if (strcmp(xx->value.k, "ASCII85Decode") == 0)
+	{
+	  t = ASCII85Decode;
+	}
+      else if (strcmp(xx->value.k, "LZWDecode") == 0)
+	{
+	  t = LZWDecode;
+	}
+      else if (strcmp(xx->value.k, "RunLengthDecode") == 0)
+	{
+	  t = RunLengthDecode;
+	}
+      else if (strcmp(xx->value.k, "CCITTFaxDecode") == 0)
+	{
+	  t = CCITTFaxDecode;
+	}
+      else if (strcmp(xx->value.k, "JBIG2Decode") == 0)
+	{
+	  t = JBIG2Decode;
+	}
+      else if (strcmp(xx->value.k, "DCTDecode") == 0)
+	{
+	  t = DCTDecode;
+	}
+      else if (strcmp(xx->value.k, "JPXDecode") == 0)
+	{
+	  t = JPXDecode;
+	}
+      else if (strcmp(xx->value.k, "Crypt") == 0)
+	{
+	  t = Crypt;
+	}
+      else
+	{
+	  t = Raw;
+	}
+      // make the filter
+      f = pdf_filter_new(t);
+      if (!f)
+	return NULL;
+      // train them
+      if (!last)
+	{
+	  last = f;
+	  s->ffilter = f;
+	}
+      else
+	{
+	  last->next = f;
+	  last = f;
+	}
+    }
+  // train the raw filter
+ make_raw_filter:
+  raw = pdf_rawfilter_new(ss);
+  if (last)
+    last->next = raw;
+  else
+    s->ffilter = raw;
+  return s;
+}
+
 pdf_err
 pdf_resources_free(pdf_resources *r)
 {
@@ -521,7 +659,7 @@ pdf_annots_free(pdf_annots *a)
 }
 
 pdf_stream*
-pdf_stream_load(pdf_obj* o)
+pdf_streams_load(pdf_obj* o)
 {
     pdf_stream *s, *last;
     pdf_obj *oo;
@@ -549,128 +687,46 @@ pdf_stream_load(pdf_obj* o)
     last = NULL;
     for (i = 0; i < n && oo; i++, oo++)
     {
-        pdf_stream *t = pdf_malloc(sizeof(pdf_stream));
-        pdf_obj *x, *xx, *y, *pos;
-        int m, mm;
-        if (!t)
-            return NULL;
-        memset(t, 0, sizeof(pdf_stream));
-        if (i == 0)
-            s = t;
-        // fill stream info
-        y = oo;
-        if (y->t == eRef)
-            y = pdf_obj_find(y->value.r.num, y->value.r.gen);
-        if (!y || y->t != eDict)
-            break;
-        /// internal struct. stream starting position in file.
-        pos = dict_get(y->value.d.dict, "S_P");
-        if (!pos || (pos->t != eInt && pos->t != eRef))
-        {
-            fprintf(stderr, "%s\n", "Invalid stream.");
-            break;
-        }
-        t->offset = pos->value.i;
-        ///
-        x = dict_get(y->value.d.dict, "Length");
-        if (!x || (x->t != eInt && x->t != eRef))
-        {
-            fprintf(stderr, "%s\n", "Invalid stream.");
-            break;
-        }
-        t->length = x->value.i;
-        x = dict_get(y->value.d.dict, "Filter");
-        if (!x)
-        {
-            continue;
-        }
-        if (x->t == eArray)
-        {
-            mm = x->value.a.len;
-            xx = x->value.a.items;
-        }
-        else if (x->t == eKey)
-        {
-            mm = 1;
-            xx = x;
-        }
-        else
-        {
-            continue;
-        }
-        t->filter = pdf_malloc((mm+1) * sizeof(pdf_filterkind)); //+1 for Limit
-        if (!t->filter)
-            break;
-        for (m = 0; m < mm; m++, xx++)
-        {
-            if (xx->t != eKey)
-            {
-                break;
-            }
-            if (strcmp(xx->value.k, "FlateDecode") == 0)
-            {
-                t->filter[m] = FlateDecode;
-            }
-            else if (strcmp(xx->value.k, "ASCIIHexDecode") == 0)
-            {
-                t->filter[m] = ASCIIHexDecode;
-            }
-            else if (strcmp(xx->value.k, "ASCII85Decode") == 0)
-            {
-                t->filter[m] = ASCII85Decode;
-            }
-            else if (strcmp(xx->value.k, "LZWDecode") == 0)
-            {
-                t->filter[m] = LZWDecode;
-            }
-            else if (strcmp(xx->value.k, "RunLengthDecode") == 0)
-            {
-                t->filter[m] = RunLengthDecode;
-            }
-            else if (strcmp(xx->value.k, "CCITTFaxDecode") == 0)
-            {
-                t->filter[m] = CCITTFaxDecode;
-            }
-            else if (strcmp(xx->value.k, "JBIG2Decode") == 0)
-            {
-                t->filter[m] = JBIG2Decode;
-            }
-            else if (strcmp(xx->value.k, "DCTDecode") == 0)
-            {
-                t->filter[m] = DCTDecode;
-            }
-            else if (strcmp(xx->value.k, "JPXDecode") == 0)
-            {
-                t->filter[m] = JPXDecode;
-            }
-            else if (strcmp(xx->value.k, "Crypt") == 0)
-            {
-                t->filter[m] = Crypt;
-            }
-            else
-            {
-                t->filter[m] = Raw;
-            }
-        }
-        t->filter[mm] = Limit; // terminate filter train
-        if (last)
-            last->next = t;
-        last = t;
+      pdf_stream *t = pdf_stream_load(oo);
+      if (last)
+	{
+	  last->next = t;
+	}
+      else
+	{
+	  s = t;
+	}
+      last = t;
     }
     return s;
 }
 
 pdf_err
-pdf_stream_free(pdf_stream *s)
+pdf_streams_free(pdf_stream *s)
 {
   pdf_stream *t = s;
   while (s)
     {
-      if (s->filter)
-	pdf_free(s->filter);
       t = s->next;
-      pdf_free(s);
+      pdf_stream_free(s);
       s = t;
     }
+  return pdf_ok;
+}
+
+pdf_err
+pdf_stream_free(pdf_stream *s)
+{
+  pdf_filter *f;
+  if (!s)
+    return pdf_ok;
+  f = s->ffilter;
+  while (f)
+    {
+      pdf_filter *t = f->next;
+      (*f->close)(f);
+      f = t;
+    }
+  pdf_free(s);
   return pdf_ok;
 }

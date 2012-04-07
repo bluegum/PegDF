@@ -277,6 +277,7 @@ void pop_stream(int pos)
 {
     pdf_obj v;
     dict *d;
+    sub_stream *s;
 #ifdef DEBUG
   printf("stream starts at %d.\n", pos);
 #endif
@@ -284,8 +285,10 @@ void pop_stream(int pos)
         return;
     d = stack[stackp].value.d.dict;
     v = pdf_int_to_obj(pos);
-    // _SP_ stands for stream_position
-    dict_insert(d, "S_P", dup_pdf_obj(&v));
+    // S_O stands for stream_object
+    // insert stream object
+    s = (pdf_parser_inst.create_stream)(pos, 0);
+    dict_insert(d, "S_O", s);
 }
 
 ////////////////////////////////////////////////////
@@ -298,9 +301,6 @@ int main(int argc, char **argv)
    int i = 1;
    char *in = NULL;
    char *out = NULL;
-
-   pdf_parser_inst.infile = stdin;
-   pdf_parser_inst.outfile = stdout;
 
    if (argc > 1)
    {
@@ -331,6 +331,7 @@ int main(int argc, char **argv)
 	 i += 1;
       }
    }
+   init_filestream_parser_instance(&pdf_parser_inst);
    if (in)
    {
       printf("reading = %s\n", in);

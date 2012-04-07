@@ -2,7 +2,7 @@ d	:= pdfdoc
 
 LOCAL_LIB	:= $(d)/libpdfdoc.a
 
-SRCS_$(d)	:= $(d)/pdfdoc.c $(d)/pdfpage.c $(d)/pdfcatalog.c
+SRCS_$(d)	:= $(d)/pdfdoc.c $(d)/pdfpage.c $(d)/pdfcatalog.c $(d)/pdffilter.c
 
 OBJS_$(d)	:= $(SRCS_$(d):%.c=%.o)
 

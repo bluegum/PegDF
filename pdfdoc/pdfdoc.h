@@ -188,14 +188,12 @@ struct pdf_doc_s
 struct pdf_stream_s
 {
   int length;
-  pdf_filterkind *filter; // terminated by Limit
   void *decodeparms;
   void *f;
-  void *ffilter;
+  pdf_filter *ffilter; // filter train
   void *fdecodeparms;
   int dl;
   // private
-  int offset;
   pdf_stream *next;
 };
 
@@ -256,6 +254,8 @@ extern pdf_err pdf_info_print(pdf_info *info);
 extern pdf_resources* pdf_resources_load(pdf_obj *o);
 extern pdf_extgstate* pdf_extgstate_load(pdf_obj *o);
 extern pdf_annots* pdf_annots_load(pdf_obj* o);
+extern pdf_stream* pdf_streams_load(pdf_obj* o);
+extern pdf_err pdf_streams_free(pdf_stream* s);
 extern pdf_stream* pdf_stream_load(pdf_obj* o);
 extern pdf_err pdf_stream_free(pdf_stream *s);
 extern pdf_err pdf_annots_free(pdf_annots *a);
