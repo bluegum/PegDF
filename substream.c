@@ -8,10 +8,12 @@ struct file_stream_s
 {
   int (*reset)(sub_stream*);
   int (*read)(sub_stream*, unsigned char *, int);
+  int len;
+  // private
   pdf_parser *p; // global object
   int offset;
-  int len;
   int r; // to seek
+  int avail;
 };
 
 static int
@@ -46,6 +48,7 @@ fs_reset(sub_stream* s)
   if (fs->r)
     {
       fs->r = 0;
+      fs->avail = fs->len; // through API is better
       return (fs->p->seek)(fs->offset);
     }
   return 0;
@@ -58,7 +61,18 @@ fs_read(sub_stream* s, unsigned char *buf, int len)
     return 0;
   if (!fs->p)
     return 0;
+  if (fs->avail == 0)
+    return 0;
   (fs->reset)(s);
+  if (len > fs->avail)
+    {
+      len = fs->avail;
+      fs->avail = 0;
+    }
+  else
+    {
+      fs->avail -= len;
+    }
   return (fs->p->read)(buf, len);
 }
 
@@ -101,6 +115,8 @@ struct in_mem_stream_s
 {
   int (*reset)(sub_stream*);
   int (*read)(sub_stream*, unsigned char *, int);
+  int len;
+  // private
   unsigned char *s; // start
   unsigned char *p; // current
   unsigned char *e; // end

@@ -84,7 +84,7 @@ OBJ	<- NUM  NUM  'obj' DELIM   { push_marker(eObjMarker); }
 	STREAM*
 	'endobj'  {pop_obj();}  DELIM 
 
-STREAM   <- 'stream' EOL* {pop_stream( pdf_parser_inst.file_position + yyoff - yypos);}
+STREAM   <- 'stream' '\n' {pop_stream( pdf_parser_inst.file_position + yyoff - yypos);}
 	 (!'endstream' .)* 'endstream' DELIM 
 
 REF	 <- NUM NUM 'R' DELIM { push_ref(eRef, pop().value.i, pop().value.i);}

@@ -150,7 +150,8 @@ pdf_err pdf_parse_content_stream(pdf_stream *s)
     {
       i = (f->read)(f, buf, 16);
 #ifdef DEBUG
-      printf("%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
+      if (i)
+	printf("%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
 #endif
     }
   while (i);
@@ -443,6 +444,7 @@ pdf_stream_load(pdf_obj* o)
       fprintf(stderr, "%s\n", "Invalid stream.");
       return NULL;
     }
+  ss->len = x->value.i;
   s = pdf_malloc(sizeof(pdf_stream));
   if (!s)
     return NULL;

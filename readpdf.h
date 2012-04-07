@@ -56,6 +56,7 @@ struct sub_stream_s
 {
   int (*reset)(sub_stream*);
   int (*read)(sub_stream*, unsigned char *, int);
+  int len;
 };
 
 extern int g_xref_off;
