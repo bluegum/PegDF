@@ -28,7 +28,7 @@
 start	<- COMMENT EOL* SPACE* 
 	   / OBJ
 	   / DELIM (XREF TRAILER)* STARTXREF GOBBLE {print_stack();}
-	   / GARBAGE
+	   / DELIM GARBAGE DELIM
 DICT	<- DB 
 	( KEY COMMENT* (VALUE / KWORD / ID)
 	/ COMMENT  
