@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include "pdftypes.h"
 #include "readpdf.h"
+#include "pdfdoc.h"
+#include "pdfcmds.h"
 
 typedef struct file_stream_s file_stream;
 
@@ -61,9 +63,9 @@ fs_read(sub_stream* s, unsigned char *buf, int len)
     return 0;
   if (!fs->p)
     return 0;
+  (fs->reset)(s);
   if (fs->avail == 0)
     return 0;
-  (fs->reset)(s);
   if (len > fs->avail)
     {
       len = fs->avail;

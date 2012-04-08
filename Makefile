@@ -1,7 +1,7 @@
 ### Build flags for all targets
 #
 CF_ALL          = -g -Wall -I . -I pdfdoc 
-LF_ALL          = -lz
+LF_ALL          = -lz -lm
 LL_ALL          =
 
 ifeq	"$(YYDEBUG)" "y"

@@ -82,7 +82,7 @@ pdf_err pdf_page_tree_load(pdf_doc *d, pdf_obj *o)
   pdf_obj *a, *kids = o;
   if (o->t == eRef)
     {
-      o = pdf_obj_find(o->value.r.num, o->value.r.gen);
+      pdf_obj_resolve(o);
       a = dict_get(o->value.d.dict, "Type");
       if (!a)
 	return pdf_ok;
@@ -110,10 +110,7 @@ pdf_err pdf_page_tree_load(pdf_doc *d, pdf_obj *o)
 	  return pdf_ok;
         }
     }
-  if (kids->t == eRef)
-    {
-      kids = pdf_obj_find(kids->value.r.num, kids->value.r.gen);
-    }
+  pdf_obj_resolve(kids);
   if (kids->t == eDict)
     {
       pdf_page_load(kids, &d->pages[d->pageidx]);
@@ -135,29 +132,6 @@ pdf_err pdf_page_tree_load(pdf_doc *d, pdf_obj *o)
   return pdf_ok;
 }
 
-pdf_err pdf_parse_content_stream(pdf_stream *s)
-{
-  int i;
-  pdf_filter *f;
-  unsigned char buf[16];
-  if (!s)
-    return pdf_ok;
-  if (!s->ffilter)
-    return pdf_ok;
-  // construct filter train
-  f = s->ffilter;
-  do
-    {
-      i = (f->read)(f, buf, 16);
-#ifdef DEBUG
-      if (i)
-	printf("%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
-#endif
-    }
-  while (i);
-  return pdf_ok;
-}
-
 pdf_err pdf_exec_page_content(pdf_page *p)
 {
     pdf_stream *c;
@@ -168,7 +142,7 @@ pdf_err pdf_exec_page_content(pdf_page *p)
     p->content_streams = pdf_streams_load(p->contents);
     for (c = p->content_streams; c; c = c->next)
     {
-      pdf_parse_content_stream(c);
+      pdf_cs_parse(p, c);
     }
     if (p->content_streams)
       {
@@ -196,6 +170,7 @@ pdf_doc* pdf_doc_load(pdf_obj *rdoc)
 {
   pdf_obj *a, *d, *c, *kids;
   pdf_doc *doc;
+
   if (rdoc->t == eRef)
     {
       d = pdf_obj_find(rdoc->value.r.num, rdoc->value.r.gen);
@@ -213,7 +188,7 @@ pdf_doc* pdf_doc_load(pdf_obj *rdoc)
   a = dict_get(d->value.d.dict, "Pages");
   if (!a || a->t != eRef)
     return NULL;
-  a = pdf_obj_find(a->value.r.num, a->value.r.gen);
+  pdf_obj_resolve(a);
   if (!a || a->t != eDict)
     return NULL;
   c = dict_get(a->value.d.dict, "Count");
@@ -281,10 +256,8 @@ pdf_err pdf_info_load(pdf_obj *o, pdf_info **info)
   if (!o)
     return pdf_ok;
   memset(*info, 0, sizeof(pdf_info));
-  if (o->t == eRef)
-    {
-      o = pdf_obj_find(o->value.r.num, o->value.r.gen);
-    }
+
+  pdf_obj_resolve(o);
   if (!o || o->t != eDict)
     {
       pdf_free(*info);
@@ -399,10 +372,7 @@ pdf_resources_load(pdf_obj *o)
   if (!o || (o->t != eDict && o->t != eRef))
     return NULL;
 
-  if (o->t == eRef)
-    {
-      o = pdf_obj_find(o->value.r.num, o->value.r.gen);
-    }
+  pdf_obj_resolve(o);
   r = pdf_malloc(sizeof(pdf_resources));
   if (!r)
     return NULL;
@@ -427,9 +397,8 @@ pdf_stream_load(pdf_obj* o)
   pdf_obj *x, *xx, *y;
   int m, mm;
   // fill stream info
+  pdf_obj_resolve(o);
   y = o;
-  if (y->t == eRef)
-    y = pdf_obj_find(y->value.r.num, y->value.r.gen);
   if (!y || y->t != eDict)
     {
       return NULL;
@@ -444,11 +413,14 @@ pdf_stream_load(pdf_obj* o)
       fprintf(stderr, "%s\n", "Invalid stream.");
       return NULL;
     }
-  ss->len = x->value.i;
+  pdf_obj_resolve(x);
   s = pdf_malloc(sizeof(pdf_stream));
   if (!s)
     return NULL;
   memset(s, 0, sizeof(pdf_stream));
+  s->length = x->value.i;
+  ss->len = s->length;
+  //
   x = dict_get(y->value.d.dict, "Filter");
   if (!x)
     {
@@ -469,7 +441,6 @@ pdf_stream_load(pdf_obj* o)
 	}
     }
 
-  s->length = x->value.i;
   for (m = 0; m < mm; m++, xx++)
     {
       pdf_filterkind t = Raw;
@@ -566,11 +537,7 @@ pdf_extgstate_load(pdf_obj *o)
 
   if (!o || (o->t != eDict && o->t != eRef))
     return NULL;
-
-  if (o->t == eRef)
-    {
-      o = pdf_obj_find(o->value.r.num, o->value.r.gen);
-    }
+  pdf_obj_resolve(o);
   g = pdf_malloc(sizeof(pdf_extgstate));
   if (!g)
     return NULL;
@@ -621,16 +588,12 @@ pdf_annots_load(pdf_obj* o)
   if (!o || (o->t != eArray && o->t != eRef))
     return NULL;
 
-  if (o->t == eRef)
-    o = pdf_obj_find(o->value.r.num, o->value.r.gen);
+  pdf_obj_resolve(o);
 
   for (i = 0; i < o->value.a.len; i++)
     {
       pdf_obj *t = &o->value.a.items[i]; 
-      if (t->t == eRef)
-        {
-	  t = pdf_obj_find(t->value.r.num, t->value.r.gen);
-        }
+      pdf_obj_resolve(t);
       a = pdf_malloc(sizeof(pdf_annots));
       if (!a)
 	return NULL;
@@ -674,10 +637,7 @@ pdf_streams_load(pdf_obj* o)
     if (!o || (o->t != eDict && o->t != eRef && o->t != eArray))
         return NULL;
 
-    if (o->t == eRef)
-    {
-        o = pdf_obj_find(o->value.r.num, o->value.r.gen);
-    }
+    pdf_obj_resolve(o);
     if (o->t == eArray)
     {
         n = o->value.a.len;
