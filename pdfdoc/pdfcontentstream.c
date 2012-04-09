@@ -191,23 +191,43 @@ static pdf_err
 pdf_lex_number(buffer_stream *s, int *last, int c, float *out)
 {
   int frac = 0;
-  float a;
+  float a = 1;
   float b = 0;
+  float man = 0.1;
   int i = 0;
 
-  if (c != '.')
-    a = c - '0';
+  if (c == '.')
+    {
+      frac = 1;
+      b += (c - '0') * man;
+      man *= 0.1;
+      a = 0;
+    }
+  else if (c == '+')
+    {
+      a = 1;
+    }
+  else if (c == '-')
+    {
+      a = -1;
+      man = -0.1;
+    }
   else
-    a = 1;
+    {
+      a = (c - '0');
+    }
 
   while ((c = mGETCHAR(s)) != EOF)
     {
       if (isdigit(c))
 	{
 	  if (!frac)
-	    a *= (c - '0');
+	    a = a * 10 + (c - '0');
 	  else
-	    b += (c - '0') * log10(i) ;
+	    {
+	      b += (c - '0') * man;
+	      man *= 0.1;
+	    }
 	}
       else if (c == '.')
 	{
@@ -226,6 +246,7 @@ pdf_lex_number(buffer_stream *s, int *last, int c, float *out)
 	}
     }
   *last = c;
+  *out = a+b;
   return pdf_ok;
 }
 
@@ -256,11 +277,45 @@ pdf_lex_cmd(buffer_stream *s, int *last, int c, unsigned char *out, int max, int
       *out++ = c;
       *cnt += 1;
       if (++i >= max)
-	break;
+	return pdf_syntax_err;
     }
-  return pdf_syntax_err;
+  *last = c;
+  return pdf_ok;
 }
 
+///////////////////////////////////////////////////
+// ONLY for direct dictionary parsing in a content stream
+static
+pdf_err
+pdf_parse_dict(buffer_stream *s, int *last)
+{
+  int c;
+  while ((c = mGETCHAR(s)) != EOF)
+    {
+    weird:
+      if (c == '>')
+	{
+	  if (((c = mGETCHAR(s)) != EOF) && (c == '>'))
+	    {
+	      *last = mGETCHAR(s);
+	      break;
+	    }
+	}
+      else if (c == '<')
+	{
+	  if (((c = mGETCHAR(s)) != EOF) && (c == '<'))
+	    {
+	      pdf_parse_dict(s, last);
+	      c = *last;
+	      goto weird;
+	    }
+	}
+    }
+  return pdf_ok;
+}
+//static float pop_n(float *base, float *p) {if (p <= base) np = base+1; np--; return *np;}
+#define PUSH_N(a) *np++ = (a); if (np>=nx) np--
+#define POP_N(n) np -= n; if (np <= num_stack) np = num_stack
 /////////////////////////////////////////////////////////////////////////////////
 // Content Stream Parser 
 /////////////////////////////////////////////////////////////////////////////////
@@ -272,7 +327,13 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
   buffer_stream *b;
   float n;
   int cmdlen;
-
+  int _2_hash;
+  /// lexical value storage
+  float num_stack[32], *np = num_stack, *nx = np+32;
+  //unsigned char **str_stk; // for string/hex-string
+  //unsigned char **name_stk; // for resources
+  //unsigned char **dict_stk; // for direct dictionary
+  ///
   if (!s)
     return pdf_ok;
   if (!s->ffilter)
@@ -294,6 +355,7 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
       if (isdigit(c))
 	{
 	  ON_ERROR(pdf_lex_number(b, &c, c, &n));
+	  PUSH_N(n);
 	}
 
       switch(c)
@@ -305,7 +367,17 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
 	  ON_ERROR(pdf_lex_string(b, &c, buf, LEX_BUF_LEN));
 	  break;
 	case '<':
-	  ON_ERROR(pdf_lex_hexstring(b, &c, buf, LEX_BUF_LEN));
+	  if ((c = mGETCHAR(b)) && c != EOF)
+	    {
+	      if (c == '<')
+		{
+		  ON_ERROR(pdf_parse_dict(b, &c));
+		}
+	      else
+		{
+		  ON_ERROR(pdf_lex_hexstring(b, &c, buf, LEX_BUF_LEN));
+		}
+	    }
 	  break;
 	case '/':
 	  ON_ERROR(pdf_lex_name(b, &c, buf, LEX_BUF_LEN));
@@ -314,6 +386,7 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
 	case '+':
 	case '-':
 	  ON_ERROR(pdf_lex_number(b, &c, c, &n));
+	  PUSH_N(n);
 	break;
 	default:
 	  if (isspace(c))
@@ -327,114 +400,241 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
 	    case 1:
 	      switch (buf[0])
 		{
-		case 'n':
-		  x_n(p);
-		  break;
-		case 'm':
-		  {
-		    float x, y;
-		    x_m(p, x, y);
-		  }
-		  break;
-		case 'l':
+		case '"':  break;
+		case '\'':  break;
+		case 'b':
 		  break;
 		case 'c':
+		  x_c(p, np[-1], np[-2], np[-3], np[-4], np[-5], np[-6]);
+		  POP_N(6);
+		  break;
+		case 'd':
 		  break;
 		case 'f':
 		  break;
-		case 'W':
+		case 'g':
+		  x_g(p, np[-1]);
+		  POP_N(1);
 		  break;
-		  // graphics state
+		case 'h':
+		  break;
+		case 'i':
+		  break;
+		case 'j':
+		  break;
+		case 'k':
+		  x_k(p, np[-1], np[-2], np[-3], np[-4]);
+		  POP_N(4);
+		  break;
+		case 'l':
+		  {
+		    x_m(p, np[-2], np[-1]);
+		    POP_N(2);
+		  }
+		  break;
+		case 'm':
+		  {
+		    x_m(p, np[-2], np[-1]);
+		    POP_N(2);
+		  }
+		  break;
+		case 'n':
+		  x_n(p);
+		  break;
 		case 'q':
+		  break;
+		case 's':
+		  break;
+		case 'v':
+		  x_v(p, np[-1], np[-2], np[-3], np[-4]);
+		  POP_N(4);
+		  break;
+		case 'w':
+		  break;
+		case 'y':
+		  x_y(p, np[-1], np[-2], np[-3], np[-4]);
+		  POP_N(4);
+		  break;
+		  ///
+		case 'B':
+		  break;
+		case 'F':
+		  break;
+		case 'G':
+		  x_G(p, np[-1]);
+		  POP_N(1);
+		  break;
+		case 'J':
+		  break;
+		case 'K':
+		  x_K(p, np[-1], np[-2], np[-3], np[-4]);
+		  POP_N(4);
+		  break;
+		case 'M':
 		  break;
 		case 'Q':
 		  break;
+		case 'S':
+		  break;
+		case 'W':
+		  break;
 		default:
+		  goto syntax_err;
 		  break;
 		}
 	      break;
 	      /////////////////////////////// two letter command
 	    case 2:
-	      if (buf[0] == 'c' && buf[1] == 'm')
+	      _2_hash = (buf[0]<<8)+buf[1];
+#define TWO_HASH(a, b) (((a)<<8)+(b))
+	      switch (_2_hash)
 		{
-		  x_cm(p);
-		}
-	      else if (buf[0] == 'g' && buf[1] == 's')
-		{
-		  x_gs(p);
-		}
-	      else if (buf[0] == 'r')
-		{
-		  if (buf[1] == 'e') // re
-		    {
-		      x_re(p);
-		    }
-		  else if (buf[1] == 'g')
-		    {
-		      x_rg(p);
-		    }
-		  else
-		    {
-		      goto syntax_err;
-		    }
-		}
-	      else if (buf[0] == 'T')
-		{
-		  switch (buf[1])
-		    {
-		    case 'f': // Tf
-		      x_Tf(p);
-		      break;
-		    case 'j': // Tj
-		      x_Tj(p);
-		      break;
-		    case 'J': // TJ
-		      x_TJ(p);
-		      break;
-		    case 'm': // Tm
-		      x_Tm(p);
-		      break;
-		    case 'd': // Td
-		      x_Td(p);
-		      break;
-		    case 'L': // TL
-		      x_TL(p);
-		      break;
-		    default:
-		      //goto syntax_err;
-		      break;
-		    }
-		}
-	      else if (buf[0] == 'B')
-		{
-		  switch (buf[1])
-		    {
-		    case '*': x_Bstar(p); break; // B*
-		    case 'I': x_BI(p); break;// BI
-		    case 'T': x_BT(p); break; // BT
-		    case 'X': x_BX(p); break; // BX
-		    default:
-		      goto syntax_err;
-		    }
-		}
-	      else if (buf[0] == 'E')
-		{
-		  if (buf[1] == 'T')
-		    {
-		      x_ET(p);
-		    }
-		  else if (buf[1] == 'X')
-		    {
-		      x_EX(p);
-		    }
-		  else
-		    {
-		      goto syntax_err;
-		    }
-		}
-	      else
-		{
-		  // will jump to error
+		case TWO_HASH('b','*'):
+		  //x_bstar(p);
+		  break;
+		case (TWO_HASH('c','m')):
+		  x_cm(p, np[-1], np[-2], np[-3], np[-4], np[-5], np[-6]);
+		  POP_N(6);
+		  break;
+		case (TWO_HASH('c','s')):
+		  {
+		    //x_cs(p);
+		  }
+		  break;
+		case (TWO_HASH('d','0')):
+		  {
+		    //x_d0(p);
+		  }
+		  break;
+		case (TWO_HASH('d','1')):
+		  {
+		    //x_d1(p);
+		  }
+		  break;
+		case (TWO_HASH('f','*')):
+		  {
+		    //x_fstar(p);
+		  }
+		  break;
+		case (TWO_HASH('g','s')):
+		  {
+		    x_gs(p);
+		  }
+		  break;
+		case TWO_HASH('r','e'):
+		  {
+		    x_re(p, np[-4], np[-3], np[-2], np[-1]);
+		    POP_N(4);
+		  }
+		  break;
+		case TWO_HASH('r','g'):
+		  {
+		    x_rg(p, np[-3], np[-2], np[-1]);
+		    POP_N(3);
+		  }
+		  break;
+		case TWO_HASH('r','i'):
+		  {
+		    //x_ri(p);
+		  }
+		  break;
+		case TWO_HASH('s','c'):
+		  {
+		    //x_sc(p);
+		  }
+		  break;
+		case TWO_HASH('s','h'):
+		  {
+		    //x_sh(p);
+		  }
+		  break;
+		case TWO_HASH('B', '*'): x_Bstar(p); break; // B*
+		case TWO_HASH('B', 'I'): x_BI(p); break;// BI
+		case TWO_HASH('B', 'T'): x_BT(p); break; // BT
+		case TWO_HASH('B', 'X'): x_BX(p); break; // BX
+		case TWO_HASH('C','S'):
+		  {
+		    //x_CS(p);
+		  }
+		  break;
+		case (TWO_HASH('D','o')):
+		  {
+		    x_Do(p);
+		  }
+		break;
+		case (TWO_HASH('D','P')):
+		  {
+		    //x_DP(p);
+		  }
+		  break;
+		case TWO_HASH('E','T'):
+		  {
+		    x_ET(p);
+		  }
+		break;
+		case TWO_HASH('E', 'X'):
+		  {
+		    x_EX(p);
+		  }
+		break;
+		case TWO_HASH('T', '*'): // T*
+		  x_Tstar(p);
+		  break;
+		case TWO_HASH('T', 'c'): // Tc
+		  x_Tc(p);
+		  break;
+		case TWO_HASH('T', 'd'): // Td
+		  x_Td(p);
+		  break;
+		case TWO_HASH('T', 'f'): // Tf
+		  x_Tf(p, NULL,  np[-1]);
+		  POP_N(1);
+		  break;
+		case TWO_HASH('T', 'j'): // Tj
+		  x_Tj(p);
+		  break;
+		case TWO_HASH('T', 'J'): // TJ
+		  x_TJ(p);
+		  break;
+		case TWO_HASH('T', 'L'): // TL
+		  x_TL(p);
+		  break;
+		case TWO_HASH('T', 'm'): // Tm
+		  x_Tm(p, np[-1], np[-2], np[-3], np[-4], np[-5], np[-6]);
+		  POP_N(6);
+		  break;
+		case TWO_HASH('T', 'r'): // Tr
+		  x_Tr(p);
+		  break;
+		case TWO_HASH('T', 's'): // Ts
+		  x_Ts(p);
+		  break;
+		case TWO_HASH('T', 'w'): // Tw
+		  x_Tw(p);
+		  break;
+		case TWO_HASH('T', 'z'): // Tz
+		  x_Tz(p);
+		  break;
+		case TWO_HASH('R', 'G'):
+		  {
+		    x_RG(p, np[-3], np[-2], np[-1]);
+		    POP_N(3);
+		  }
+		  break;
+		case TWO_HASH('S', 'C'):
+		  {
+		    // x_SC();
+		  }
+		  break;
+		case TWO_HASH('W', '*'):
+		  {
+		    // x_Wstar();
+		  }
+		  break;
+		  ///
+		default:
+		  goto syntax_err;
+		  break;
 		}
 	      break;
 	      //////////////////////////////////////////// 3 letter command
@@ -451,6 +651,18 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
 		{
 		  x_EMC(p);
 		}
+	      else if (buf[0] == 'S' && buf[1] == 'C' && buf[2] == 'N')
+		{
+		  //x_EMC(p);
+		}
+	      else if (buf[0] == 's' && buf[1] == 'c' && buf[2] == 'n')
+		{
+		  //x_EMC(p);
+		}
+	      else
+		{
+		  goto syntax_err;
+		}
 	      break;
 	    default:
 	      goto syntax_err;
@@ -465,7 +677,9 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
     {
       s_buffer_stream_close(b);
     }
-  printf("syntax error!\n");
+#ifdef DEBUG
+  printf("content stream syntax error!\n");
+#endif
   return pdf_syntax_err;
  done:
   return pdf_ok;

@@ -3,6 +3,28 @@
 #include "pdfcmds.h"
 
 pdf_err
+x_g(pdf_page *p, float g)
+{
+  return pdf_ok;
+}
+pdf_err
+x_k(pdf_page *p, float a, float b, float c, float d)
+{
+  return pdf_ok;
+}
+
+pdf_err
+x_G(pdf_page *p, float g)
+{
+  return pdf_ok;
+}
+pdf_err
+x_K(pdf_page *p, float a, float b, float c, float d)
+{
+  return pdf_ok;
+}
+
+pdf_err
 x_n(pdf_page *p)
 {
   return pdf_ok;
@@ -18,7 +40,17 @@ x_l(pdf_page *p, float x, float y)
   return pdf_ok;
 }
 pdf_err
-x_c(pdf_page *p, float a, float b, float c, float d)
+x_c(pdf_page *p, float a, float b, float c, float d, float e, float f)
+{
+  return pdf_ok;
+}
+pdf_err
+x_v(pdf_page *p, float a, float b, float c, float d)
+{
+  return pdf_ok;
+}
+pdf_err
+x_y(pdf_page *p, float a, float b, float c, float d)
 {
   return pdf_ok;
 }
@@ -57,7 +89,11 @@ pdf_err x_BMC(pdf_page *p)
   return pdf_ok;
 }
 /// T group
-pdf_err x_Tf(pdf_page *p)
+pdf_err x_Tstar(pdf_page *p)
+{
+  return pdf_ok;
+}
+pdf_err x_Tf(pdf_page *p, void *res, float scale)
 {
 #ifdef DEBUG
   printf("%s ", "Tf");
@@ -92,6 +128,31 @@ pdf_err x_TL(pdf_page *p)
 #endif
   return pdf_ok;
 }
+pdf_err x_Tm(pdf_page *p, float a, float b, float c, float d, float e, float f)
+{
+  return pdf_ok;
+}
+pdf_err x_Tc(pdf_page *p)
+{
+  return pdf_ok;
+}
+pdf_err x_Tr(pdf_page *p)
+{
+  return pdf_ok;
+}
+pdf_err x_Ts(pdf_page *p)
+{
+  return pdf_ok;
+}
+pdf_err x_Tw(pdf_page *p)
+{
+  return pdf_ok;
+}
+pdf_err x_Tz(pdf_page *p)
+{
+  return pdf_ok;
+}
+
 /// E group
 pdf_err x_ET(pdf_page *p)
 {
@@ -108,15 +169,19 @@ pdf_err x_EMC(pdf_page *p)
 {
   return pdf_ok;
 }
-pdf_err x_re(pdf_page *p)
+pdf_err x_re(pdf_page *p, float a, float b, float c, float d)
 {
   return pdf_ok;
 }
-pdf_err x_rg(pdf_page *p)
+pdf_err x_rg(pdf_page *p, float a, float b, float c)
 {
   return pdf_ok;
 }
-pdf_err x_cm(pdf_page *p)
+pdf_err x_RG(pdf_page *p, float a, float b, float c)
+{
+  return pdf_ok;
+}
+pdf_err x_cm(pdf_page *p, float a, float b, float c, float d, float e, float f)
 {
   return pdf_ok;
 }
@@ -124,7 +189,8 @@ pdf_err x_gs(pdf_page *p)
 {
   return pdf_ok;
 }
-pdf_err x_Tm(pdf_page *p)
+////////
+pdf_err x_Do(pdf_page *p)
 {
   return pdf_ok;
 }
