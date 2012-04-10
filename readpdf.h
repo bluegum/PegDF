@@ -24,6 +24,7 @@ THE SOFTWARE.
 #include <stdio.h> // due to FILE, should be factored out ASAP
 typedef struct pdf_parser_s pdf_parser;
 typedef struct sub_stream_s sub_stream;
+typedef struct xreftab_s xreftab;
 
 typedef struct xrefentry_s
 {
@@ -37,7 +38,13 @@ typedef struct xreftab_s
   int idx;
   int count;
   xrefentry_t *obj;
+  //
+  xreftab *next;
 } xreftab_t;
+
+typedef struct trailer_s trailer;
+struct trailer_s
+{pdf_obj root; trailer *next;};
 
 struct pdf_parser_s
 {
@@ -50,6 +57,9 @@ struct pdf_parser_s
   unsigned char* (*cache)(int len);
   sub_stream* (*create_stream)(int, int);
   int lock;
+  //
+  xreftab *xref;
+  trailer *trailer;
 };
 
 struct sub_stream_s
@@ -78,7 +88,7 @@ extern int read_trailer(void);
 
 extern void print_stack();
 extern int xref_new(int off, int n);
-extern int xref_append(pdf_obj x, int gen, int off);
+extern int xref_append(int off, int gen, pdf_obj x);
 extern void pop_comment(char *s, int len);
 extern void pop_stream(int pos);
 extern void xref_start();

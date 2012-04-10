@@ -35,11 +35,8 @@ extern int yyparse();
 extern char *yytext;
 
 // large stack size for large array, ouch!
-pdf_obj stack[65536], root_obj;
+pdf_obj stack[65536];
 int stackp= -1;
-xreftab_t g_xreftab;
-int g_xref_off;
-int g_xref_gen;
 
 int push(e_pdf_kind t, int n) { stack[++stackp].t =t; stack[stackp].value.i = n; return 0;}
 int push_marker(e_pdf_kind t)
@@ -205,8 +202,22 @@ int pop_obj(void)
 
 int read_trailer(void)
 {
-  root_obj = pop();
-  dict_dump(root_obj.value.d.dict);
+  trailer *t;
+  t = pdf_malloc(sizeof(trailer));
+  if (!t)
+    return -1;
+  memset(t, 0, sizeof(trailer));
+  if (pdf_parser_inst.trailer)
+    {
+      t->next = pdf_parser_inst.trailer;
+      pdf_parser_inst.trailer = t;
+    }
+  else
+    {
+      pdf_parser_inst.trailer = t;
+    }
+  t->root = pop();
+  dict_dump(t->root.value.d.dict);
   return 0;
 }
 
@@ -220,41 +231,64 @@ void print_stack()
 }
 int xref_new(int off, int n)
 {
+  xreftab *x;
    if (n < 1)
    {
       return 1;
    }
-   g_xreftab.idx = off;
-   g_xreftab.count = n;
-   g_xreftab.obj = pdf_malloc(n*sizeof(xrefentry_t));
+   x = pdf_malloc(sizeof(xreftab));
+   if (!x)
+     return -1;
+   memset(x, 0, sizeof(xreftab));
+   if (!pdf_parser_inst.xref)
+     {
+       pdf_parser_inst.xref = x;
+     }
+   else
+     {
+       // insert to head
+       x->next = pdf_parser_inst.xref;
+       pdf_parser_inst.xref = x;
+     }
+   x->idx = off;
+   x->count = n;
+   x->obj = pdf_malloc(n*sizeof(xrefentry_t));
 #ifdef DEBUG
    printf("Created xref table of %d entries\n", n);
 #endif
    return 0;
 }
 
-int xref_append(pdf_obj x, int gen, int off)
+int xref_append(int off, int gen, pdf_obj o)
 {
+  xreftab *x = pdf_parser_inst.xref;
 #ifdef DEBUG
   //printf("xref_entry:%d,%d,%c\n", off, gen, x.value.i);
 #endif
-   if (g_xreftab.idx >= g_xreftab.count)
+   if (x->idx >= x->count)
      return 0;
-   g_xreftab.obj[g_xreftab.idx].off = off;
-   g_xreftab.obj[g_xreftab.idx].gen = gen;
-   g_xreftab.obj[g_xreftab.idx].x = x.value.i;
-   g_xreftab.idx += 1;
-   if (g_xreftab.idx >= g_xreftab.count)
+   x->obj[x->idx].off = off;
+   x->obj[x->idx].gen = gen;
+   x->obj[x->idx].x = o.value.i;
+   x->idx += 1;
+   if (x->idx >= x->count)
    {
-      g_xreftab.idx = g_xreftab.count - 1;
+      x->idx = x->count - 1;
    }
    return 0;
 }
 
 int xref_delete()
 {
+  xreftab *x = pdf_parser_inst.xref;
    //printf("xref=%d\n", g_xreftab.idx);
-   pdf_free(g_xreftab.obj);
+  while (x)
+    {
+      xreftab *t = x->next;
+      pdf_free(x->obj);
+      pdf_free(x);
+      x = t;
+    }
    return 0;
 }
 
@@ -352,8 +386,11 @@ int main(int argc, char **argv)
       }
    }
    pdf_parser_inst.file_position = 0;
-   root_obj.t = eLimit;
-   root_obj.value.marker = 0;
+   pdf_parser_inst.xref = 0;
+   pdf_parser_inst.trailer = 0;
+   
+   //root_obj.t = eLimit;
+   //root_obj.value.marker = 0;
    // parse magic
    yyparse();
    if (*comment_string == '%')
@@ -377,7 +414,16 @@ int main(int argc, char **argv)
    print_mem_tracking();
    //pdf_obj_walk();
 #endif
-   pdf_trailer_open(&root_obj);
+   pdf_trailer_open(pdf_parser_inst.trailer);
+   {
+     trailer *t = pdf_parser_inst.trailer;
+     while (t)
+       {
+	 trailer *tt = t->next;
+	 pdf_free(t);
+	 t = tt;
+       }
+   }
    xref_delete();
    pdf_obj_free();
 #ifdef DEBUG

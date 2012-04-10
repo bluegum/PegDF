@@ -123,7 +123,7 @@ pdf_lex_string(buffer_stream *s, int *last, unsigned char* buf, int max)
       if (c == ')')
 	{
 	  *buf = 0;
-	  *last = c;
+	  *last = mGETCHAR(s);
 	  return pdf_ok;
 	}
       else

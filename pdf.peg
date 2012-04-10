@@ -27,7 +27,7 @@
 ####################################
 start	<- COMMENT EOL* SPACE* 
 	   / OBJ
-	   / DELIM (XREF TRAILER)* STARTXREF GOBBLE {print_stack();}
+	   / DELIM (XREF TRAILER)* STARTXREF {print_stack();}
 	   / DELIM GARBAGE DELIM
 DICT	<- DB 
 	( KEY COMMENT* (VALUE / KWORD / ID)
@@ -84,7 +84,7 @@ OBJ	<- NUM  NUM  'obj' DELIM   { push_marker(eObjMarker); }
 	STREAM*
 	'endobj'  {pop_obj();}  DELIM 
 
-STREAM   <- 'stream' '\n' {pop_stream( pdf_parser_inst.file_position + yyoff - yypos);}
+STREAM   <- 'stream' (LF / CR) {pop_stream( pdf_parser_inst.file_position + yyoff - yypos);}
 	 (!'endstream' .)* 'endstream' DELIM 
 
 REF	 <- NUM NUM 'R' DELIM { push_ref(eRef, pop().value.i, pop().value.i);}
@@ -100,7 +100,7 @@ XREFTAB	 <- < [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9] > {push(eInt,at
 	    < [0-9][0-9][0-9][0-9][0-9] > {push(eInt,atoi(yytext));}
 	    ' '
 	    XREF_ENTRY_FLAG 
-	    (SP CR/SP LF/CR LF) {xref_append(pop(), pop().value.i, pop().value.i);}
+	    (SP CR/SP LF/CR LF) {xref_append(pop().value.i, pop().value.i, pop());}
 	 
 TRAILER	        <- 'trailer' DELIM DICT DELIM {printf(" trailer...\n"); read_trailer();}
 STARTXREF      	<- DELIM 'startxref' DELIM NUM DELIM {xref_start();}
@@ -111,7 +111,6 @@ GARBAGE		<- . !('startxref' / 'xref'/
 #####################################
 # Terminals
 #####################################
-GOBBLE	       	<- .*
 POSITIVE       	<- < [0-9]+ > SPACE*
 NUM	       	<- < [-+]?[0-9]+ !['.'] > DELIM {push(eInt,atoi(yytext));}
 REAL	       	<- < [-+]?[0-9]* '.' [0-9]+ > DELIM {push(eReal,atof(yytext));}

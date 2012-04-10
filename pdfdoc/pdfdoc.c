@@ -307,43 +307,44 @@ pdf_err pdf_info_print(pdf_info *info)
   return pdf_ok;
 }
 
-pdf_err pdf_trailer_open(pdf_obj *trailer)
+pdf_err pdf_trailer_open(trailer *tr)
 {
-  pdf_obj *a, *root;
+  pdf_obj *a, *root, *o;
   pdf_trailer t;
   pdf_doc * d;
 
+  o = &tr->root;
   memset(&t, 0, sizeof(pdf_trailer));
-  if (!trailer)
+  if (!o)
     return pdf_ok;
-  if (trailer->t != eDict)
+  if (o->t != eDict)
     goto done;
 
-  root = dict_get(trailer->value.d.dict, "Root");
+  root = dict_get(o->value.d.dict, "Root");
   if (!root || root->t != eRef)
     goto done;
 
-  a = dict_get(trailer->value.d.dict, "Size");
+  a = dict_get(o->value.d.dict, "Size");
   if (a && a->t == eInt)
     {
       t.size = a->value.i;
     }
-  a = dict_get(trailer->value.d.dict, "Prev");
+  a = dict_get(o->value.d.dict, "Prev");
   if (a && a->t == eInt)
     {
       t.prev = a->value.i;
     }
-  a = dict_get(trailer->value.d.dict, "Encrypt");
+  a = dict_get(o->value.d.dict, "Encrypt");
   if (a)
     {
       t.encrypt = a;
     }
-  a = dict_get(trailer->value.d.dict, "Info");
+  a = dict_get(o->value.d.dict, "Info");
   if (a)
     {
       pdf_info_load(a, &t.info);
     }
-  a = dict_get(trailer->value.d.dict, "ID");
+  a = dict_get(o->value.d.dict, "ID");
   if (a && a->t == eArray)
     {
       t.id[0] = &a->value.a.items[0];
@@ -359,8 +360,12 @@ pdf_err pdf_trailer_open(pdf_obj *trailer)
  done:
   if (t.info)
     pdf_free(t.info);
-  if (trailer->t == eDict)
-    dict_free(trailer->value.d.dict);
+  while (tr)
+    {
+      if (tr->root.t == eDict)
+	dict_free(tr->root.value.d.dict);
+      tr = tr->next;
+    }
   return pdf_ok;
 }
 

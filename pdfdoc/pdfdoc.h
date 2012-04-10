@@ -263,6 +263,6 @@ extern pdf_err pdf_stream_free(pdf_stream *s);
 extern pdf_err pdf_annots_free(pdf_annots *a);
 extern pdf_err pdf_resources_free(pdf_resources*);
 extern pdf_err pdf_extgstate_free(pdf_extgstate*);
-extern pdf_err pdf_trailer_open(pdf_obj *trailer);
+extern pdf_err pdf_trailer_open(trailer *trailer);
 extern pdf_err pdf_cs_parse(pdf_page *, pdf_stream *s);
 #endif
