@@ -120,12 +120,20 @@ pdf_to_int(pdf_obj *o)
     return 0; // should be NAN
   return o->value.i;
 }
-static inline int*
-pdf_to_int_array(pdf_obj *o)
+// return number of array element
+static inline int
+pdf_to_int_array(pdf_obj *o, int *a)
 {
+  int i, n;
   if (!o || o->t != eArray)
-    return 0; // should be NAN
-  return NULL;
+    return 0;
+  n = o->value.a.len;
+  for (i = 0; i < n; i++, a++)
+    {
+      if (o->value.a.items[i].t == eInt)
+	*a = o->value.a.items[i].value.i;
+    }
+  return n;
 }
 
 static inline float

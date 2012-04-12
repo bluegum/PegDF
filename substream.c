@@ -29,6 +29,11 @@ file_read(unsigned char *buf, int len)
   return fread(buf, 1, len, pdf_parser_inst.infile);
 }
 static int
+file_unget(unsigned char c)
+{
+  return ungetc(c, pdf_parser_inst.infile);
+}
+static int
 file_close()
 {
   return 0;
@@ -42,6 +47,7 @@ file_cache(int len)
 static int
 fs_reset(sub_stream* s)
 {
+  int ret = 0;
   file_stream *fs = (file_stream*)s;
   if (!fs)
     return 0;
@@ -49,11 +55,26 @@ fs_reset(sub_stream* s)
     return 0;
   if (fs->r)
     {
+      unsigned char buf[6];
       fs->r = 0;
       fs->avail = fs->len; // through API is better
-      return (fs->p->seek)(fs->offset);
+      ret = (fs->p->seek)(fs->offset-1);
+      // escape "stream"
+      (fs->p->read)(buf, 6);
+      // escape line terminator
+      (fs->p->read)(buf, 1);
+      (fs->p->read)(buf, 1);
+      if (buf[0] == '\n' || buf[0] == '\r')
+	{
+	  // do nothing
+	}
+      else
+	{
+	  // unget c
+	  (fs->p->unget)(buf[0]);
+	}
     }
-  return 0;
+  return ret;
 }
 static int
 fs_read(sub_stream* s, unsigned char *buf, int len)
@@ -104,6 +125,7 @@ init_filestream_parser_instance(pdf_parser *p)
    p->outfile = stdout;
    p->seek = file_seek;
    p->read = file_read;
+   p->unget = file_unget;
    p->close = file_close;
    p->cache = file_cache;
    p->create_stream = file_stream_new;

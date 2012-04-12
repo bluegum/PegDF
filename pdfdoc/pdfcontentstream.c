@@ -586,6 +586,9 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
 		case TWO_HASH('T', 'd'): // Td
 		  x_Td(p);
 		  break;
+		case TWO_HASH('T', 'D'): // Td
+		  x_TD(p);
+		  break;
 		case TWO_HASH('T', 'f'): // Tf
 		  x_Tf(p, NULL,  np[-1]);
 		  POP_N(1);

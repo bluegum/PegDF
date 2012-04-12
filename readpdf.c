@@ -197,6 +197,8 @@ int pop_obj(void)
    while (stack[stackp--].t != eObjMarker);
    gen = pop().value.i; // gen num
    n = pop().value.i; // obj num
+   pdf_parser_inst.cur_obj = n;
+   pdf_parser_inst.cur_gen = gen;
    return pdf_obj_insert(n, gen, o);
 }
 
@@ -320,10 +322,65 @@ void pop_stream(int pos)
     // S_O stands for stream_object
     // insert stream object
     // +6 to offset "stream"
-    s = (pdf_parser_inst.create_stream)(pos+6, 0);
+    s = (pdf_parser_inst.create_stream)(pos, 0);
     dict_insert(d, "S_O", s);
 }
 
+// return 0: ok
+int read_linearized_dict(pdf_obj *o, linearized *l)
+{
+  dict *d;
+  pdf_obj *a;
+  if (!o || o->t != eDict)
+    {
+      return 1;
+    }
+  d = o->value.d.dict;
+  a = dict_get(d, "L");
+  if (a && a->t == eInt)
+    l->L = pdf_to_int(a);
+  else
+    return 1;
+  a = dict_get(d, "L");
+  if (a && a->t == eInt)
+    l->L = pdf_to_int(a);
+  else
+    return 1;
+  a = dict_get(d, "H");
+  if (a && a->t == eArray)
+    {
+      int n = pdf_to_int_array(a, &l->H);
+      if (!n)
+	return 1;
+    }
+  else
+    return 1;
+  a = dict_get(d, "O");
+  if (a && a->t == eInt)
+    l->O = pdf_to_int(a);
+  else
+    return 1;
+  a = dict_get(d, "E");
+  if (a && a->t == eInt)
+    l->E = pdf_to_int(a);
+  else
+    return 1;
+  a = dict_get(d, "N");
+  if (a && a->t == eInt)
+    l->N = pdf_to_int(a);
+  else
+    return 1;
+  a = dict_get(d, "T");
+  if (a && a->t == eInt)
+    l->T = pdf_to_int(a);
+  else
+    return 1;
+  a = dict_get(d, "P");
+  if (a && a->t == eInt)
+    l->P = pdf_to_int(a);
+
+  return 0;
+}
 ////////////////////////////////////////////////////
 // example application
 ////////////////////////////////////////////////////
@@ -334,6 +391,7 @@ int main(int argc, char **argv)
    int i = 1;
    char *in = NULL;
    char *out = NULL;
+   int linear = 0;
 
    if (argc > 1)
    {
@@ -395,20 +453,78 @@ int main(int argc, char **argv)
    yyparse();
    if (*comment_string == '%')
      {
-       fprintf(stdout, "%s\n", comment_string);
+       char *p = comment_string+1;
+       while(*p == '%') {p++;};
+       if ((p[0] == 'p' || p[0] == 'P') &&
+	   (p[1] == 'd' || p[1] == 'D') &&
+	   (p[2] == 'f' || p[2] == 'F'))
+	 {
+	   fprintf(stdout, "%s\n", comment_string);
+	   *comment_string = 0;
+	 }
+       else
+	 {
+	   fprintf(stderr, "%s\n", "Not a pdf file!");
+	   goto done;
+	 }
      }
    else
      {
        fprintf(stderr, "%s\n", "Not a pdf file!");
        goto done;
      }
+   // escape all leading comment lines
+   while (1)
+     {
+       if (yyparse() == 0)
+	 {
+	   printf("%s\n", "PDF file spec error");
+	   break;
+	 }
+       else
+	 {
+	   if (!(*comment_string))
+	     break;
+	   else
+	     *comment_string = 0;
+	 }
+     }
+   // Look for linearized dict
+   {
+     pdf_obj *first_obj;
+     first_obj = pdf_obj_find(pdf_parser_inst.cur_obj, pdf_parser_inst.cur_gen);
+     if (first_obj && first_obj->t == eDict)
+       {
+	 pdf_obj *l;
+	 l = dict_get(first_obj->value.d.dict, "Linearized");
+	 if (l && (l->t == eReal || l->t == eInt))
+	   {
+	     printf("%s\n", "processing linearized pdf file");
+	     if (read_linearized_dict(first_obj, &pdf_parser_inst.l) != 0)
+	       linear = 0;
+	     else
+	       linear = 1;
+	   }
+       }
+   }
    // parse the rest
    while (1)
    {
       if (yyparse() == 0)
       {
-	 break;
+	printf("%s\n", "PDF file spec error");
+	break;
       }
+      else
+	{
+	  if (linear)
+	    {
+	      if (pdf_parser_inst.cur_obj == pdf_parser_inst.l.O)
+		{
+		  printf("%s\n", "Just parsed the first page");
+		}
+	    }
+	}
    }
 #ifdef DEBUG
    print_mem_tracking();

@@ -42,6 +42,18 @@ typedef struct xreftab_s
   xreftab *next;
 } xreftab_t;
 
+typedef struct linearized_s linearized;
+struct linearized_s
+{
+  int L;
+  int H[4];
+  int O;
+  int E;
+  int N;
+  int T;
+  int P;
+};
+
 typedef struct trailer_s trailer;
 struct trailer_s
 {pdf_obj root; trailer *next;};
@@ -51,8 +63,10 @@ struct pdf_parser_s
   FILE* infile;
   FILE* outfile;
   int file_position;
+  int cur_obj, cur_gen;
   int (*seek)(int off);
   int (*read)(unsigned char *, int);
+  int (*unget)(unsigned char);
   int (*close)();
   unsigned char* (*cache)(int len);
   sub_stream* (*create_stream)(int, int);
@@ -60,6 +74,7 @@ struct pdf_parser_s
   //
   xreftab *xref;
   trailer *trailer;
+  linearized l;
 };
 
 struct sub_stream_s

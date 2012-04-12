@@ -121,6 +121,13 @@ pdf_err x_Td(pdf_page *p)
 #endif
   return pdf_ok;
 }
+pdf_err x_TD(pdf_page *p)
+{
+#ifdef DEBUG
+  printf("%s ", "TD");
+#endif
+  return pdf_ok;
+}
 pdf_err x_TL(pdf_page *p)
 {
 #ifdef DEBUG

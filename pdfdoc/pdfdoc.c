@@ -312,14 +312,17 @@ pdf_err pdf_trailer_open(trailer *tr)
   pdf_obj *a, *root, *o;
   pdf_trailer t;
   pdf_doc * d;
-
+  trailer *head = tr;
+ prev_trailer:
   o = &tr->root;
-  memset(&t, 0, sizeof(pdf_trailer));
   if (!o)
-    return pdf_ok;
+    {
+      return pdf_ok;
+    }
   if (o->t != eDict)
     goto done;
 
+  memset(&t, 0, sizeof(pdf_trailer));
   root = dict_get(o->value.d.dict, "Root");
   if (!root || root->t != eRef)
     goto done;
@@ -358,8 +361,15 @@ pdf_err pdf_trailer_open(trailer *tr)
   pdf_doc_print_info(d);
   pdf_doc_done(d);
  done:
+  if (tr->next)
+    {
+      tr = tr->next;
+      goto prev_trailer;
+    }
+  // really done
   if (t.info)
     pdf_free(t.info);
+  tr = head;
   while (tr)
     {
       if (tr->root.t == eDict)
@@ -553,7 +563,7 @@ pdf_extgstate_load(pdf_obj *o)
   g->LC = pdf_to_int(dict_get(d, "LC"));
   g->LJ = pdf_to_int(dict_get(d, "LJ"));
   g->ML = pdf_to_float(dict_get(d, "ML"));
-  g->D = pdf_to_int_array(dict_get(d, "D"));
+  pdf_to_int_array(dict_get(d, "D"), &g->D);
   g->RI = pdf_to_string(dict_get(d, "RI"));
   g->OP = pdf_to_int(dict_get(d, "OP"));
   g->OPM = pdf_to_int(dict_get(d, "OPM"));
