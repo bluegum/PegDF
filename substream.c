@@ -59,6 +59,7 @@ fs_reset(sub_stream* s)
       fs->r = 0;
       fs->avail = fs->len; // through API is better
       ret = (fs->p->seek)(fs->offset-1);
+#if 0
       // escape "stream"
       (fs->p->read)(buf, 6);
       // escape line terminator
@@ -73,6 +74,7 @@ fs_reset(sub_stream* s)
 	  // unget c
 	  (fs->p->unget)(buf[0]);
 	}
+#endif
     }
   return ret;
 }

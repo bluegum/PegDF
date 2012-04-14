@@ -7,6 +7,8 @@
 #include "pdfmem.h"
 #include "readpdf.h"
 
+static void pdf_info_free(pdf_info *info);
+
 static inline pdf_group*
 pdf_group_load(pdf_obj *o)
 {
@@ -231,6 +233,7 @@ void pdf_doc_done(pdf_doc *d)
     {
       pdf_page_free(d->pages[i]);
     }
+  pdf_info_free(d->info);
   pdf_free(d->pages);
   pdf_free(d);
 }
@@ -244,6 +247,9 @@ struct pdf_trailer_s
   void *encrypt;
   pdf_info *info;
   unsigned char *id[2];
+  // xrefstream entries
+  int index[2];
+  int w[3];
 };
 
 pdf_err pdf_info_load(pdf_obj *o, pdf_info **info)
@@ -266,21 +272,21 @@ pdf_err pdf_info_load(pdf_obj *o, pdf_info **info)
     }
   i = *info;
   a = dict_get(o->value.d.dict, "Title");
-  if (a) i->title = a->value.s.buf;
+  if (a) {i->title = pdf_malloc(a->value.s.len+1); memcpy(i->title, a->value.s.buf, a->value.s.len); i->title[a->value.s.len] = 0;}
   a = dict_get(o->value.d.dict, "Author");
-  if (a) i->author = a->value.s.buf;
+  if (a) {i->author = pdf_malloc(a->value.s.len+1); memcpy(i->author, a->value.s.buf, a->value.s.len); i->author[a->value.s.len] = 0;}
   a = dict_get(o->value.d.dict, "Subject");
-  if (a) i->subject = a->value.s.buf;
+  if (a) {i->subject = pdf_malloc(a->value.s.len+1); memcpy(i->subject, a->value.s.buf, a->value.s.len); i->subject[a->value.s.len] = 0;}
   a = dict_get(o->value.d.dict, "Keywords");
-  if (a) i->keywords = a->value.s.buf;
+  if (a) {i->keywords = pdf_malloc(a->value.s.len+1); memcpy(i->keywords, a->value.s.buf, a->value.s.len); i->keywords[a->value.s.len] = 0;}
   a = dict_get(o->value.d.dict, "Creator");
-  if (a) i->creator = a->value.s.buf;
+  if (a) {i->creator = pdf_malloc(a->value.s.len+1); memcpy(i->creator, a->value.s.buf, a->value.s.len); i->creator[a->value.s.len] = 0;}
   a = dict_get(o->value.d.dict, "Producer");
-  if (a) i->producer = a->value.s.buf;
+  if (a) {i->producer = pdf_malloc(a->value.s.len+1); memcpy(i->producer, a->value.s.buf, a->value.s.len); i->producer[a->value.s.len] = 0;}
   a = dict_get(o->value.d.dict, "CreationDate");
-  if (a) i->creationdate = a->value.s.buf;
+  if (a) {i->creationdate = pdf_malloc(a->value.s.len+1); memcpy(i->creationdate, a->value.s.buf, a->value.s.len); i->creationdate[a->value.s.len] = 0;}
   a = dict_get(o->value.d.dict, "ModDate");
-  if (a) i->moddate = a->value.s.buf;
+  if (a) {i->moddate = pdf_malloc(a->value.s.len+1); memcpy(i->moddate, a->value.s.buf, a->value.s.len); i->moddate[a->value.s.len] = 0;}
   a = dict_get(o->value.d.dict, "Trapped");
   i->trapped = UNknown;
   if (a)
@@ -295,16 +301,31 @@ pdf_err pdf_info_load(pdf_obj *o, pdf_info **info)
 
 pdf_err pdf_info_print(pdf_info *info)
 {
-  printf("Title:%s\n", info->title);
-  printf("Auther:%s\n", info->author);
-  printf("Subject:%s\n", info->subject);
-  printf("Keywords:%s\n", info->keywords);
-  printf("Creator:%s\n", info->creator);
-  printf("Producer:%s\n", info->producer);
-  printf("CreationDate:%s\n", info->creationdate);
-  printf("ModDate:%s\n", info->moddate);
+  if (info->title) printf("Title:%s\n", info->title);
+  if (info->author) printf("Auther:%s\n", info->author);
+  if (info->subject) printf("Subject:%s\n", info->subject);
+  if (info->keywords) printf("Keywords:%s\n", info->keywords);
+  if (info->creator) printf("Creator:%s\n", info->creator);
+  if (info->producer) printf("Producer:%s\n", info->producer);
+  if (info->creationdate) printf("CreationDate:%s\n", info->creationdate);
+  if (info->moddate) printf("ModDate:%s\n", info->moddate);
   printf("Trapped:%s\n", info->trapped==TRue?"Yes":(info->trapped==FAlse)?"No":"Unknown");
   return pdf_ok;
+}
+
+static void
+pdf_info_free(pdf_info *info)
+{
+  if (!info)
+    return;
+  if (info->title)  pdf_free(info->title);
+  if (info->author)  pdf_free(info->author);
+  if (info->subject)  pdf_free(info->subject);
+  if (info->keywords)  pdf_free(info->keywords);
+  if (info->creator)  pdf_free(info->creator);
+  if (info->producer)  pdf_free(info->producer);
+  if (info->creationdate) pdf_free(info->creationdate);
+  if (info->moddate)  pdf_free(info->moddate);
 }
 
 pdf_err pdf_trailer_open(trailer *tr)
@@ -315,12 +336,10 @@ pdf_err pdf_trailer_open(trailer *tr)
   trailer *head = tr;
  prev_trailer:
   o = &tr->root;
-  if (!o)
-    {
-      return pdf_ok;
-    }
-  if (o->t != eDict)
+  if (!o || (o->t != eDict && o->t != eRef))
     goto done;
+
+  pdf_obj_resolve(o);
 
   memset(&t, 0, sizeof(pdf_trailer));
   root = dict_get(o->value.d.dict, "Root");
@@ -353,6 +372,18 @@ pdf_err pdf_trailer_open(trailer *tr)
       t.id[0] = &a->value.a.items[0];
       t.id[1] = &a->value.a.items[1];
     }
+  /// xrefstream entries
+  a = dict_get(o->value.d.dict, "Index");
+  if (a)
+    {
+      pdf_to_int_array(a, t.index);
+    }
+  a = dict_get(o->value.d.dict, "W");
+  if (a)
+    {
+      pdf_to_int_array(a, t.w);
+    }
+  ///
   d = pdf_doc_load(root);
   if (!d)
     goto done;
@@ -372,7 +403,7 @@ pdf_err pdf_trailer_open(trailer *tr)
   tr = head;
   while (tr)
     {
-      if (tr->root.t == eDict)
+      if (tr->root.t == eDict && tr->is_xrefstm == 0)
 	dict_free(tr->root.value.d.dict);
       tr = tr->next;
     }
@@ -563,7 +594,7 @@ pdf_extgstate_load(pdf_obj *o)
   g->LC = pdf_to_int(dict_get(d, "LC"));
   g->LJ = pdf_to_int(dict_get(d, "LJ"));
   g->ML = pdf_to_float(dict_get(d, "ML"));
-  pdf_to_int_array(dict_get(d, "D"), &g->D);
+  pdf_to_int_array(dict_get(d, "D"), g->D);
   g->RI = pdf_to_string(dict_get(d, "RI"));
   g->OP = pdf_to_int(dict_get(d, "OP"));
   g->OPM = pdf_to_int(dict_get(d, "OPM"));

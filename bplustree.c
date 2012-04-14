@@ -96,7 +96,7 @@ bpt_insert_leaf(bpt_node *r, int i, void *d)
    {
       /* split leaf */
       n = bpt_new_node(1); /* new leaf */
-      if (r->low > i)
+      if (r->low < i)
       {
 	 r->next = n;
       }
@@ -107,9 +107,18 @@ bpt_insert_leaf(bpt_node *r, int i, void *d)
       }
       n->low = i / BPT_ORDER_LEAF * BPT_ORDER_LEAF;
       bpt_insert_leaf(n, i, d);
-      s.left = r;
-      s.right = n;
-      s.n = n->low;
+      if (r->low > n->low)
+	{
+	  s.left = n;
+	  s.right = r;
+	  s.n = r->low;
+	}
+      else
+	{
+	  s.left = r;
+	  s.right = n;
+	  s.n = n->low;
+	}
       s.split = 1;
    }
    else

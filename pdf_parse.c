@@ -28,6 +28,10 @@ THE SOFTWARE.
 
 extern pdf_parser pdf_parser_inst;
 
+#define malloc pdf_malloc
+#define free pdf_free
+#define realloc pdf_realloc
+
 static int my_getchar()
 {
   int c;
@@ -47,3 +51,14 @@ static int my_getchar()
 }
 
 #include "pdf.c"
+
+void parser_free()
+{
+  if (yybuf) free(yybuf);
+  if (yytext) free(yytext);
+  if (yythunks) free(yythunks);
+  if (yyvals) free(yyvals);
+}
+#undef malloc
+#undef free
+#undef realloc

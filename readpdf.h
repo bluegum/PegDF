@@ -56,7 +56,11 @@ struct linearized_s
 
 typedef struct trailer_s trailer;
 struct trailer_s
-{pdf_obj root; trailer *next;};
+{
+  pdf_obj root; 
+  int is_xrefstm;
+  trailer *next;
+};
 
 struct pdf_parser_s
 {
@@ -75,6 +79,7 @@ struct pdf_parser_s
   xreftab *xref;
   trailer *trailer;
   linearized l;
+  int startxref;
 };
 
 struct sub_stream_s
@@ -106,7 +111,7 @@ extern int xref_new(int off, int n);
 extern int xref_append(int off, int gen, pdf_obj x);
 extern void pop_comment(char *s, int len);
 extern void pop_stream(int pos);
-extern void xref_start();
+extern void xref_start(int);
 extern int stream_seek(int s);
 extern int stream_read(unsigned char*, int);
 extern void init_filestream_parser_instance(pdf_parser *p);

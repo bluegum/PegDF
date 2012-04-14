@@ -295,10 +295,13 @@ int xref_delete()
 }
 
 void
-xref_start()
+xref_start(int i)
 {
   pdf_obj o = pop();
+#ifdef DEBUG
   printf("startxref = %d\n", o.value.i);
+#endif
+  pdf_parser_inst.startxref = i;
   return;
 }
 
@@ -322,7 +325,7 @@ void pop_stream(int pos)
     // S_O stands for stream_object
     // insert stream object
     // +6 to offset "stream"
-    s = (pdf_parser_inst.create_stream)(pos, 0);
+    s = (pdf_parser_inst.create_stream)(pos+6, 0);
     dict_insert(d, "S_O", s);
 }
 
@@ -349,7 +352,7 @@ int read_linearized_dict(pdf_obj *o, linearized *l)
   a = dict_get(d, "H");
   if (a && a->t == eArray)
     {
-      int n = pdf_to_int_array(a, &l->H);
+      int n = pdf_to_int_array(a, l->H);
       if (!n)
 	return 1;
     }
@@ -381,10 +384,60 @@ int read_linearized_dict(pdf_obj *o, linearized *l)
 
   return 0;
 }
+// return 0: ok
+int read_xrefstm(pdf_obj *o, pdf_parser *p)
+{
+  dict *d;
+  pdf_obj *a = NULL;
+  trailer *t;
+
+  if (!o || o->t != eDict)
+    {
+      return 1;
+    }
+  d = o->value.d.dict;
+  a = dict_get(d, "Type");
+  if (a && a->t == eKey)
+    {
+      if (strcmp(a->value.k, "XRef") != 0)
+	{
+	  return -1;
+	}
+    }
+  else
+    {
+      return -1;
+    }
+  t = pdf_malloc(sizeof(trailer));
+  if (!t)
+    return -1;
+  memset(t, 0, sizeof(trailer));
+  if (p->trailer)
+    {
+      t->next = p->trailer;
+      p->trailer = t;
+    }
+  else
+    {
+      p->trailer = t;
+    }
+#if 0
+  a = dict_get(d, "Root");
+  if (a && (a->t == eDict || a->t == eRef))
+    {
+      t->root = *a;
+    }
+#else
+      t->root = *o;
+      t->is_xrefstm = 1;
+#endif
+  return 0;
+}
 ////////////////////////////////////////////////////
 // example application
 ////////////////////////////////////////////////////
 pdf_parser pdf_parser_inst;
+extern void parser_free();
 
 int main(int argc, char **argv)
 {
@@ -446,6 +499,7 @@ int main(int argc, char **argv)
    pdf_parser_inst.file_position = 0;
    pdf_parser_inst.xref = 0;
    pdf_parser_inst.trailer = 0;
+   pdf_parser_inst.startxref = -1;
    
    //root_obj.t = eLimit;
    //root_obj.value.marker = 0;
@@ -507,6 +561,24 @@ int main(int argc, char **argv)
 	   }
        }
    }
+   // process linearized headers
+   if (linear)
+     {
+       if (yyparse() == 0)
+	 {
+	   printf("%s\n", "PDF file spec error");
+	 }
+       else
+	 {
+	   printf("%s\n", "Processing first xref");
+	   if (pdf_parser_inst.xref == 0) // On the other hand, a legacy xref tab has been read
+	     {
+	       // xref must reside inside an XRefStm obj
+	       pdf_obj *o = pdf_obj_find(pdf_parser_inst.cur_obj, pdf_parser_inst.cur_gen);
+	       read_xrefstm(o, &pdf_parser_inst);
+	     }
+	 }
+     }
    // parse the rest
    while (1)
    {
@@ -526,6 +598,7 @@ int main(int argc, char **argv)
 	    }
 	}
    }
+   parser_free();
 #ifdef DEBUG
    print_mem_tracking();
    //pdf_obj_walk();
