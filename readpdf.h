@@ -27,6 +27,7 @@ THE SOFTWARE.
 typedef struct pdf_parser_s pdf_parser;
 typedef struct sub_stream_s sub_stream;
 typedef struct xreftab_s xreftab;
+typedef int (*parser_getchar)();
 
 typedef struct xrefentry_s
 {
@@ -70,15 +71,10 @@ struct pdf_parser_s
   FILE* outfile;
   int file_position;
   int cur_obj, cur_gen;
-  int (*seek)(int off);
-  int (*read)(unsigned char *, int);
-  int (*unget)(unsigned char);
-  int (*close)();
-  unsigned char* (*cache)(int len);
-  sub_stream* (*create_stream)(int, int);
   int lock;
+  int (*getchar)();
   /// parser tmporary storage
-  pdf_obj stack[65536];
+  pdf_obj stack[65536]; // large stack size for large array, ouch!
   int stackp;
   char* comment_string;
   //
@@ -86,6 +82,13 @@ struct pdf_parser_s
   trailer *trailer;
   linearized l;
   int startxref;
+  // non-parsing related, for pdf stream object
+  int (*seek)(int off);
+  int (*read)(unsigned char *, int);
+  int (*unget)(unsigned char);
+  int (*close)();
+  unsigned char* (*cache)(int len);
+  sub_stream* (*create_stream)(int, int);
 };
 
 struct sub_stream_s
@@ -95,29 +98,26 @@ struct sub_stream_s
   int len;
 };
 
-extern int g_xref_off;
-extern int g_xref_gen;
+/// The ONLY Global
 extern pdf_parser *parser_inst;
 
-extern int push_key(char *s);
-extern int push_marker(e_pdf_kind t);
-extern int push(e_pdf_kind t, int n);
+/// parser actions
+extern int push(e_pdf_kind t, double n, char *s);
 extern int push_ref(e_pdf_kind t, int gen, int r);
+extern pdf_obj push_array(void);
+extern pdf_obj push_literal(char *s);
 extern pdf_obj pop(void);
 extern pdf_obj pop_dict(void);
 extern int pop_obj(void);
-extern pdf_obj push_array(void);
-extern pdf_obj push_literal(char *s);
-extern void print_literal();
-extern pdf_obj push_hexliteral(char *s);
 extern int read_trailer(void);
-
 extern void print_stack();
 extern int xref_new(int off, int n);
 extern int xref_append(int off, int gen, pdf_obj x);
 extern void pop_comment(char *s, int len);
 extern void pop_stream(int pos);
 extern void xref_start(int);
+
+/// parser helpers
 extern int stream_seek(int s);
 extern int stream_read(unsigned char*, int);
 extern void init_filestream_parser_instance(pdf_parser *p);

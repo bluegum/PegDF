@@ -34,9 +34,9 @@ DICT	<- DB
 	( KEY COMMENT* (VALUE / KWORD / ID)
 	/ COMMENT  
 	)* DE 
-DB      <- '<<' DELIM {push_marker(eDictMarker);}
+DB      <- '<<' DELIM {push(eDictMarker, 0, NULL);}
 DE	<- '>>' DELIM {pop_dict();}
-KEY	<- DELIM '/' < ALPHANUM+ > DELIM  {push_key(yytext);} 
+KEY	<- DELIM '/' < ALPHANUM+ > DELIM  {push(eKey, 0, yytext);} 
 VALUE	<- (
 	   REF
 	   / NUM
@@ -48,12 +48,12 @@ VALUE	<- (
 	   / HEXSTR
 	   / KWORD
 	   ) DELIM 
-ARRAY	   <- '[' DELIM { push_marker(eArrayMarker); }
+ARRAY	   <- '[' DELIM { push(eArrayMarker, 0, NULL); }
 	      (VALUE)* 
 	      ']'  DELIM { push_array();  }
 	   
 STRING     <- STRBGN {push_literal(NULL);}
-	      STR* STREND  {print_literal();}
+	      STR* STREND
 #string temporary rule
 STR	   <- (
 	      STRE  STR 
@@ -69,9 +69,9 @@ STRE       <- (
 #string alphabet
 STRA       <- (ESCPAREN / (!STRBGN !STREND .))
 
-HEXSTR	   <- '<' < [0-9a-fA-F\n\r]* > '>' DELIM {push_hexliteral(yytext);}
+HEXSTR	   <- '<' < [0-9a-fA-F\n\r]* > '>' DELIM {push(eString, 0, yytext);}
 
-OBJ	<- NUM  NUM  'obj' DELIM   { push_marker(eObjMarker); }
+OBJ	<- NUM  NUM  'obj' DELIM   { push(eObjMarker, 0, NULL); }
 	COMMENT*
 	(REF 
 	/ DICT 
@@ -94,14 +94,14 @@ STREAM   <- (
 REF	 <- NUM NUM 'R' DELIM { push_ref(eRef, pop().value.i, pop().value.i);}
 XREF	 <- 'xref' DELIM {printf("xref...%s", yytext); }
 	 (
-	 POSITIVE {push(eInt,atoi(yytext));}
+	 POSITIVE {push(eInt,atoi(yytext), NULL);}
 	 POSITIVE {xref_new(pop().value.i, atoi(yytext));}
 	 DELIM
 	 XREFTAB*  DELIM
 	 )+
-XREFTAB	 <- < [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9] > {push(eInt,atoi(yytext));}
+XREFTAB	 <- < [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9] > {push(eInt,atoi(yytext), NULL);}
 	    ' ' 
-	    < [0-9][0-9][0-9][0-9][0-9] > {push(eInt,atoi(yytext));}
+	    < [0-9][0-9][0-9][0-9][0-9] > {push(eInt,atoi(yytext), NULL);}
 	    ' '
 	    XREF_ENTRY_FLAG 
 	    (SP CR/SP LF/CR LF) {xref_append(pop().value.i, pop().value.i, pop());}
@@ -116,8 +116,8 @@ GARBAGE		<- . !('startxref' / 'xref'/
 # Terminals
 #####################################
 POSITIVE       	<- < [0-9]+ > SPACE*
-NUM	       	<- < [-+]?[0-9]+ !['.'] > DELIM {push(eInt,atoi(yytext));}
-REAL	       	<- < [-+]?[0-9]* '.' [0-9]+ > DELIM {push(eReal,atof(yytext));}
+NUM	       	<- < [-+]?[0-9]+ !['.'] > DELIM {push(eInt,atoi(yytext), NULL);}
+REAL	       	<- < [-+]?[0-9]* '.' [0-9]+ > DELIM {push(eReal,atof(yytext), NULL);}
 ALPHANUM       	<- [a-zA-Z0-9#+_,.:~\-]
 COMMENT		<- < '%'+ (!EOL .)* EOL DELIM > {pop_comment(yytext, yytextlen);}
 SPACE		<- ' ' / '\t' / EOL
@@ -133,9 +133,9 @@ ESCPAREN	<- (
 XREF_ENTRY_FLAG <- (
 		   < 'n' >
 		   / < 'f' >
-		   ) {push(eInt, yytext[0]);}
-KWORD		<- ( 'false' {push(eBool, 0);}
-		/ 'true'  { push (eBool, 1); }
+		   ) {push(eInt, yytext[0], NULL);}
+KWORD		<- ( 'false' {push(eBool, 0, NULL);}
+		/ 'true'  { push (eBool, 1, NULL); }
 		/ 'null') DELIM
 ID		<- (!SPACE !EOL .)* DELIM
 

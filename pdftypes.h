@@ -68,7 +68,7 @@ struct pdf_obj_s
       int marker;
       int b;
       int i;
-      float f;
+      double f;
       struct {
 	 unsigned short len;
 	 char *buf;

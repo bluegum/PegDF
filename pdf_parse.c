@@ -32,21 +32,9 @@ extern pdf_parser *parser_inst;
 #define free pdf_free
 #define realloc pdf_realloc
 
-static int my_getchar()
-{
-  int c;
-  c = getc(parser_inst->infile);
-  parser_inst->file_position += 1;
-#ifdef YY_DEBUG
-   if (EOF != c) printf("<%c>\n", c); 
-#endif
-   return c;
-}
-
-
 #define YY_INPUT(buf, result, max)                      \
 {                                                       \
-  int c = my_getchar();             			\
+  int c = (parser_inst->getchar)();			\
   result= (EOF == c) ? 0 : (*(buf)= c, 1);              \
 }
 

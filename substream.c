@@ -125,8 +125,10 @@ init_filestream_parser_instance(pdf_parser *p)
 {
   if (!p)
     return;
+#if 0
    p->infile = stdin;
    p->outfile = stdout;
+#endif
    p->seek = file_seek;
    p->read = file_read;
    p->unget = file_unget;
