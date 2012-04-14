@@ -35,25 +35,23 @@ extern int yyparse();
 extern char *yytext;
 
 // large stack size for large array, ouch!
-pdf_obj stack[65536];
-int stackp= -1;
 
-int push(e_pdf_kind t, int n) { stack[++stackp].t =t; stack[stackp].value.i = n; return 0;}
+int push(e_pdf_kind t, int n) { parser_inst->stack[++parser_inst->stackp].t =t; parser_inst->stack[parser_inst->stackp].value.i = n; return 0;}
 int push_marker(e_pdf_kind t)
 {
-   stack[++stackp].t = t;
+   parser_inst->stack[++parser_inst->stackp].t = t;
    return 0;
 }
 
 int push_key(char *s)
 {
-   stack[++stackp].value.k = pdf_malloc(strlen(s)+1);
-   memcpy(stack[stackp].value.k, s, strlen(s)+1);
-   stack[stackp].t = eKey;
+   parser_inst->stack[++parser_inst->stackp].value.k = pdf_malloc(strlen(s)+1);
+   memcpy(parser_inst->stack[parser_inst->stackp].value.k, s, strlen(s)+1);
+   parser_inst->stack[parser_inst->stackp].t = eKey;
    return 0;
 }
 
-pdf_obj pop(void)   { return stack[stackp--]; }
+pdf_obj pop(void)   { return parser_inst->stack[parser_inst->stackp--]; }
 
 pdf_obj pop_dict(void)
 {
@@ -65,38 +63,38 @@ pdf_obj pop_dict(void)
 
    o.t = eDict;
    o.value.d.dict = d;
-   while (stack[stackp--].t != eDictMarker)
+   while (parser_inst->stack[parser_inst->stackp--].t != eDictMarker)
    {
       if (i%2)
       {
-	//printf("%s|", (char*)(stack[stackp+1].value.k));
-	 dict_insert(d, stack[stackp+1].value.k, a);
-	 pdf_free(stack[stackp+1].value.k);
+	//printf("%s|", (char*)(parser_inst->stack[parser_inst->stackp+1].value.k));
+	 dict_insert(d, parser_inst->stack[parser_inst->stackp+1].value.k, a);
+	 pdf_free(parser_inst->stack[parser_inst->stackp+1].value.k);
       }
       else
       {
 	 a = pdf_malloc(sizeof(pdf_obj));
-	 *a = stack[stackp+1];
+	 *a = parser_inst->stack[parser_inst->stackp+1];
       }
       i += 1;
    }
    //printf(">>\n");
-   stackp += 1;
-   stack[stackp] = o;
+   parser_inst->stackp += 1;
+   parser_inst->stack[parser_inst->stackp] = o;
    return o;
 }
 
 pdf_obj push_array(void)
 {
-   int i = stackp;
+   int i = parser_inst->stackp;
    pdf_obj o, p;
    int k = 0;
-#ifdef DEBUG
+#ifdef YY_DEBUG
    printf("push-array: [");
 #endif
-   while (stack[i--].t != eArrayMarker);
+   while (parser_inst->stack[i--].t != eArrayMarker);
    o.t = eArray;
-   o.value.a.len = stackp-i-1;
+   o.value.a.len = parser_inst->stackp-i-1;
    o.value.a.items = pdf_malloc(sizeof(pdf_obj)*(o.value.a.len));
    
    for (k = o.value.a.len - 1, p = pop(); p.t != eArrayMarker; k--)
@@ -104,8 +102,8 @@ pdf_obj push_array(void)
       o.value.a.items[k] = p;
       p = pop();
    } 
-   stack[++stackp] = o;
-#ifdef DEBUG
+   parser_inst->stack[++parser_inst->stackp] = o;
+#ifdef YY_DEBUG
    printf("]\n");
 #endif
    return o;
@@ -122,7 +120,7 @@ pdf_obj push_hexliteral(char *s)
       o.value.s.buf = pdf_malloc(strlen(s));
       memcpy(o.value.s.buf, s, strlen(s));
    }
-   stack[++stackp] = o;
+   parser_inst->stack[++parser_inst->stackp] = o;
    return o;
 }
 pdf_obj push_literal(char *s)
@@ -133,12 +131,12 @@ pdf_obj push_literal(char *s)
        o.t = eString;
        o.value.s.len = 0;
        o.value.s.buf = NULL;
-       stack[++stackp] = o;
+       parser_inst->stack[++parser_inst->stackp] = o;
    }
    else
    {
        pdf_obj *o;
-       o = &stack[stackp];
+       o = &parser_inst->stack[parser_inst->stackp];
        if (o->value.s.len)
        {
            char *p = pdf_malloc(o->value.s.len + strlen(s));
@@ -156,14 +154,14 @@ pdf_obj push_literal(char *s)
            memcpy(o->value.s.buf, s, o->value.s.len);
        }
    }
-   return stack[stackp];
+   return parser_inst->stack[parser_inst->stackp];
 }
 
 void print_literal()
 {
-#ifdef DEBUG
+#ifdef YY_DEBUG
     int i;
-    pdf_obj o = stack[stackp];
+    pdf_obj o = parser_inst->stack[parser_inst->stackp];
     for ( i = 0; i < o.value.s.len; i++) printf("%c", o.value.s.buf[i]);
     printf("\n");
 #endif
@@ -171,9 +169,9 @@ void print_literal()
 
 int push_ref(e_pdf_kind t, int r, int gen)
 {
-   stack[++stackp].t =t; 
-   stack[stackp].value.r.gen = gen;
-   stack[stackp].value.r.num = r;
+   parser_inst->stack[++parser_inst->stackp].t =t; 
+   parser_inst->stack[parser_inst->stackp].value.r.gen = gen;
+   parser_inst->stack[parser_inst->stackp].value.r.num = r;
    return 0;
 }
 
@@ -189,16 +187,16 @@ int pop_obj(void)
 {
   int n, gen;
   pdf_obj *o;
-#ifdef DEBUG
+#ifdef YY_DEBUG
    printf("%s", "pop-obj:\n");
    printf ("object..\n");
 #endif
-   o = dup_pdf_obj(&stack[stackp]);
-   while (stack[stackp--].t != eObjMarker);
+   o = dup_pdf_obj(&parser_inst->stack[parser_inst->stackp]);
+   while (parser_inst->stack[parser_inst->stackp--].t != eObjMarker);
    gen = pop().value.i; // gen num
    n = pop().value.i; // obj num
-   pdf_parser_inst.cur_obj = n;
-   pdf_parser_inst.cur_gen = gen;
+   parser_inst->cur_obj = n;
+   parser_inst->cur_gen = gen;
    return pdf_obj_insert(n, gen, o);
 }
 
@@ -209,14 +207,14 @@ int read_trailer(void)
   if (!t)
     return -1;
   memset(t, 0, sizeof(trailer));
-  if (pdf_parser_inst.trailer)
+  if (parser_inst->trailer)
     {
-      t->next = pdf_parser_inst.trailer;
-      pdf_parser_inst.trailer = t;
+      t->next = parser_inst->trailer;
+      parser_inst->trailer = t;
     }
   else
     {
-      pdf_parser_inst.trailer = t;
+      parser_inst->trailer = t;
     }
   t->root = pop();
   dict_dump(t->root.value.d.dict);
@@ -225,10 +223,10 @@ int read_trailer(void)
 
 void print_stack()
 {
-   printf("current stack: depth=%d\n", stackp);
-   while (stackp>=0)
+   printf("current stack: depth=%d\n", parser_inst->stackp);
+   while (parser_inst->stackp>=0)
    {
-      printf("%d\n", stack[stackp--].t);
+      printf("%d\n", parser_inst->stack[parser_inst->stackp--].t);
    }
 }
 int xref_new(int off, int n)
@@ -242,20 +240,20 @@ int xref_new(int off, int n)
    if (!x)
      return -1;
    memset(x, 0, sizeof(xreftab));
-   if (!pdf_parser_inst.xref)
+   if (!parser_inst->xref)
      {
-       pdf_parser_inst.xref = x;
+       parser_inst->xref = x;
      }
    else
      {
        // insert to head
-       x->next = pdf_parser_inst.xref;
-       pdf_parser_inst.xref = x;
+       x->next = parser_inst->xref;
+       parser_inst->xref = x;
      }
    x->idx = off;
    x->count = n;
    x->obj = pdf_malloc(n*sizeof(xrefentry_t));
-#ifdef DEBUG
+#ifdef YY_DEBUG
    printf("Created xref table of %d entries\n", n);
 #endif
    return 0;
@@ -263,9 +261,9 @@ int xref_new(int off, int n)
 
 int xref_append(int off, int gen, pdf_obj o)
 {
-  xreftab *x = pdf_parser_inst.xref;
-#ifdef DEBUG
-  //printf("xref_entry:%d,%d,%c\n", off, gen, x.value.i);
+  xreftab *x = parser_inst->xref;
+#ifdef YY_DEBUG
+  printf("xref_entry:%d,%d,%c\n", off, gen, x.value.i);
 #endif
    if (x->idx >= x->count)
      return 0;
@@ -282,7 +280,7 @@ int xref_append(int off, int gen, pdf_obj o)
 
 int xref_delete()
 {
-  xreftab *x = pdf_parser_inst.xref;
+  xreftab *x = parser_inst->xref;
    //printf("xref=%d\n", g_xreftab.idx);
   while (x)
     {
@@ -301,31 +299,29 @@ xref_start(int i)
 #ifdef DEBUG
   printf("startxref = %d\n", o.value.i);
 #endif
-  pdf_parser_inst.startxref = i;
+  parser_inst->startxref = i;
   return;
 }
 
-static char* comment_string;
-
 void pop_comment(char *s, int len)
 {
-  comment_string = s;
+  parser_inst->comment_string = s;
 }
 
 void pop_stream(int pos)
 {
     dict *d;
     sub_stream *s;
-#ifdef DEBUG
+#ifdef YY_DEBUG
   printf("stream starts at %d.\n", pos);
 #endif
-    if (stack[stackp].t != eDict)
+    if (parser_inst->stack[parser_inst->stackp].t != eDict)
         return;
-    d = stack[stackp].value.d.dict;
+    d = parser_inst->stack[parser_inst->stackp].value.d.dict;
     // S_O stands for stream_object
     // insert stream object
     // +6 to offset "stream"
-    s = (pdf_parser_inst.create_stream)(pos+6, 0);
+    s = (parser_inst->create_stream)(pos+6, 0);
     dict_insert(d, "S_O", s);
 }
 
@@ -436,7 +432,7 @@ int read_xrefstm(pdf_obj *o, pdf_parser *p)
 ////////////////////////////////////////////////////
 // example application
 ////////////////////////////////////////////////////
-pdf_parser pdf_parser_inst;
+pdf_parser *parser_inst;
 extern void parser_free();
 
 int main(int argc, char **argv)
@@ -475,12 +471,15 @@ int main(int argc, char **argv)
 	 i += 1;
       }
    }
-   init_filestream_parser_instance(&pdf_parser_inst);
+   parser_inst = (pdf_parser*)pdf_malloc(sizeof(pdf_parser));
+   if (!parser_inst)
+     return -1;
+   init_filestream_parser_instance(parser_inst);
    if (in)
    {
       printf("reading = %s\n", in);
-      pdf_parser_inst.infile = fopen(in, "rb");
-      if (!pdf_parser_inst.infile)
+      parser_inst->infile = fopen(in, "rb");
+      if (!parser_inst->infile)
       {
 	 printf("Can not open %s.\n", in);
 	 return 1;
@@ -489,32 +488,33 @@ int main(int argc, char **argv)
    if (out)
    {
       printf("writing = %s\n", out);
-      pdf_parser_inst.outfile = fopen(out, "wb");
-      if (!pdf_parser_inst.outfile)
+      parser_inst->outfile = fopen(out, "wb");
+      if (!parser_inst->outfile)
       {
 	 printf("Can not open %s.\n", out);
 	 return 1;
       }
    }
-   pdf_parser_inst.file_position = 0;
-   pdf_parser_inst.xref = 0;
-   pdf_parser_inst.trailer = 0;
-   pdf_parser_inst.startxref = -1;
-   
+   parser_inst->file_position = 0;
+   parser_inst->xref = 0;
+   parser_inst->trailer = 0;
+   parser_inst->startxref = -1;
+   parser_inst->stackp = -1;
+
    //root_obj.t = eLimit;
    //root_obj.value.marker = 0;
    // parse magic
    yyparse();
-   if (*comment_string == '%')
+   if (*parser_inst->comment_string == '%')
      {
-       char *p = comment_string+1;
+       char *p = parser_inst->comment_string+1;
        while(*p == '%') {p++;};
        if ((p[0] == 'p' || p[0] == 'P') &&
 	   (p[1] == 'd' || p[1] == 'D') &&
 	   (p[2] == 'f' || p[2] == 'F'))
 	 {
-	   fprintf(stdout, "%s\n", comment_string);
-	   *comment_string = 0;
+	   fprintf(stdout, "%s\n", parser_inst->comment_string);
+	   *parser_inst->comment_string = 0;
 	 }
        else
 	 {
@@ -537,16 +537,16 @@ int main(int argc, char **argv)
 	 }
        else
 	 {
-	   if (!(*comment_string))
+	   if (!(*parser_inst->comment_string))
 	     break;
 	   else
-	     *comment_string = 0;
+	     *parser_inst->comment_string = 0;
 	 }
      }
    // Look for linearized dict
    {
      pdf_obj *first_obj;
-     first_obj = pdf_obj_find(pdf_parser_inst.cur_obj, pdf_parser_inst.cur_gen);
+     first_obj = pdf_obj_find(parser_inst->cur_obj, parser_inst->cur_gen);
      if (first_obj && first_obj->t == eDict)
        {
 	 pdf_obj *l;
@@ -554,7 +554,7 @@ int main(int argc, char **argv)
 	 if (l && (l->t == eReal || l->t == eInt))
 	   {
 	     printf("%s\n", "processing linearized pdf file");
-	     if (read_linearized_dict(first_obj, &pdf_parser_inst.l) != 0)
+	     if (read_linearized_dict(first_obj, &parser_inst->l) != 0)
 	       linear = 0;
 	     else
 	       linear = 1;
@@ -571,11 +571,11 @@ int main(int argc, char **argv)
        else
 	 {
 	   printf("%s\n", "Processing first xref");
-	   if (pdf_parser_inst.xref == 0) // On the other hand, a legacy xref tab has been read
+	   if (parser_inst->xref == 0) // On the other hand, a legacy xref tab has been read
 	     {
 	       // xref must reside inside an XRefStm obj
-	       pdf_obj *o = pdf_obj_find(pdf_parser_inst.cur_obj, pdf_parser_inst.cur_gen);
-	       read_xrefstm(o, &pdf_parser_inst);
+	       pdf_obj *o = pdf_obj_find(parser_inst->cur_obj, parser_inst->cur_gen);
+	       read_xrefstm(o, parser_inst);
 	     }
 	 }
      }
@@ -591,7 +591,7 @@ int main(int argc, char **argv)
 	{
 	  if (linear)
 	    {
-	      if (pdf_parser_inst.cur_obj == pdf_parser_inst.l.O)
+	      if (parser_inst->cur_obj == parser_inst->l.O)
 		{
 		  printf("%s\n", "Just parsed the first page");
 		}
@@ -600,12 +600,11 @@ int main(int argc, char **argv)
    }
    parser_free();
 #ifdef DEBUG
-   print_mem_tracking();
-   //pdf_obj_walk();
+   pdf_obj_walk();
 #endif
-   pdf_trailer_open(pdf_parser_inst.trailer);
+   pdf_trailer_open(parser_inst->trailer);
    {
-     trailer *t = pdf_parser_inst.trailer;
+     trailer *t = parser_inst->trailer;
      while (t)
        {
 	 trailer *tt = t->next;
@@ -615,17 +614,19 @@ int main(int argc, char **argv)
    }
    xref_delete();
    pdf_obj_free();
+ done:
+   if (parser_inst->infile != stdin)
+   {
+      fclose(parser_inst->infile);
+   }
+   if (parser_inst->outfile != stdout)
+   {
+      fclose(parser_inst->outfile);
+   }
+   if (parser_inst)
+     pdf_free(parser_inst);
 #ifdef DEBUG
    print_mem_tracking();
 #endif
- done:
-   if (pdf_parser_inst.infile != stdin)
-   {
-      fclose(pdf_parser_inst.infile);
-   }
-   if (pdf_parser_inst.outfile != stdout)
-   {
-      fclose(pdf_parser_inst.outfile);
-   }
    return 0;
 }

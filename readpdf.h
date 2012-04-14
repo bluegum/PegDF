@@ -22,6 +22,8 @@ THE SOFTWARE.
 #ifndef READPDF_H
 #define READPDF_H
 #include <stdio.h> // due to FILE, should be factored out ASAP
+#include "pdftypes.h"
+
 typedef struct pdf_parser_s pdf_parser;
 typedef struct sub_stream_s sub_stream;
 typedef struct xreftab_s xreftab;
@@ -75,6 +77,10 @@ struct pdf_parser_s
   unsigned char* (*cache)(int len);
   sub_stream* (*create_stream)(int, int);
   int lock;
+  /// parser tmporary storage
+  pdf_obj stack[65536];
+  int stackp;
+  char* comment_string;
   //
   xreftab *xref;
   trailer *trailer;
@@ -91,7 +97,7 @@ struct sub_stream_s
 
 extern int g_xref_off;
 extern int g_xref_gen;
-extern pdf_parser pdf_parser_inst;
+extern pdf_parser *parser_inst;
 
 extern int push_key(char *s);
 extern int push_marker(e_pdf_kind t);

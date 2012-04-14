@@ -34,6 +34,7 @@ bpt_new_node(int leaf)
       node->k = NULL;
 #else
       node->k = pdf_malloc(sizeof(int)*BPT_ORDER_LEAF);
+      memset(node->k, 0, (sizeof(int)*BPT_ORDER_LEAF));
 #endif
       node->v = pdf_malloc(sizeof(void*)*BPT_ORDER_LEAF);
       memset(node->v, 0, (sizeof(void*)*BPT_ORDER_LEAF));
@@ -41,6 +42,7 @@ bpt_new_node(int leaf)
    else
    {
       node->k = pdf_malloc(sizeof(int)*BPT_ORDER_INNER);
+      memset(node->k, 0, (sizeof(int)*BPT_ORDER_INNER));
       node->v = pdf_malloc(sizeof(bpt_node*)*BPT_ORDER_INNER+1);
       memset(node->v, 0, (sizeof(void*)*BPT_ORDER_INNER+1));
    }
@@ -462,23 +464,23 @@ bpt_destroy(bpt_tree *t)
 }
 
 static void
-bpt_walk_node(bpt_node* n, bpt_callback c)
+bpt_walk_node(bpt_node* n, bpt_callback c, leaf_action a)
 {
    int i;
    if (!n)
       return;
-   c(n);
+   c(n, a);
    if (!n->leaf)
    {
       for (i = 0; i <= n->cnt; i++)
       {
-	 bpt_walk_node(n->v[i].n, c);
+	bpt_walk_node(n->v[i].n, c, a);
       }
    }
 }
 
 static void
-bpt_print_node(bpt_node *n)
+bpt_print_node(bpt_node *n, leaf_action a)
 {
   int i;
    if (n->leaf)
@@ -505,7 +507,7 @@ bpt_print_node(bpt_node *n)
 }
 
 static void
-bpt_delete_leaf(bpt_node *n)
+bpt_delete_leaf(bpt_node *n, leaf_action a)
 {
   int i;
    if (n->leaf)
@@ -514,7 +516,7 @@ bpt_delete_leaf(bpt_node *n)
       for (i = 0; i < BPT_ORDER_LEAF; i++)
       {
 	 if (n->v[i].n)
-	   pdf_obj_delete(n->v[i].d);
+	   (a)((void*)(n->v[i].d));
       }
 #else
       for (i = 0; i < n->cnt; i++)
@@ -526,18 +528,18 @@ bpt_delete_leaf(bpt_node *n)
 }
 
 void
-bpt_walk(bpt_tree* t)
+bpt_walk(bpt_tree* t, leaf_action a)
 {
    if (!t)
       return;
-   bpt_walk_node(t->root, bpt_print_node);
+   bpt_walk_node(t->root, bpt_print_node, a);
 }
 
 
 void
-bpt_delete_node(bpt_tree* t)
+bpt_delete_node(bpt_tree* t, leaf_action a)
 {
    if (!t)
       return;
-   bpt_walk_node(t->root, bpt_delete_leaf);
+   bpt_walk_node(t->root, bpt_delete_leaf, a);
 }

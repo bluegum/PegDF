@@ -21,17 +21,17 @@ struct file_stream_s
 static int
 file_seek(int off)
 {
-  return fseek(pdf_parser_inst.infile, off, SEEK_SET);
+  return fseek(parser_inst->infile, off, SEEK_SET);
 }
 static int
 file_read(unsigned char *buf, int len)
 {
-  return fread(buf, 1, len, pdf_parser_inst.infile);
+  return fread(buf, 1, len, parser_inst->infile);
 }
 static int
 file_unget(unsigned char c)
 {
-  return ungetc(c, pdf_parser_inst.infile);
+  return ungetc(c, parser_inst->infile);
 }
 static int
 file_close()
@@ -55,11 +55,12 @@ fs_reset(sub_stream* s)
     return 0;
   if (fs->r)
     {
-      unsigned char buf[6];
       fs->r = 0;
       fs->avail = fs->len; // through API is better
       ret = (fs->p->seek)(fs->offset-1);
 #if 0
+      {
+      unsigned char buf[6];
       // escape "stream"
       (fs->p->read)(buf, 6);
       // escape line terminator
@@ -74,6 +75,7 @@ fs_reset(sub_stream* s)
 	  // unget c
 	  (fs->p->unget)(buf[0]);
 	}
+      }
 #endif
     }
   return ret;
@@ -113,7 +115,7 @@ file_stream_new(int pos, int len)
   f->read = fs_read;
   f->offset = pos;
   f->len = len;
-  f->p = &pdf_parser_inst;
+  f->p = parser_inst;
   f->r = 1;
   return (sub_stream*)f;
 }

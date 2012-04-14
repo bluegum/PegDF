@@ -26,7 +26,7 @@ THE SOFTWARE.
 #include "pdfindex.h"
 #include "dict.h"
 
-extern pdf_parser pdf_parser_inst;
+extern pdf_parser *parser_inst;
 
 #define malloc pdf_malloc
 #define free pdf_free
@@ -35,8 +35,8 @@ extern pdf_parser pdf_parser_inst;
 static int my_getchar()
 {
   int c;
-  c = getc(pdf_parser_inst.infile);
-  pdf_parser_inst.file_position += 1;
+  c = getc(parser_inst->infile);
+  parser_inst->file_position += 1;
 #ifdef YY_DEBUG
    if (EOF != c) printf("<%c>\n", c); 
 #endif

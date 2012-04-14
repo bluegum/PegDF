@@ -11,6 +11,7 @@ extern int tst_rsearch(Tptr p, char *s);
 extern void * tst_delete(Tptr p, char *s);
 extern void tst_cleanup(Tptr p);
 extern void tst_traverse(Tptr p, tst_hook f);
+extern void tst_print_reset();
 
 /* user data */
 extern Tptr tst_init();

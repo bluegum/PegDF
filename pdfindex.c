@@ -69,7 +69,7 @@ pdf_obj_walk()
    for (;m; m = m->next)
    {
      //printf("walk generation %d...\n", m->generation);
-      bpt_walk(m->head);
+     bpt_walk(m->head, NULL);
    }
 }
 
@@ -121,7 +121,7 @@ pdf_obj_free()
    for (; i!=0; i=i->next)
    {
       /* delete obj tree nodes */
-      bpt_delete_node(i->head);
+     bpt_delete_node(i->head, (leaf_action)pdf_obj_delete);
    }
    i = m;
    for (; i!=0; i=i->next)

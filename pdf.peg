@@ -86,8 +86,8 @@ OBJ	<- NUM  NUM  'obj' DELIM   { push_marker(eObjMarker); }
 	'endobj'  {pop_obj();}  DELIM 
 
 STREAM   <- (
-	    'stream' (CR LF/LF CR) {pop_stream( pdf_parser_inst.file_position + yyoff - yypos+2);}
-	    / 'stream' (CR/LF) {pop_stream( pdf_parser_inst.file_position + yyoff - yypos+1);}
+	    'stream' (CR LF/LF CR) {pop_stream( parser_inst->file_position + yyoff - yypos+2);}
+	    / 'stream' (CR/LF) {pop_stream( parser_inst->file_position + yyoff - yypos+1);}
 	 )
 	 (!'endstream' .)* 'endstream' DELIM 
 
@@ -146,4 +146,3 @@ ID		<- (!SPACE !EOL .)* DELIM
 SP		<- ' '
 CR		<- '\r'
 LF		<- '\n'
-LT		<- CR/LF/CR LF/LF CR

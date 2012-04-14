@@ -164,6 +164,9 @@ pdf_err pdf_page_tree_walk(pdf_doc *d)
       printf("processing page#%d\n", i);
 #endif
       pdf_exec_page_content(d->pages[i]);
+#ifdef DEBUG
+      printf("%s", "\n");
+#endif
     }
   return pdf_ok;
 }

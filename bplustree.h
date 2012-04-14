@@ -5,6 +5,7 @@
 #define BPT_ORDER_INNER 16
 #define BPT_ORDER_LEAF 32
 
+typedef void(*leaf_action)(void *);
 typedef struct s_bpt_node bpt_node;
 struct s_bpt_node
 {
@@ -26,13 +27,13 @@ typedef struct
    bpt_node *root;
 } bpt_tree;
 
-typedef void (*bpt_callback)(bpt_node *n);
+typedef void (*bpt_callback)(bpt_node *n, leaf_action);
 
 extern void bpt_destroy(bpt_tree *t);
 extern int bpt_insert(bpt_tree *t, int i, void *d);
 extern bpt_node* bpt_search(bpt_tree *t, int i);
 extern bpt_tree* bpt_new_tree();
-extern void bpt_walk(bpt_tree* t);
-extern void bpt_delete_node(bpt_tree* t);
+extern void bpt_walk(bpt_tree* t, leaf_action a);
+extern void bpt_delete_node(bpt_tree* t, leaf_action a);
 
 #endif
