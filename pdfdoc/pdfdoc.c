@@ -567,6 +567,16 @@ pdf_stream_load(pdf_obj* o)
     s->ffilter = raw;
   return s;
 }
+// public api
+int
+pdf_stream_getchar(pdf_stream *s)
+{
+  unsigned char c;
+  if ((s->ffilter->read)(s->ffilter, &c, 1) == 0)
+    return EOF;
+  else
+    return c;
+}
 
 pdf_err
 pdf_resources_free(pdf_resources *r)

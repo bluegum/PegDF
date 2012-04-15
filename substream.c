@@ -175,7 +175,20 @@ im_read(sub_stream* s, unsigned char *buf, int len)
   in_mem_stream *ms = (in_mem_stream*)s;
   if (!ms)
     return 0;
-  return 0;
+  if (ms->e == ms->p)
+    return 0;
+  if (ms->e - ms->p >= len)
+    {
+      memcpy(buf, ms->p, len);
+      ms->p += len;
+      return len;
+    }
+  else
+    {
+      len = ms->e - ms->p;
+      memcpy(buf, ms->p, len);
+      return len;
+    }
 }
 
 static int
@@ -195,7 +208,10 @@ in_mem_stream_new(int pos, int len)
   s = pdf_malloc(sizeof(in_mem_stream));
   if (!s)
     return NULL;
+  s->len = len;
   s->s = (unsigned char*)pos;
+  s->p = s->s;
+  s->e = s->s + s->len;
   s->reset = im_reset;
   s->read = im_read;
   s->close = im_close;

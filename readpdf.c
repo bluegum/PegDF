@@ -446,6 +446,13 @@ void pop_stream(int pos)
   dict_insert(d, "S_O", s);
   pop_obj();
 }
+///////////////////////////////////////////////////////////////////////////////
+//
+// raw object readers
+//
+///////////////////////////////////////////////////////////////////////////////
+
+extern pdf_parser* parser_new(FILE *in, FILE *out, parser_getchar getchar);
 
 // return 0: ok
 int read_linearized_dict(pdf_obj *o, linearized *l)
@@ -608,8 +615,8 @@ int read_hint(pdf_obj *o, hint *h)
   return 0;
 }
 ///////////////////////////////////////////////////
-/// parser getchar
-static int my_getchar()
+/// parser getchar, from file
+static int f_getchar()
 {
   int c;
   c = getc(parser_inst->infile);
@@ -619,16 +626,60 @@ static int my_getchar()
 #endif
    return c;
 }
+///////////////////////////////////////////////////
+/// parser getchar, from stream
+extern int pdf_stream_getchar(pdf_stream *s);
+static int s_getchar()
+{
+  if (parser_inst->cnt_oneobj) {
+    parser_inst->cnt_oneobj--;
+    return *parser_inst->p_oneobj++;
+  }
+  else
+   return EOF;
+}
+
+int  lex_positive_int(pdf_stream *s)
+{
+  int c;
+  int i=0;
+  while (1)
+    {
+      c = pdf_stream_getchar(s);
+      if (c == EOF)
+	break;
+      if (c == ' ')
+	continue;
+      else
+	break;
+    }
+  i = c - '0';
+  while (1)
+    {
+      c = pdf_stream_getchar(s);
+      if (c == EOF)
+	break;
+      if (c >= '0' && c <= '9')
+	{
+	  i *= 10;
+	  i += c - '0';
+	}
+      else
+	break;
+    }
+  return i;
+}
 
 // return 0 when ok
 static int
-objstream_load(pdf_obj *o)
+read_objstream(pdf_obj *o)
 {
   dict *d;
   pdf_obj *a;
-  int first, n;
-  sub_stream *ss = NULL;
-  struct {int obj, off;} *objs;
+  int i, first, n;
+  pdf_stream *s;
+  pdf_parser *oldparser;
+  struct{int obj, off;} *objs;
   if (!o || o->t != eDict)
     {
       return 1;
@@ -645,12 +696,84 @@ objstream_load(pdf_obj *o)
     n = pdf_to_int(a);
   else
     return 1;
-  ss = dict_get(d, "S_O");
-  if (!ss)
-    return 0;
+
   objs = pdf_malloc(sizeof(*objs)*n);
+  // construct filter chain and stream interface
+  s = pdf_stream_load(o);
+  if (!s) return 1;
+  // construct parser
+  oldparser = parser_inst;
+  parser_inst = parser_new(NULL, NULL, s_getchar);
+  // lex header block for obj/offset pairs
+  for (i = 0; i < n; i++)
+    {
+      objs[i].obj = lex_positive_int(s);
+      objs[i].off = lex_positive_int(s);
+    }
+  // parse each obj string using yyparse
+  for (i = 0; i < n-1; i++)
+    {
+      int j;
+      int len = objs[i+1].off-objs[i].off, ll1, ll2;
+      char *buf = pdf_malloc(len+100);
+      char *p = buf;
+      int ret;
+      // construct tmp strings for yyparse
+      sprintf(p, "%d 0 obj\n", objs[i].obj);
+      ll1 = strlen(p);
+      p += strlen(p);
+      for (j = 0; j < len; j++)
+	*p++ = pdf_stream_getchar(s);
+      sprintf(p, "%s", "endobj\n");
+      ll2 = strlen(p);
+      parser_inst->oneobj = buf;
+      parser_inst->p_oneobj = buf;
+      parser_inst->cnt_oneobj = ll1+ll2+len;
+      ret = yyparse();
+      if (ret == 0)
+	printf("%s\n", "Invalid obj");
+      pdf_free(buf);
+    }
+  // last one
+  {
+    int cc;
+    int len = 0, ll1, ll2;
+    char *buf = pdf_malloc(2048);
+    char *p = buf;
+    int ret;
+    // construct tmp strings for yyparse
+    sprintf(p, "%d 0 obj\n", objs[i].obj);
+    ll1 = strlen(p);
+    p += strlen(p);
+    while(1)
+      {
+	cc = pdf_stream_getchar(s);
+	if (cc == EOF)
+	  break;
+	// else
+	*p++ = cc;
+	len++;
+	if (len>2000)
+	  {
+	    printf("obj buffer too small, abort parsing!\n");
+	    break;
+	  }
+      }
+    sprintf(p, "%s", "endobj\n");
+    ll2 = strlen(p);
+    parser_inst->oneobj = buf;
+    parser_inst->p_oneobj = buf;
+    parser_inst->cnt_oneobj = ll1+ll2+len;
+    ret = yyparse();
+    if (ret == 0)
+      printf("%s\n", "Invalid obj");
+    pdf_free(buf);
+  }
+  ////////////////////
+  pdf_free(parser_inst);
+  parser_inst = oldparser;
+  pdf_stream_free(s);
   pdf_free(objs);
-  ss->close(ss);
   return 0;
 }
 
@@ -733,7 +856,7 @@ int main(int argc, char **argv)
 	  return 1;
 	}
     }
-  parser_inst = parser_new(inf, outf, my_getchar);
+  parser_inst = parser_new(inf, outf, f_getchar);
   if (!parser_inst)
     return -1;
   // configure parser
@@ -854,7 +977,7 @@ int main(int argc, char **argv)
 		      if (strncmp(t->value.k, "ObjStm", 6) == 0)
 			{
 			  PRINTDEBUG("Procssing Object stream");
-			  objstream_load(o);
+			  read_objstream(o);
 			}
 		      else if (strncmp(t->value.k, "XRef", 4) == 0)
 			{

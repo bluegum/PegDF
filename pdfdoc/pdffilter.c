@@ -105,8 +105,11 @@ pdf_flated_read(pdf_filter *f, unsigned char *obuf, int request)
 pdf_err
 pdf_rawfilter_close(pdf_filter *f)
 {
+  sub_stream *ss;
   if (!f)
-    return pdf_ok;
+    return 0;
+  ss = (sub_stream*) f->state;
+  (ss->close)(ss);
   pdf_free(f);
   return pdf_ok;
 }

@@ -8,7 +8,6 @@
 typedef struct pdf_page_s pdf_page;
 typedef struct pdf_doc_s pdf_doc;
 typedef struct pdf_info_s pdf_info;
-typedef struct pdf_stream_s pdf_stream;
 typedef struct pdf_extgstate_s pdf_extgstate;
 typedef struct pdf_group_s pdf_group;
 typedef struct pdf_mask_s pdf_mask;

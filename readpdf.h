@@ -80,6 +80,7 @@ struct trailer_s
   int is_xrefstm;
   trailer *next;
 };
+typedef struct pdf_stream_s pdf_stream;
 
 struct pdf_parser_s
 {
@@ -107,6 +108,9 @@ struct pdf_parser_s
   int file_position;
   int cur_obj, cur_gen;
   int lock;
+  // for one-liner parser
+  char *oneobj, *p_oneobj;
+  int cnt_oneobj;
 };
 
 struct sub_stream_s
