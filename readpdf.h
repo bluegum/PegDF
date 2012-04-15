@@ -48,6 +48,7 @@ typedef struct xreftab_s
 typedef struct linearized_s linearized;
 struct linearized_s
 {
+  int Linearized;
   int L;
   int H[4];
   int O;
@@ -55,6 +56,21 @@ struct linearized_s
   int N;
   int T;
   int P;
+};
+typedef struct hint_s hint;
+struct hint_s
+{
+  int S; // shared
+  int T; // thumbnail
+  int O; // outline
+  int A; // thread info
+  int E; // named destination
+  int V; // interactive form
+  int I; // information dict
+  int C; // logical struct
+  int L; // page label
+  int R; // renditions name tree
+  int B; // embedded file stream
 };
 
 typedef struct trailer_s trailer;
@@ -67,11 +83,6 @@ struct trailer_s
 
 struct pdf_parser_s
 {
-  FILE* infile;
-  FILE* outfile;
-  int file_position;
-  int cur_obj, cur_gen;
-  int lock;
   int (*getchar)();
   /// parser tmporary storage
   pdf_obj stack[65536]; // large stack size for large array, ouch!
@@ -81,6 +92,7 @@ struct pdf_parser_s
   xreftab *xref;
   trailer *trailer;
   linearized l;
+  hint h;
   int startxref;
   // non-parsing related, for pdf stream object
   int (*seek)(int off);
@@ -89,6 +101,12 @@ struct pdf_parser_s
   int (*close)();
   unsigned char* (*cache)(int len);
   sub_stream* (*create_stream)(int, int);
+  /// private
+  FILE* infile;
+  FILE* outfile;
+  int file_position;
+  int cur_obj, cur_gen;
+  int lock;
 };
 
 struct sub_stream_s

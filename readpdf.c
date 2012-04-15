@@ -307,21 +307,114 @@ void pop_comment(char *s, int len)
   parser_inst->comment_string = s;
 }
 
+// return 0 if match
+static int
+match_string(char *m)
+{
+  int c;
+  char *s = m;
+  while (1)
+    {
+      if (*s == 0) // success
+	break;
+      if ((c = (parser_inst->getchar)()) == EOF)
+	return -1;
+      if (c == *s++)
+	{
+	  continue;
+	}
+      else
+	{
+	  s = m; // reset
+	  continue;
+	}
+    }
+  return 0;
+}
+
 void pop_stream(int pos)
 {
+  pdf_obj *o;
   dict *d;
   sub_stream *s;
+  int i, length;
+  int c;
 #ifdef YY_DEBUG
   printf("stream starts at %d.\n", pos);
 #endif
   if (parser_inst->stack[parser_inst->stackp].t != eDict)
     return;
   d = parser_inst->stack[parser_inst->stackp].value.d.dict;
+  o = dict_get(d, "Length");
+  if (o && o->t != eRef)
+    {
+      length = o->value.i;
+      if (parser_inst->l.Linearized)
+	{
+	  /// get hinting stream
+	  o = dict_get(d, "S");
+	  // TODO: cache stream
+	  for (i = 0; i < length; i++)
+	    if ((parser_inst->getchar)() == EOF)
+	      break;
+	}
+      else
+	{
+	  for (i = 0; i < length; i++)
+	    if ((parser_inst->getchar)() == EOF)
+	      break;
+	}
+      // escape 'endstream'
+      c = '\r';
+      while (c=='\r' || c== '\n') {  c = (parser_inst->getchar)(); }
+      if (c == 'e') 
+	{
+	  if (match_string("ndstream") != 0)
+	    {
+#ifdef DEBUG
+	      printf("%s\n", "Stream syntax error!");
+#endif
+	    }
+	}
+    }
+  else
+    {
+      length = -1; // don't bother to de-reference
+      if (parser_inst->l.Linearized)
+	{
+	  // TODO: cache stream
+	  // has to match 'endstream"
+	  match_string("endstream");
+	}
+      else
+	{
+	  // has to match 'endstream"
+	  if (match_string("endstream") != 0)
+	    {
+#ifdef DEBUG
+	      printf("%s\n", "Stream syntax error!");
+#endif
+	    }
+	}
+    }
+  // escape 'endobj'
+  c = (parser_inst->getchar)();
+  while (c=='\r' || c== '\n' || c== '\t'  || c== ' ') {  c = (parser_inst->getchar)(); }
+  if (c == 'e')
+    {
+      if (match_string("ndobj") != 0)
+	{
+#ifdef DEBUG
+	  printf("%s\n", "Stream syntax error!");
+#endif
+	}
+    }
+
   // S_O stands for stream_object
   // insert stream object
-  // +6 to offset "stream"
-  s = (parser_inst->create_stream)(pos+6, 0);
+  s = (parser_inst->create_stream)(pos, 0);
   dict_insert(d, "S_O", s);
+  pop_obj();
 }
 
 // return 0: ok
@@ -329,16 +422,13 @@ int read_linearized_dict(pdf_obj *o, linearized *l)
 {
   dict *d;
   pdf_obj *a;
+  l->Linearized = 0;
   if (!o || o->t != eDict)
     {
       return 1;
     }
   d = o->value.d.dict;
-  a = dict_get(d, "L");
-  if (a && a->t == eInt)
-    l->L = pdf_to_int(a);
-  else
-    return 1;
+
   a = dict_get(d, "L");
   if (a && a->t == eInt)
     l->L = pdf_to_int(a);
@@ -376,7 +466,7 @@ int read_linearized_dict(pdf_obj *o, linearized *l)
   a = dict_get(d, "P");
   if (a && a->t == eInt)
     l->P = pdf_to_int(a);
-
+  l->Linearized = 1;
   return 0;
 }
 // return 0: ok
@@ -428,6 +518,55 @@ int read_xrefstm(pdf_obj *o, pdf_parser *p)
 #endif
   return 0;
 }
+// return 0: ok
+int read_hint(pdf_obj *o, hint *h)
+{
+  dict *d;
+  pdf_obj *a;
+  if (!o || o->t != eDict)
+    {
+      return 1;
+    }
+  d = o->value.d.dict;
+
+  a = dict_get(d, "S");
+  if (a && a->t == eInt)
+    h->L = pdf_to_int(a);
+  else
+    return 1;
+  a = dict_get(d, "T");
+  if (a && a->t == eInt)
+    h->T = pdf_to_int(a);
+  a = dict_get(d, "O");
+  if (a && a->t == eInt)
+    h->O = pdf_to_int(a);
+  a = dict_get(d, "A");
+  if (a && a->t == eInt)
+    h->A = pdf_to_int(a);
+  a = dict_get(d, "E");
+  if (a && a->t == eInt)
+    h->E = pdf_to_int(a);
+  a = dict_get(d, "V");
+  if (a && a->t == eInt)
+    h->V = pdf_to_int(a);
+  a = dict_get(d, "I");
+  if (a && a->t == eInt)
+    h->I = pdf_to_int(a);
+  a = dict_get(d, "C");
+  if (a && a->t == eInt)
+    h->C = pdf_to_int(a);
+  a = dict_get(d, "L");
+  if (a && a->t == eInt)
+    h->L = pdf_to_int(a);
+  a = dict_get(d, "R");
+  if (a && a->t == eInt)
+    h->R = pdf_to_int(a);
+  a = dict_get(d, "B");
+  if (a && a->t == eInt)
+    h->B = pdf_to_int(a);
+  return 0;
+}
+///////////////////////////////////////////////////
 /// parser getchar
 static int my_getchar()
 {
@@ -469,7 +608,6 @@ int main(int argc, char **argv)
   int i = 1;
   char *in = NULL;
   char *out = NULL;
-  int linear = 0;
   FILE *inf=stdin, *outf=stdout;
   if (argc > 1)
     {
@@ -577,15 +715,12 @@ int main(int argc, char **argv)
 	if (l && (l->t == eReal || l->t == eInt))
 	  {
 	    printf("%s\n", "processing linearized pdf file");
-	    if (read_linearized_dict(first_obj, &parser_inst->l) != 0)
-	      linear = 0;
-	    else
-	      linear = 1;
+	    read_linearized_dict(first_obj, &parser_inst->l);
 	  }
       }
   }
   // process linearized headers
-  if (linear)
+  if (parser_inst->l.Linearized)
     {
       if (yyparse() == 0)
 	{
@@ -601,6 +736,25 @@ int main(int argc, char **argv)
 	      read_xrefstm(o, parser_inst);
 	    }
 	}
+      /// read hinting dict
+      while (1)
+	{
+	  if (yyparse() == 0)
+	    {
+	      printf("%s\n", "PDF file spec error");
+	    }
+	  else
+	    {
+	      pdf_obj *o = pdf_obj_find(parser_inst->cur_obj, parser_inst->cur_gen);
+	      if (read_hint(o, &parser_inst->h) == 0)
+		{
+#ifdef DEBUG
+		  printf("%s\n", "Hinting dictionary processed");
+#endif
+		  break;
+		}
+	    }
+	}
     }
   // parse the rest
   while (1)
@@ -612,7 +766,7 @@ int main(int argc, char **argv)
 	}
       else
 	{
-	  if (linear)
+	  if (parser_inst->l.Linearized)
 	    {
 	      if (parser_inst->cur_obj == parser_inst->l.O)
 		{
@@ -625,7 +779,8 @@ int main(int argc, char **argv)
 #ifdef DEBUG
   pdf_obj_walk();
 #endif
-  pdf_trailer_open(parser_inst->trailer);
+  if (parser_inst->trailer)
+    pdf_trailer_open(parser_inst->trailer);
   {
     trailer *t = parser_inst->trailer;
     while (t)

@@ -26,9 +26,10 @@
 # Productions
 ####################################
 start	<- COMMENT EOL* SPACE* 
+	   / STREAM
 	   / OBJ
-	   / DELIM XREF TRAILER STARTXREF {print_stack();}
-	   / DELIM STARTXREF 
+	   / DELIM XREF TRAILER 
+	   / DELIM STARTXREF {print_stack();}
 	   / DELIM GARBAGE DELIM
 DICT	<- DB 
 	( KEY COMMENT* (VALUE / KWORD / ID)
@@ -71,7 +72,7 @@ STRA       <- (ESCPAREN / (!STRBGN !STREND .))
 
 HEXSTR	   <- '<' < [0-9a-fA-F\n\r]* > '>' DELIM {push(eString, 0, yytext);}
 
-OBJ	<- NUM  NUM  'obj' DELIM   { push(eObjMarker, 0, NULL); }
+OBJ	<- DELIM NUM  NUM  'obj' DELIM   { push(eObjMarker, 0, NULL); }
 	COMMENT*
 	(REF 
 	/ DICT 
@@ -82,14 +83,15 @@ OBJ	<- NUM  NUM  'obj' DELIM   { push(eObjMarker, 0, NULL); }
 	/ STRING
 	/ HEXSTR
 	)* DELIM
-	STREAM*
 	'endobj'  {pop_obj();}  DELIM 
 
-STREAM   <- (
-	    'stream' (CR LF/LF CR) {pop_stream( parser_inst->file_position + yyoff - yypos+2);}
-	    / 'stream' (CR/LF) {pop_stream( parser_inst->file_position + yyoff - yypos+1);}
-	 )
-	 (!'endstream' .)* 'endstream' DELIM 
+STREAM   <- DELIM NUM  NUM  'obj' DELIM   { push(eObjMarker, 0, NULL); }
+	COMMENT*
+	DICT
+	(
+	    'stream' (CR LF/LF CR) {pop_stream( parser_inst->file_position+1);}
+	    / 'stream' (CR/LF) {pop_stream( parser_inst->file_position);}
+	)
 
 REF	 <- NUM NUM 'R' DELIM { push_ref(eRef, pop().value.i, pop().value.i);}
 XREF	 <- 'xref' DELIM {printf("xref...%s", yytext); }
@@ -107,10 +109,10 @@ XREFTAB	 <- < [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9] > {push(eInt,at
 	    (SP CR/SP LF/CR LF) {xref_append(pop().value.i, pop().value.i, pop());}
 	 
 TRAILER	        <- 'trailer' DELIM DICT DELIM {printf(" trailer...\n"); read_trailer();}
-STARTXREF      	<- DELIM 'startxref' DELIM <NUM> DELIM {xref_start(atoi(yytext));}
+STARTXREF      	<- DELIM 'startxref' DELIM NUM DELIM {xref_start(pop().value.i);}
 
 GARBAGE		<- . !('startxref' / 'xref'/ 
-		      	NUM NUM 'obj'
+		      	NUM NUM 'obj' {pop();}
 			) 
 #####################################
 # Terminals

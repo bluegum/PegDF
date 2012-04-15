@@ -687,6 +687,8 @@ pdf_streams_load(pdf_obj* o)
         return NULL;
 
     pdf_obj_resolve(o);
+    if (!o)
+      return NULL;
     if (o->t == eArray)
     {
         n = o->value.a.len;
