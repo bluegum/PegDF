@@ -339,6 +339,8 @@ void pop_stream(int pos)
   sub_stream *s;
   int i, length;
   int c;
+  int cache_stm = 0;
+  char *cache = NULL;
 #ifdef YY_DEBUG
   printf("stream starts at %d.\n", pos);
 #endif
@@ -349,14 +351,34 @@ void pop_stream(int pos)
   if (o && o->t != eRef)
     {
       length = o->value.i;
-      if (parser_inst->l.Linearized)
+      /// is a hinting stream?
+      o = dict_get(d, "S");
+      if (o) cache_stm = 1;
+      /// is it an object stream?
+      o = dict_get(d, "Type");
+      if (o && o->t == eKey && (strncmp(o->value.k, "ObjStm", 6) == 0)) cache_stm = 1;
+      /// is it an xref stream?
+      o = dict_get(d, "Type");
+      if (o && o->t == eKey && (strncmp(o->value.k, "XRef", 4) == 0)) cache_stm = 1;
+      if (//parser_inst->l.Linearized ||
+	  cache_stm)
 	{
-	  /// get hinting stream
-	  o = dict_get(d, "S");
-	  // TODO: cache stream
+	  char *pcache;
+	  cache = pdf_malloc(length);
+	  if (!cache)
+	    return;
+	  pcache = cache;
 	  for (i = 0; i < length; i++)
-	    if ((parser_inst->getchar)() == EOF)
-	      break;
+	    {
+	      if ((c = (parser_inst->getchar)()) == EOF)
+		{
+		  break;
+		}
+	      else
+		{
+		  *pcache++ = c;
+		}
+	    }
 	}
       else
 	{
@@ -412,7 +434,15 @@ void pop_stream(int pos)
 
   // S_O stands for stream_object
   // insert stream object
-  s = (parser_inst->create_stream)(pos, 0);
+  if (cache_stm)
+    {
+      extern sub_stream* in_mem_stream_new(int pos, int len);
+      s = in_mem_stream_new((int)cache, length);
+    }
+  else
+    {
+      s = (parser_inst->create_stream)(pos, 0);
+    }
   dict_insert(d, "S_O", s);
   pop_obj();
 }
@@ -515,6 +545,11 @@ int read_xrefstm(pdf_obj *o, pdf_parser *p)
 #else
   t->root = *o;
   t->is_xrefstm = 1;
+  if ((o = dict_get(o->value.d.dict, "S_O")) != NULL)
+    {
+      sub_stream *ss = (sub_stream*)o;
+      ss->close(ss);
+    }
 #endif
   return 0;
 }
@@ -564,6 +599,12 @@ int read_hint(pdf_obj *o, hint *h)
   a = dict_get(d, "B");
   if (a && a->t == eInt)
     h->B = pdf_to_int(a);
+  {
+    sub_stream* ss = dict_get(d, "S_O");
+    if (!ss)
+      return 0;
+    ss->close(ss);
+  }
   return 0;
 }
 ///////////////////////////////////////////////////
@@ -577,6 +618,40 @@ static int my_getchar()
    if (EOF != c) printf("<%c>\n", c); 
 #endif
    return c;
+}
+
+// return 0 when ok
+static int
+objstream_load(pdf_obj *o)
+{
+  dict *d;
+  pdf_obj *a;
+  int first, n;
+  sub_stream *ss = NULL;
+  struct {int obj, off;} *objs;
+  if (!o || o->t != eDict)
+    {
+      return 1;
+    }
+  d = o->value.d.dict;
+
+  a = dict_get(d, "First");
+  if (a && a->t == eInt)
+    first = pdf_to_int(a);
+  else
+    return 1;
+  a = dict_get(d, "N");
+  if (a && a->t == eInt)
+    n = pdf_to_int(a);
+  else
+    return 1;
+  ss = dict_get(d, "S_O");
+  if (!ss)
+    return 0;
+  objs = pdf_malloc(sizeof(*objs)*n);
+  pdf_free(objs);
+  ss->close(ss);
+  return 0;
 }
 
 /// make a new parser
@@ -759,6 +834,7 @@ int main(int argc, char **argv)
   // parse the rest
   while (1)
     {
+      parser_inst->cur_obj = -1;
       if (yyparse() == 0)
 	{
 	  printf("%s\n", "PDF file spec error");
@@ -766,6 +842,29 @@ int main(int argc, char **argv)
 	}
       else
 	{
+	  /// process obj stream
+	  if (parser_inst->cur_obj != -1)
+	    {
+	      pdf_obj *o = pdf_obj_find(parser_inst->cur_obj, parser_inst->cur_gen);
+	      if (o && o->t == eDict)
+		{
+		  pdf_obj *t = dict_get(o->value.d.dict, "Type");
+		  if (t && t->t == eKey)
+		    {
+		      if (strncmp(t->value.k, "ObjStm", 6) == 0)
+			{
+			  PRINTDEBUG("Procssing Object stream");
+			  objstream_load(o);
+			}
+		      else if (strncmp(t->value.k, "XRef", 4) == 0)
+			{
+			  PRINTDEBUG("Procssing Object stream");
+			  read_xrefstm(o, parser_inst);
+			}
+		    }
+		}
+	    }
+	  /// 
 	  if (parser_inst->l.Linearized)
 	    {
 	      if (parser_inst->cur_obj == parser_inst->l.O)

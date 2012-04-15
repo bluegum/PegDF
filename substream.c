@@ -10,6 +10,7 @@ struct file_stream_s
 {
   int (*reset)(sub_stream*);
   int (*read)(sub_stream*, unsigned char *, int);
+  int (*close)(sub_stream*);
   int len;
   // private
   pdf_parser *p; // global object
@@ -103,6 +104,12 @@ fs_read(sub_stream* s, unsigned char *buf, int len)
   return (fs->p->read)(buf, len);
 }
 
+static int
+fs_close(sub_stream* s)
+{
+  return 0;
+}
+
 static
 sub_stream*
 file_stream_new(int pos, int len)
@@ -113,6 +120,7 @@ file_stream_new(int pos, int len)
     return NULL;
   f->reset = fs_reset;
   f->read = fs_read;
+  f->close = fs_close;
   f->offset = pos;
   f->len = len;
   f->p = parser_inst;
@@ -145,6 +153,7 @@ struct in_mem_stream_s
 {
   int (*reset)(sub_stream*);
   int (*read)(sub_stream*, unsigned char *, int);
+  int (*close)(sub_stream*);
   int len;
   // private
   unsigned char *s; // start
@@ -169,7 +178,16 @@ im_read(sub_stream* s, unsigned char *buf, int len)
   return 0;
 }
 
-static
+static int
+im_close(sub_stream* s)
+{
+  in_mem_stream *ms = (in_mem_stream*)s;
+  if (!ms || !ms->s)
+    return 0;
+  pdf_free(ms->s);
+  return 0;
+}
+
 sub_stream*
 in_mem_stream_new(int pos, int len)
 {
@@ -177,8 +195,10 @@ in_mem_stream_new(int pos, int len)
   s = pdf_malloc(sizeof(in_mem_stream));
   if (!s)
     return NULL;
+  s->s = (unsigned char*)pos;
   s->reset = im_reset;
   s->read = im_read;
+  s->close = im_close;
   return (sub_stream*)s;
 }
 

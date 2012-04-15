@@ -113,6 +113,7 @@ struct sub_stream_s
 {
   int (*reset)(sub_stream*);
   int (*read)(sub_stream*, unsigned char *, int);
+  int (*close)(sub_stream*);
   int len;
 };
 
@@ -139,5 +140,13 @@ extern void xref_start(int);
 extern int stream_seek(int s);
 extern int stream_read(unsigned char*, int);
 extern void init_filestream_parser_instance(pdf_parser *p);
+///////////////////// non-descriptives
+#ifdef DEBUG
+#define PRINTDEBUG(a)				\
+  fprintf(stderr, "%s\n", a)
+#else
+#define PRINTDEBUG(a)
+#endif
+
 
 #endif
