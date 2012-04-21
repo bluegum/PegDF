@@ -137,6 +137,154 @@ pdf_rawfilter_new(sub_stream* ss)
   return f;
 }
 
+/////////////////////////////////////////// ASCII85Decode
+struct pdf_a85d_s
+{
+  unsigned char bp[4];
+  unsigned char *rp, *wp;
+  int eod;
+};
+
+pdf_err
+pdf_a85d_close(pdf_filter *f)
+{
+  if (!f)
+    return 0;
+  pdf_free(f->state);
+  pdf_free(f);
+  return pdf_ok;
+}
+
+static int
+pdf_a85d_read(pdf_filter *f, unsigned char *obuf, int request)
+{
+  struct pdf_a85d_s *state;
+  pdf_filter *up;
+  unsigned char *p = obuf;
+  unsigned char *e = obuf+request;
+  unsigned char c;
+  unsigned int word=0, count=0;
+
+  if (!f)
+    return 0;
+  state = f->state;
+  if (!state)
+    return 0;
+  up = f->next; // upstream
+  if (!up)
+    return 0;
+  while (p < e)
+    {
+      if (state->eod)
+	return p - obuf;
+      // read upstream
+      int l = (up->read)(up, &c, 1);
+      if (l == 0)
+	{ // eof
+	  return p - obuf;
+	}
+      if (c >= '!' && c <= 'u')
+	{
+	  if (count == 4)
+	    {
+	      word = word * 85 + (c - '!');
+
+	      state->bp[0] = (word >> 24) & 0xff;
+	      state->bp[1] = (word >> 16) & 0xff;
+	      state->bp[2] = (word >> 8) & 0xff;
+	      state->bp[3] = (word) & 0xff;
+	      state->rp = state->bp;
+	      state->wp = state->bp + 4;
+
+	      word = 0;
+	      count = 0;
+	    }
+	  else
+	    {
+	      word = word * 85 + (c - '!');
+	      count ++;
+	    }
+	}
+      else if (c == 'z' && count == 0)
+	{
+	  state->bp[0] = 0;
+	  state->bp[1] = 0;
+	  state->bp[2] = 0;
+	  state->bp[3] = 0;
+	  state->rp = state->bp;
+	  state->wp = state->bp + 4;
+	}
+      else if (c == '~')
+	{
+	  int l = (up->read)(up, &c, 1);
+	  
+	  if (l == 0 || (c != '>'))
+	    printf("%s\n", "bad eod marker in a85d");
+
+	  switch (count) {
+	  case 0:
+	    break;
+	  case 1:
+	    printf("%s\n", "partial final byte in a85d");
+	  case 2:
+	    word = word * (85 * 85 * 85) + 0xffffff;
+	    state->bp[0] = word >> 24;
+	    state->rp = state->bp;
+	    state->wp = state->bp + 1;
+	    break;
+	  case 3:
+	    word = word * (85 * 85) + 0xffff;
+	    state->bp[0] = word >> 24;
+	    state->bp[1] = word >> 16;
+	    state->rp = state->bp;
+	    state->wp = state->bp + 2;
+	    break;
+	  case 4:
+	    word = word * 85 + 0xff;
+	    state->bp[0] = word >> 24;
+	    state->bp[1] = word >> 16;
+	    state->bp[2] = word >> 8;
+	    state->rp = state->bp;
+	    state->wp = state->bp + 3;
+	    break;
+	  }
+	  state->eod = 1;
+	}
+      else if (c != ' ')
+	{
+	  printf("%s\n", "bad data in a85d: '%c'");
+	  return 0;
+	}
+
+      while (state->rp < state->wp && p < e)
+	*p++ = *state->rp++;
+    }
+  return p - obuf;
+}
+
+pdf_err
+pdf_a85d_new(pdf_filter **f)
+{
+  struct pdf_a85d_s *state;
+  *f = pdf_malloc(sizeof(pdf_filter));
+  if (!(*f))
+    return pdf_mem_err;
+  memset(*f, 0, sizeof(pdf_filter));
+  (*f)->close = pdf_a85d_close;
+  (*f)->read = pdf_a85d_read;
+  state = pdf_malloc(sizeof(struct pdf_a85d_s));
+  if (!state)
+    {
+      pdf_free(*f);
+      return pdf_mem_err;
+    }
+  state->rp = state->bp;
+  state->wp = state->bp;
+  state->eod = 0;
+  (*f)->state = state;
+  return pdf_ok;
+}
+
 ///////////////////////////////////
 int
 pdf_filter_getchar(pdf_filter *f)
@@ -163,6 +311,9 @@ pdf_filter_new(pdf_filterkind t)
     {
     case FlateDecode:
       pdf_flated_new(&f);
+      break;
+    case ASCII85Decode:
+      pdf_a85d_new(&f);
       break;
     default:
       return NULL;

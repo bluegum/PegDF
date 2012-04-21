@@ -473,10 +473,12 @@ pdf_stream_load(pdf_obj* o)
   ss->len = s->length;
   //
   x = dict_get(y->value.d.dict, "Filter");
+  // make raw filter
+  raw = pdf_rawfilter_new(ss);
+  last = raw;
   if (!x)
     {
-      // make raw filter
-      goto make_raw_filter;
+      goto done;
     }
   else
     {
@@ -560,17 +562,12 @@ pdf_stream_load(pdf_obj* o)
 	}
       else
 	{
-	  last->next = f;
+	  f->next = last;
 	  last = f;
 	}
     }
-  // train the raw filter
- make_raw_filter:
-  raw = pdf_rawfilter_new(ss);
-  if (last)
-    last->next = raw;
-  else
-    s->ffilter = raw;
+ done:
+  s->ffilter = last;
   return s;
 }
 // public api

@@ -160,13 +160,17 @@ bpt_split_inner(bpt_node *r, bpt_split *k)
 
    s.split = 1;
    n = bpt_new_node(0);
-#if 0
-   if ((r->cnt)%2)
+
+   for (i = mid; i < r->cnt; i++)
    {
-      if (k->n > r->k[mid])
-	 mid += 1;
+      if (k->n > r->k[i])
+	{
+	  mid += 1;
+	}
+      else
+	  break;
    }
-#endif
+
    if (bpt_upper(r) <= k->n)
      {
        s.n = k->n;
@@ -480,7 +484,7 @@ void
 bpt_destroy_inner(bpt_node *n)
 {
    int c = 0;
-   for (; c <= n->cnt; c++)
+   for (; c <= n->cnt && n->v[c].n; c++)
    {
      if (n->v[c].n->leaf)
 	 bpt_destroy_leaf(n->v[c].n);
