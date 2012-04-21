@@ -397,6 +397,8 @@ pdf_err pdf_trailer_open(trailer *tr)
  done:
   if (tr->next)
     {
+      if (t.info)
+	pdf_free(t.info);
       tr = tr->next;
       goto prev_trailer;
     }
@@ -545,7 +547,11 @@ pdf_stream_load(pdf_obj* o)
       // make the filter
       f = pdf_filter_new(t);
       if (!f)
-	return NULL;
+	{
+	  if (s)
+	    pdf_free(s);
+	  return NULL;
+	}
       // train them
       if (!last)
 	{
@@ -640,7 +646,7 @@ pdf_key_resolve(pdf_obj*o)
 pdf_annots*
 pdf_annots_load(pdf_obj* o)
 {
-  pdf_annots *a, *first, *last = 0;
+  pdf_annots *a=NULL, *first=NULL, *last = NULL;
   dict *d;
   int i;
 

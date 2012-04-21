@@ -793,6 +793,7 @@ parser_new(FILE *in, FILE *out, parser_getchar getchar)
   parser_inst->trailer = 0;
   parser_inst->startxref = -1;
   parser_inst->stackp = -1;
+  parser_inst->l.Linearized = 0;
   return parser_inst;
 }
 ////////////////////////////////////////////////////

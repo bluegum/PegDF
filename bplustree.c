@@ -43,8 +43,8 @@ bpt_new_node(int leaf)
    {
       node->k = pdf_malloc(sizeof(int)*BPT_ORDER_INNER);
       memset(node->k, 0, (sizeof(int)*BPT_ORDER_INNER));
-      node->v = pdf_malloc(sizeof(bpt_node*)*BPT_ORDER_INNER+1);
-      memset(node->v, 0, (sizeof(void*)*BPT_ORDER_INNER+1));
+      node->v = pdf_malloc(sizeof(bpt_node*)*(BPT_ORDER_INNER+1));
+      memset(node->v, 0, (sizeof(void*)*(BPT_ORDER_INNER+1)));
    }
    return node;
 }
@@ -167,6 +167,16 @@ bpt_split_inner(bpt_node *r, bpt_split *k)
 	 mid += 1;
    }
 #endif
+   if (bpt_upper(r) <= k->n)
+     {
+       s.n = k->n;
+       s.left = r;
+       s.right = n;
+       n->k[0] = bpt_upper(k->right);
+       n->v[0].n = k->right;
+       n->cnt += 1;
+       return s;
+     }
    /* shuffle half into new node */
    for(j=mid, i = 0; j < BPT_ORDER_INNER; j++, i++)
    {
@@ -254,13 +264,39 @@ bpt_insert_inner(bpt_node *r, int i, void *d)
    {
       r = bpt_new_node(1/* leaf */);
    }
+   else
+     {
+       if (r->cnt == 0)
+	 {
+	   bpt_node *l = bpt_new_node(1);
+	   s = bpt_insert_leaf(l, i, d);
+	   r->k[0] = bpt_upper(l);
+	   r->v[0].n = l;
+	   r->cnt += 1;
+	   return s;
+	 }
+     }
+   for (k = 0; k < r->cnt && (i > n->k[k]); k++);
 
-   for (k = 0; i > n->k[k] && k < r->cnt; k++);
-   if (n->k[k] == i)
+   if (k == BPT_ORDER_INNER)
+      n = n->v[k].n;
+   else if (n->k[k] == i)
       n = n->v[k+1].n;
    else
       n = n->v[k].n;
 
+   if (!n)
+     {
+       n = bpt_new_node(1);
+       n->low = i/BPT_ORDER_LEAF*BPT_ORDER_LEAF;
+       if (k < BPT_ORDER_INNER)
+	 {
+	   if (r->k[k] == i)
+	     r->v[k+1].n = n;
+	   else
+	     r->v[k].n = n;
+	 }
+     }
    if (n->leaf)
    {
       s = bpt_insert_leaf(n, i, d);
@@ -274,6 +310,15 @@ bpt_insert_inner(bpt_node *r, int i, void *d)
       if (r->cnt >= BPT_ORDER_INNER)
       {
 	 s = bpt_split_inner(r, &s);
+	 if (s.right->leaf)
+	   {
+	     bpt_node *ni; // inner node
+	     ni = bpt_new_node(0);
+	     ni->k[0] = bpt_upper(s.right);
+	     ni->v[0].n = s.right;
+	     ni->cnt += 1;
+	     s.right = ni;
+	   }
       }
       else
       {
@@ -352,7 +397,10 @@ int bpt_upper(bpt_node *n)
       return n->k[n->cnt];
 #endif
    }
-   return n->k[n->cnt];
+   else
+     {
+       return bpt_upper(n->v[n->cnt].n);
+     }
 }
 
 int bpt_lower(bpt_node *n)

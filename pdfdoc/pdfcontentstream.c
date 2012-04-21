@@ -8,6 +8,8 @@
 #include "pdfcmds.h"
 
 #define mGETCHAR(s) s_get_char(s)
+#define mUNGETCHAR(s) s_unget_char(s)
+
 #define BUFFER_STREAM_BUF_SIZE 1024
 #define LEX_BUF_LEN 1024
 #define ON_ERROR(exp) if (pdf_ok != (exp)) goto error;
@@ -42,7 +44,7 @@ typedef struct buffer_stream_s buffer_stream;
 
 struct buffer_stream_s
 {
-  unsigned char buf[BUFFER_STREAM_BUF_SIZE];
+  unsigned char buf[BUFFER_STREAM_BUF_SIZE+1]; // plus 1 for unget buffer
   unsigned char *p, *e, *l; // e -> buffer end, x -> buffer limit 
   pdf_filter *f;
 };
@@ -54,10 +56,15 @@ s_get_char(buffer_stream *s)
   if (s->p == s->e)
     {
       int i;
-      i = (s->f->read)(s->f, s->buf, BUFFER_STREAM_BUF_SIZE);
+      //move last byte to 1st in buffer, in case of unget
+      if (s->p != s->buf)
+	{
+	  s->buf[0] = *(s->e-1);
+	  s->p = s->buf + 1;
+	}
+      i = (s->f->read)(s->f, s->p, BUFFER_STREAM_BUF_SIZE);
       if (i == 0)
 	return EOF;
-      s->p = s->buf;
       s->e = s->p + i;
     }
   if (s->p != s->e)
@@ -65,6 +72,15 @@ s_get_char(buffer_stream *s)
       return *s->p++;
     }
   return EOF;
+}
+
+static void
+s_unget_char(buffer_stream *s)
+{
+  if (s->p > s->buf)
+    s->p -= 1;
+  else
+    printf("%s\n", "Can't do unget, too many to handle!");
 }
 
 static buffer_stream*
@@ -76,7 +92,7 @@ s_buffer_stream_open(pdf_filter *f)
       s->f = f;
       s->p = &s->buf[0];
       s->e = s->p;
-      s->l = s->p + BUFFER_STREAM_BUF_SIZE;
+      s->l = s->p + BUFFER_STREAM_BUF_SIZE+1;
     }
   return s;
 }
@@ -117,18 +133,28 @@ pdf_lex_string(buffer_stream *s, int *last, unsigned char* buf, int max)
 {
   int c;
   int i = 0;
+  int escaped = 0;
 
   while ((c = mGETCHAR(s)) != EOF)
     {
-      if (c == ')')
+      if (escaped)
+	{
+	  escaped = 0;
+	  *buf++ = c;
+	}
+      else if (c == ')')
 	{
 	  *buf = 0;
 	  *last = mGETCHAR(s);
 	  return pdf_ok;
 	}
+      else if ( c == '\\')
+	{
+	  escaped = 1;
+	}
       else
 	{
-	  *buf ++ = c;
+	  *buf++ = c;
 	}
       if (++i >= max)
 	break;
@@ -250,6 +276,31 @@ pdf_lex_number(buffer_stream *s, int *last, int c, float *out)
   return pdf_ok;
 }
 
+pdf_obj
+pdf_lex_obj(buffer_stream *s)
+{
+  int c;
+  pdf_obj o;
+
+  while ((c = mGETCHAR(s)) != EOF)
+    {
+      if (isdelim(c))
+	continue;
+    }
+  while (1)
+    {
+      switch (c)
+	{
+	default:
+	  mUNGETCHAR(s);
+	  goto done;
+	  break;
+	}
+    }
+ done:
+  return o;
+}
+/////////////////////////////////////////////////////////////
 static
 pdf_err
 pdf_lex_cmd(buffer_stream *s, int *last, int c, unsigned char *out, int max, int *cnt)
