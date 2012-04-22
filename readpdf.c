@@ -737,10 +737,11 @@ read_objstream(pdf_obj *o)
   // last one
   {
     int cc;
-    int len = 0, ll1, ll2;
-    char *buf = pdf_malloc(2048);
-    char *p = buf;
+    int len = 0, ll1, ll2, max = 1024;
+    char *buf = pdf_malloc(max);
+    char *p = buf, *e = buf+max;
     int ret;
+    // TODO: using in-mem stream instead of read all in.
     // construct tmp strings for yyparse
     sprintf(p, "%d 0 obj\n", objs[i].obj);
     ll1 = strlen(p);
@@ -753,10 +754,18 @@ read_objstream(pdf_obj *o)
 	// else
 	*p++ = cc;
 	len++;
-	if (len>2000)
+	if (p >= e)
 	  {
-	    printf("obj buffer too small, abort parsing!\n");
-	    break;
+	    int cur_len = p - buf;
+	    buf = pdf_realloc(buf, max*2);
+	    if (!buf)
+	      {
+		printf("obj buffer too small, realloc failed, aborting parsing obj stream!\n");
+		break;
+	      }
+	    max *= 2;
+	    p = buf + cur_len;
+	    e = buf + max;
 	  }
       }
     sprintf(p, "%s", "endobj\n");
