@@ -9,10 +9,13 @@
 
 #define mGETCHAR(s) s_get_char(s)
 #define mUNGETCHAR(s) s_unget_char(s)
+typedef struct buffer_stream_s buffer_stream;
 
 #define BUFFER_STREAM_BUF_SIZE 1024
-#define LEX_BUF_LEN 1024
+#define LEX_BUF_LEN 1024*64+1
 #define ON_ERROR(exp) if (pdf_ok != (exp)) goto error;
+static pdf_err pdf_parse_dict(buffer_stream *s, pdf_obj *o);
+extern pdf_err pdf_lex_obj(buffer_stream *s, pdf_obj *);
 //////////////////////////////////////////
 static inline
 int
@@ -38,13 +41,12 @@ isdelim(unsigned char c)
       return 0;
     }
 }
+
 //////////////////////////////////////////
-
-typedef struct buffer_stream_s buffer_stream;
-
+// Hard coded 2 bytes unget buffer
 struct buffer_stream_s
 {
-  unsigned char buf[BUFFER_STREAM_BUF_SIZE+1]; // plus 1 for unget buffer
+  unsigned char buf[BUFFER_STREAM_BUF_SIZE+2]; // plus 2 for unget buffer
   unsigned char *p, *e, *l; // e -> buffer end, x -> buffer limit 
   pdf_filter *f;
 };
@@ -56,11 +58,12 @@ s_get_char(buffer_stream *s)
   if (s->p == s->e)
     {
       int i;
-      //move last byte to 1st in buffer, in case of unget
+      //move last 2 byte to 1st in buffer, in case of unget
       if (s->p != s->buf)
 	{
-	  s->buf[0] = *(s->e-1);
-	  s->p = s->buf + 1;
+	  s->buf[0] = *(s->e-2);
+	  s->buf[1] = *(s->e-1);
+	  s->p = s->buf + 2;
 	}
       i = (s->f->read)(s->f, s->p, BUFFER_STREAM_BUF_SIZE);
       if (i == 0)
@@ -92,7 +95,7 @@ s_buffer_stream_open(pdf_filter *f)
       s->f = f;
       s->p = &s->buf[0];
       s->e = s->p;
-      s->l = s->p + BUFFER_STREAM_BUF_SIZE+1;
+      s->l = s->p + BUFFER_STREAM_BUF_SIZE + 2;
     }
   return s;
 }
@@ -108,28 +111,66 @@ s_buffer_stream_close(buffer_stream *s)
 //////////////////////////////////////////////////////////////////////////////////// lexers
 
 static pdf_err
-pdf_lex_array(buffer_stream *s, int *last, unsigned char* buf, int max)
+pdf_lex_array(buffer_stream *s, pdf_obj *a)
 {
+  struct arr_item_s {
+    pdf_obj o;
+    struct arr_item_s *next;
+  } *item = NULL, *p = NULL, *last = NULL;
   int c;
-  int i = 0;
+  int i = 0, j;
+
+  item = pdf_malloc(sizeof(struct arr_item_s));
+  p = item;
+  p->next = NULL;
+
   while ((c = mGETCHAR(s)) != EOF)
     {
       if (c == ']')
 	{
-	  *buf = 0;
-	  *last = mGETCHAR(s);
-	  return pdf_ok;
+	  break;
 	}
       else
-	*buf ++ = c;
-      if (++i >= max)
+	{
+	  if (!p)
+	    {
+	      p = pdf_malloc(sizeof(struct arr_item_s));
+	      last->next = p;
+	    }
+	  mUNGETCHAR(s);
+	  pdf_lex_obj(s, &p->o);
+	  last = p;
+	  p->next = NULL;
+	  p = p->next;
+	  i += 1;
+	}
+    }
+  // transfer items into pdf obj
+  a->t = eArray;
+  a->value.a.len = i;
+  if (i != 0)
+    a->value.a.items = pdf_malloc(i * sizeof(pdf_obj));
+  p = item;
+  for (j = 0; j < i; j++)
+    {
+      a->value.a.items[j] = p->o;
+      p = p->next;
+      if (!p)
 	break;
     }
-  return pdf_syntax_err;
+  // free temp
+  p = item;
+  while (p)
+    {
+      struct arr_item_s *t = p->next;
+      pdf_free(p);
+      p = t;
+    }
+  return pdf_ok;
 }
 
 static pdf_err
-pdf_lex_string(buffer_stream *s, int *last, unsigned char* buf, int max)
+pdf_lex_string(buffer_stream *s, unsigned char* buf, int max)
 {
   int c;
   int i = 0;
@@ -142,10 +183,11 @@ pdf_lex_string(buffer_stream *s, int *last, unsigned char* buf, int max)
 	  escaped = 0;
 	  *buf++ = c;
 	}
+      else if (c == '(')
+	pdf_lex_string(s, buf, max);
       else if (c == ')')
 	{
 	  *buf = 0;
-	  *last = mGETCHAR(s);
 	  return pdf_ok;
 	}
       else if ( c == '\\')
@@ -163,7 +205,7 @@ pdf_lex_string(buffer_stream *s, int *last, unsigned char* buf, int max)
 }
 
 static pdf_err
-pdf_lex_hexstring(buffer_stream *s, int *last, unsigned char* buf, int max)
+pdf_lex_hexstring(buffer_stream *s, unsigned char* buf, int max)
 {
   int c;
   int i = 0;
@@ -173,7 +215,6 @@ pdf_lex_hexstring(buffer_stream *s, int *last, unsigned char* buf, int max)
       if (c == '>')
 	{
 	  *buf = 0;
-	  *last = c;
 	  return pdf_ok;
 	}
       else
@@ -187,7 +228,7 @@ pdf_lex_hexstring(buffer_stream *s, int *last, unsigned char* buf, int max)
 }
 
 static pdf_err
-pdf_lex_name(buffer_stream *s, int *last, unsigned char* buf, int max)
+pdf_lex_name(buffer_stream *s, unsigned char* buf, int max)
 {
   int c;
   unsigned char *p = buf;
@@ -200,7 +241,6 @@ pdf_lex_name(buffer_stream *s, int *last, unsigned char* buf, int max)
 #ifdef DEBUG
 	  printf("/%s ", buf);
 #endif
-	  *last = c;
 	  return pdf_ok;
 	}
       else
@@ -214,7 +254,7 @@ pdf_lex_name(buffer_stream *s, int *last, unsigned char* buf, int max)
 }
 
 static pdf_err
-pdf_lex_number(buffer_stream *s, int *last, int c, float *out)
+pdf_lex_number(buffer_stream *s, int c, float *out)
 {
   int frac = 0;
   float a = 1;
@@ -271,42 +311,100 @@ pdf_lex_number(buffer_stream *s, int *last, int c, float *out)
 	  return pdf_syntax_err;
 	}
     }
-  *last = c;
   *out = a+b;
   return pdf_ok;
 }
 
-pdf_obj
-pdf_lex_obj(buffer_stream *s)
+pdf_err
+pdf_lex_obj(buffer_stream *s, pdf_obj *o)
 {
   int c;
-  pdf_obj o;
+  unsigned char buf[LEX_BUF_LEN];
+  pdf_err e = pdf_ok;
+  float n;
 
   while ((c = mGETCHAR(s)) != EOF)
     {
-      if (isdelim(c))
+      if (isspace(c))
 	continue;
+      else
+	break;
     }
-  while (1)
+  switch (c)
     {
-      switch (c)
+    case ' ':
+    case '\t':
+    case '\r':
+    case '\n':
+      break;
+    case '0':case '1':case '2':case '3':case '4':case '5':case '6':case '7':case '8':case '9':
+    case '.':
+    case '+':
+    case '-':
+      ON_ERROR(pdf_lex_number(s, c, &n));
+      if (n == floor(n))
 	{
-	default:
-	  mUNGETCHAR(s);
-	  goto done;
-	  break;
+	  o->t = eInt;
+	  o->value.i = n;
 	}
+      else
+	{
+	  o->t = eReal;
+	  o->value.f = n;
+	}
+      mUNGETCHAR(s);
+      break;
+    case '(':
+      ON_ERROR(pdf_lex_string(s, buf, LEX_BUF_LEN));
+      o->t = eString;
+      o->value.s.len = strlen((char*)buf);
+      o->value.s.buf = pdf_malloc(o->value.s.len);
+      strncpy(o->value.s.buf, (char*)buf, o->value.s.len);
+      break;
+    case '[':
+      ON_ERROR(pdf_lex_array(s, o));
+      o->t = eArray;
+      break;
+    case '<':
+      c = mGETCHAR(s);
+      if (c == EOF)
+	goto error;
+      if (c == '<')
+	{
+	  ON_ERROR(pdf_parse_dict(s, o));
+	}
+      else
+	{
+	  mUNGETCHAR(s);
+	  ON_ERROR(pdf_lex_hexstring(s, buf, LEX_BUF_LEN));
+	  o->t = eString;
+	  o->value.s.len = strlen((char*)buf);
+	  o->value.s.buf = pdf_malloc(o->value.s.len);
+	  strncpy(o->value.s.buf, (char*)buf, o->value.s.len);
+	}
+      break;
+    case '/':
+      ON_ERROR(pdf_lex_name(s, buf, LEX_BUF_LEN));
+      o->t = eKey;
+      mUNGETCHAR(s);
+      break;
+    default:
+      goto done;
+      break;
     }
+ error:
  done:
-  return o;
+  return e;
 }
 /////////////////////////////////////////////////////////////
 static
 pdf_err
-pdf_lex_cmd(buffer_stream *s, int *last, int c, unsigned char *out, int max, int *cnt)
+pdf_lex_cmd(buffer_stream *s, unsigned char *out, int max, int *cnt)
 {
+  int c;
   int i = 0;
   *cnt = 0;
+  c = mGETCHAR(s);
   while (isdelim(c))
     {
       if ((c = mGETCHAR(s)) != EOF)
@@ -321,7 +419,6 @@ pdf_lex_cmd(buffer_stream *s, int *last, int c, unsigned char *out, int max, int
     {
       if (isdelim(c))
 	{
-	  *last = c;
 	  *out = 0;
 	  return pdf_ok;
 	}
@@ -330,7 +427,6 @@ pdf_lex_cmd(buffer_stream *s, int *last, int c, unsigned char *out, int max, int
       if (++i >= max)
 	return pdf_syntax_err;
     }
-  *last = c;
   return pdf_ok;
 }
 
@@ -338,17 +434,16 @@ pdf_lex_cmd(buffer_stream *s, int *last, int c, unsigned char *out, int max, int
 // ONLY for direct dictionary parsing in a content stream
 static
 pdf_err
-pdf_parse_dict(buffer_stream *s, int *last)
+pdf_parse_dict(buffer_stream *s, pdf_obj *o)
 {
   int c;
+  o->t = eDict;
   while ((c = mGETCHAR(s)) != EOF)
     {
-    weird:
       if (c == '>')
 	{
 	  if (((c = mGETCHAR(s)) != EOF) && (c == '>'))
 	    {
-	      *last = mGETCHAR(s);
 	      break;
 	    }
 	}
@@ -356,9 +451,7 @@ pdf_parse_dict(buffer_stream *s, int *last)
 	{
 	  if (((c = mGETCHAR(s)) != EOF) && (c == '<'))
 	    {
-	      pdf_parse_dict(s, last);
-	      c = *last;
-	      goto weird;
+	      pdf_parse_dict(s, o);
 	    }
 	}
     }
@@ -373,6 +466,7 @@ pdf_parse_dict(buffer_stream *s, int *last)
 pdf_err
 pdf_cs_parse(pdf_page *p, pdf_stream *s)
 {
+  pdf_obj o;
   unsigned char buf[LEX_BUF_LEN];
   int c;
   buffer_stream *b;
@@ -393,58 +487,61 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
   if (!b)
     return pdf_ok;
 
-  c = ' ';
-  while (1)
+  while ((c = mGETCHAR(b)) != EOF)
     {
-      if (c == EOF)
-	break;
       if (isspace(c))
 	{
-	  c = mGETCHAR(b);
 	  continue;
 	}
       if (isdigit(c))
 	{
-	  ON_ERROR(pdf_lex_number(b, &c, c, &n));
+	  ON_ERROR(pdf_lex_number(b, c, &n));
+	  mUNGETCHAR(b);
 	  PUSH_N(n);
+	  continue;
 	}
 
       switch(c)
 	{
 	case '[':
-	  ON_ERROR(pdf_lex_array(b, &c, buf, LEX_BUF_LEN));
+	  ON_ERROR(pdf_lex_array(b, &o));
 	  break;
 	case '(':
-	  ON_ERROR(pdf_lex_string(b, &c, buf, LEX_BUF_LEN));
+	  ON_ERROR(pdf_lex_string(b, buf, LEX_BUF_LEN));
 	  break;
 	case '<':
 	  if ((c = mGETCHAR(b)) && c != EOF)
 	    {
 	      if (c == '<')
 		{
-		  ON_ERROR(pdf_parse_dict(b, &c));
+		  ON_ERROR(pdf_parse_dict(b, &o));
 		}
 	      else
 		{
-		  ON_ERROR(pdf_lex_hexstring(b, &c, buf, LEX_BUF_LEN));
+		  ON_ERROR(pdf_lex_hexstring(b, buf, LEX_BUF_LEN));
 		}
 	    }
 	  break;
 	case '/':
-	  ON_ERROR(pdf_lex_name(b, &c, buf, LEX_BUF_LEN));
+	  ON_ERROR(pdf_lex_name(b, buf, LEX_BUF_LEN));
+	  mUNGETCHAR(b);
 	  break;
 	case '.':
 	case '+':
 	case '-':
-	  ON_ERROR(pdf_lex_number(b, &c, c, &n));
-	  PUSH_N(n);
+	  {
+	    ON_ERROR(pdf_lex_number(b, c, &n));
+	    mUNGETCHAR(b);
+	    PUSH_N(n);
+	  }
 	break;
 	default:
 	  if (isspace(c))
 	    break;
 	  ///////////////////////////////////////////
 	  // lex stream commands
-	  ON_ERROR(pdf_lex_cmd(b, &c,  c, buf, LEX_BUF_LEN, &cmdlen))
+	  mUNGETCHAR(b);
+	  ON_ERROR(pdf_lex_cmd(b, buf, LEX_BUF_LEN, &cmdlen))
 	  switch (cmdlen)
 	    {
 	      ////////////////////////////// single letter command
@@ -460,6 +557,7 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
 		  POP_N(6);
 		  break;
 		case 'd':
+		  x_d(p, &o);
 		  break;
 		case 'f':
 		  break;
@@ -648,7 +746,7 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
 		  x_Tj(p);
 		  break;
 		case TWO_HASH('T', 'J'): // TJ
-		  x_TJ(p);
+		  x_TJ(p, &o);
 		  break;
 		case TWO_HASH('T', 'L'): // TL
 		  x_TL(p);

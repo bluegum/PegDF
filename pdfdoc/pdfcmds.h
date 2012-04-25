@@ -1,6 +1,7 @@
 #ifndef PDFCMDS_H
 #define PDFCMDS_H
 
+extern pdf_err x_d(pdf_page *p, pdf_obj *o);
 extern pdf_err x_g(pdf_page *p, float g);
 extern pdf_err x_k(pdf_page *p, float a, float b, float c, float d);
 extern pdf_err x_n(pdf_page *p);
@@ -23,7 +24,7 @@ extern pdf_err x_Tstar(pdf_page *p);
 extern pdf_err x_Tc(pdf_page *p);
 extern pdf_err x_Tf(pdf_page *p, void *, float scale);
 extern pdf_err x_Tj(pdf_page *p);
-extern pdf_err x_TJ(pdf_page *p);
+extern pdf_err x_TJ(pdf_page *p, pdf_obj*);
 extern pdf_err x_Tm(pdf_page *p, float a, float b, float c, float d, float e, float f);
 extern pdf_err x_Td(pdf_page *p);
 extern pdf_err x_TD(pdf_page *p);

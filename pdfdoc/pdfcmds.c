@@ -3,6 +3,27 @@
 #include "pdfcmds.h"
 
 pdf_err
+x_d(pdf_page *p, pdf_obj *o)
+{
+#ifdef DEBUG
+  printf("%s ", "d");
+#endif
+  if (o || o->t == eArray)
+    {
+      int i;
+      for (i=0; i < o->value.a.len; i++)
+	{
+	  pdf_obj a = o->value.a.items[i];
+	  if (a.t == eString)
+	    pdf_free(a.value.s.buf);
+	}
+      if (o->value.a.len)
+	pdf_free(o->value.a.items);
+    }
+  return pdf_ok;
+}
+
+pdf_err
 x_g(pdf_page *p, float g)
 {
   return pdf_ok;
@@ -107,11 +128,23 @@ pdf_err x_Tj(pdf_page *p)
 #endif
   return pdf_ok;
 }
-pdf_err x_TJ(pdf_page *p)
+pdf_err x_TJ(pdf_page *p, pdf_obj *o)
 {
+  int i;
 #ifdef DEBUG
   printf("%s ", "TJ");
 #endif
+  if (o || o->t == eArray)
+    {
+      for (i=0; i < o->value.a.len; i++)
+	{
+	  pdf_obj a = o->value.a.items[i];
+	  if (a.t == eString)
+	    pdf_free(a.value.s.buf);
+	}
+      if (o->value.a.len)
+	pdf_free(o->value.a.items);
+    }
   return pdf_ok;
 }
 pdf_err x_Td(pdf_page *p)
