@@ -4,28 +4,35 @@
 #include "bplustree.h"
 #include "pdfindex.h"
 #include "pdfmem.h"
+#include "readpdf.h"
 
-typedef struct pdf_map
-{
-   int generation;
-   bpt_tree *head; 
-   struct pdf_map * next;
-} pdf_map;
-
-static pdf_map a_pdf_map;
+extern pdf_parser *parser_inst;
 
 pdf_map *
 pdf_map_create()
 {
    pdf_map * m = pdf_malloc(sizeof(pdf_map));
-   memset(m, 0, sizeof(pdf_map));
+   if (m)
+     memset(m, 0, sizeof(pdf_map));
    return m;
+}
+
+void
+pdf_map_delete(pdf_map *m)
+{
+  pdf_map *t = m;
+  while (m)
+    {
+      t = m->next;
+      pdf_free(m);
+      m = t;
+    }
 }
 
 pdf_map *
 pdf_map_insert(int n, int gen)
 {
-   pdf_map * m = &a_pdf_map;
+  pdf_map * m = parser_inst->map;//&a_pdf_map;
    while (m->generation != gen)
    {
       m = m->next;
@@ -44,7 +51,7 @@ pdf_map_insert(int n, int gen)
 pdf_map *
 pdf_map_find(int gen)
 {
-   return &a_pdf_map;
+  return parser_inst->map;//&a_pdf_map;
 }
 
 int
@@ -65,7 +72,7 @@ pdf_obj_find(int n, int gen)
 void
 pdf_obj_walk()
 {
-   pdf_map * m = &a_pdf_map;
+  pdf_map * m = parser_inst->map;//&a_pdf_map;
    for (;m; m = m->next)
    {
      //printf("walk generation %d...\n", m->generation);
@@ -84,7 +91,8 @@ void free_array(pdf_obj *o)
 	{
 	  pdf_obj_delete(&o->value.a.items[i]);
 	}
-      pdf_free(o->value.a.items);
+      if (o->value.a.len)
+	pdf_free(o->value.a.items);
     }
 }
 
@@ -100,6 +108,7 @@ pdf_obj_delete(pdf_obj *o)
       dict_free(o->value.d.dict);
       break;
     case eString:
+    case eHexString:
       pdf_free(o->value.s.buf);
       break;
     case eKey:
@@ -116,7 +125,7 @@ pdf_obj_delete(pdf_obj *o)
 void
 pdf_obj_free()
 {
-   pdf_map * m = &a_pdf_map;
+  pdf_map * m = parser_inst->map;//&a_pdf_map;
    pdf_map *i = m;
    for (; i!=0; i=i->next)
    {

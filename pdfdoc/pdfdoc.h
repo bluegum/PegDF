@@ -8,7 +8,7 @@
 typedef struct pdf_page_s pdf_page;
 typedef struct pdf_doc_s pdf_doc;
 typedef struct pdf_info_s pdf_info;
-typedef struct pdf_extgstate_s pdf_extgstate;
+//typedef struct pdf_extgstate_s pdf_extgstate;
 typedef struct pdf_group_s pdf_group;
 typedef struct pdf_mask_s pdf_mask;
 typedef struct pdf_annots_s pdf_annots;
@@ -85,13 +85,13 @@ struct pdf_annots_s
 struct pdf_resources_s
 {
   pdf_extgstate *extgstate;
-  pdf_cspace *colorspace;
-  void *pattern;
-  void *shading;
-  void *xobject;
-  void *font;
+  pdf_obj *colorspace;
+  pdf_obj *pattern;
+  pdf_obj *shading;
+  pdf_obj *xobject;
+  pdf_obj *font;
   char **procset;
-  void *properties;
+  pdf_obj *properties;
 };
 
 struct pdf_page_s
@@ -122,6 +122,7 @@ struct pdf_page_s
   void *vp;
   // private
   pdf_stream *content_streams;
+  pdf_prs sstk[32], *s; // Ought to be enough for g/G?
 };
 
 typedef enum pdf_pagemode_e pdf_pagemode;
@@ -249,7 +250,9 @@ struct pdf_bead_s
   pdf_page *p; // page it belongs to
   gs_rect r;
 };
-
+// short hands
+static inline int pdf_brush_n(pdf_page *p) { return p->s->brush.n; }
+static inline int pdf_pen_n(pdf_page *p) { return p->s->pen.n; }
 // functions
 extern pdf_err pdf_info_print(pdf_info *info);
 extern pdf_resources* pdf_resources_load(pdf_obj *o);

@@ -54,6 +54,7 @@ typedef enum pdf_kind
     eRef,
     eKey,
     eString,
+    eHexString,
     eArray,
     eDict,
     eLimit

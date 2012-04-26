@@ -5,6 +5,8 @@
 
 typedef enum pdf_cspacetype_e pdf_cspacetype;
 typedef struct pdf_cspace_s pdf_cspace;
+typedef struct pdf_prs_s pdf_prs;
+typedef struct pdf_extgstate_s pdf_extgstate;
 
 struct pdf_extgstate_s
 {
@@ -102,10 +104,26 @@ struct pdf_devicen_s
   } *attributes;
 };
 
+//////////////////////////////////////////////////////////////////////////
+// page rendering states
+//////////////////////////////////////////////////////////////////////////
+
 struct pdf_cspace_s
 {
   pdf_cspacetype t;
+  float c[16]; // Ought to be enough for DeviceN
+  int n;
   void *priv;
 };
+
+struct pdf_prs_s
+{
+  pdf_cspace brush;
+  pdf_cspace pen;
+  pdf_extgstate gs;
+};
+
+////////////////////////////////
+extern pdf_err pdf_colorspace_set(pdf_cspace* p, pdf_obj *o);
 
 #endif

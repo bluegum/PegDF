@@ -23,6 +23,7 @@ THE SOFTWARE.
 #define READPDF_H
 #include <stdio.h> // due to FILE, should be factored out ASAP
 #include "pdftypes.h"
+#include "pdfindex.h"
 
 typedef struct pdf_parser_s pdf_parser;
 typedef struct sub_stream_s sub_stream;
@@ -108,9 +109,11 @@ struct pdf_parser_s
   int file_position;
   int cur_obj, cur_gen;
   int lock;
-  // for one-liner parser
+  // lex buffer for one-liner parser, for object stream parsing to be specific
   char *oneobj, *p_oneobj;
   int cnt_oneobj;
+  // pdf object tree, an alternative to xref table
+  pdf_map *map;
 };
 
 struct sub_stream_s

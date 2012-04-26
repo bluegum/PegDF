@@ -40,6 +40,7 @@ pdf_err pdf_page_load(pdf_obj *o, pdf_page **page)
   *page = pdf_malloc(sizeof(pdf_page));
   p = *page;
   memset(p, 0, sizeof(pdf_page));
+  p->s = p->sstk;
   // parse tree dict
   p->parent = dict_get(d, "Parent");
   p->mediabox = pdf_rect_resolve(dict_get(d, "MediaBox"));

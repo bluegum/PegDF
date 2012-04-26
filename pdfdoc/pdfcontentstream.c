@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include "pdftypes.h"
 #include "pdfmem.h"
+#include "pdfindex.h"
 #include "pdfdoc.h"
 #include "pdfcmds.h"
 
@@ -13,6 +14,7 @@ typedef struct buffer_stream_s buffer_stream;
 
 #define BUFFER_STREAM_BUF_SIZE 1024
 #define LEX_BUF_LEN 1024*64+1
+#define OP_STK_SIZE 1024
 #define ON_ERROR(exp) if (pdf_ok != (exp)) goto error;
 static pdf_err pdf_parse_dict(buffer_stream *s, pdf_obj *o);
 extern pdf_err pdf_lex_obj(buffer_stream *s, pdf_obj *);
@@ -377,7 +379,7 @@ pdf_lex_obj(buffer_stream *s, pdf_obj *o)
 	{
 	  mUNGETCHAR(s);
 	  ON_ERROR(pdf_lex_hexstring(s, buf, LEX_BUF_LEN));
-	  o->t = eString;
+	  o->t = eHexString;
 	  o->value.s.len = strlen((char*)buf);
 	  o->value.s.buf = pdf_malloc(o->value.s.len);
 	  strncpy(o->value.s.buf, (char*)buf, o->value.s.len);
@@ -386,6 +388,8 @@ pdf_lex_obj(buffer_stream *s, pdf_obj *o)
     case '/':
       ON_ERROR(pdf_lex_name(s, buf, LEX_BUF_LEN));
       o->t = eKey;
+      o->value.k = pdf_malloc(strlen((char*)buf)+1);
+      memcpy(o->value.k, buf, (strlen((char*)buf)+1));
       mUNGETCHAR(s);
       break;
     default:
@@ -437,7 +441,12 @@ pdf_err
 pdf_parse_dict(buffer_stream *s, pdf_obj *o)
 {
   int c;
+  pdf_obj k, v;
+  dict* d = dict_new();
+  if (!d)
+    return pdf_mem_err;
   o->t = eDict;
+  o->value.d.dict = d;
   while ((c = mGETCHAR(s)) != EOF)
     {
       if (c == '>')
@@ -454,19 +463,45 @@ pdf_parse_dict(buffer_stream *s, pdf_obj *o)
 	      pdf_parse_dict(s, o);
 	    }
 	}
+      else if (c == '/')
+	{
+	  pdf_obj *val;
+	  mUNGETCHAR(s);
+	  if (pdf_lex_obj(s, &k) != pdf_ok)
+	    return pdf_syntax_err;
+	  if (pdf_lex_obj(s, &v) != pdf_ok)
+	    return pdf_syntax_err;
+	  val = pdf_malloc(sizeof(pdf_obj));
+	  *val = v;
+	  dict_insert(d, k.value.k, val);
+	  pdf_obj_delete(&k);
+	}
+      else if (!isspace(c))
+	{
+	  printf ("%s\n", "Expecting a name in dictionary key!");
+	}
     }
+
   return pdf_ok;
 }
 //static float pop_n(float *base, float *p) {if (p <= base) np = base+1; np--; return *np;}
 #define PUSH_N(a) *np++ = (a); if (np>=nx) np--
 #define POP_N(n) np -= n; if (np <= num_stack) np = num_stack
+#define PUSH_O(a) *op++ = (a); if (op>=op_max) op--
+#define POP_O (op <= o) ? (*o):(*(--op))
 /////////////////////////////////////////////////////////////////////////////////
 // Content Stream Parser 
+//
+// Out of curiosity, I keep two operand stacks will parsing, one is number stack,
+// which holds all the integers and floating point numbers, the other one is the
+// generic stack, which holds pdf_objs. It is up to the operators the pop/push
+// the corresponding stacks.
+// 
 /////////////////////////////////////////////////////////////////////////////////
 pdf_err
 pdf_cs_parse(pdf_page *p, pdf_stream *s)
 {
-  pdf_obj o;
+  pdf_obj t, o[OP_STK_SIZE], *op = o, *op_max=op+OP_STK_SIZE;
   unsigned char buf[LEX_BUF_LEN];
   int c;
   buffer_stream *b;
@@ -475,9 +510,6 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
   int _2_hash;
   /// lexical value storage
   float num_stack[32], *np = num_stack, *nx = np+32;
-  //unsigned char **str_stk; // for string/hex-string
-  //unsigned char **name_stk; // for resources
-  //unsigned char **dict_stk; // for direct dictionary
   ///
   if (!s)
     return pdf_ok;
@@ -504,26 +536,42 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
       switch(c)
 	{
 	case '[':
-	  ON_ERROR(pdf_lex_array(b, &o));
+	  ON_ERROR(pdf_lex_array(b, &t));
+	  PUSH_O(t);
 	  break;
 	case '(':
 	  ON_ERROR(pdf_lex_string(b, buf, LEX_BUF_LEN));
+	  t.t = eString;
+	  t.value.s.len = strlen((char*)buf);
+	  t.value.s.buf = pdf_malloc(o->value.s.len);
+	  strncpy(t.value.s.buf, (char*)buf, o->value.s.len);
+	  PUSH_O(t);
 	  break;
 	case '<':
 	  if ((c = mGETCHAR(b)) && c != EOF)
 	    {
 	      if (c == '<')
 		{
-		  ON_ERROR(pdf_parse_dict(b, &o));
+		  ON_ERROR(pdf_parse_dict(b, &t));
+		  PUSH_O(t);
 		}
 	      else
 		{
 		  ON_ERROR(pdf_lex_hexstring(b, buf, LEX_BUF_LEN));
+		  t.t = eHexString;
+		  t.value.s.len = strlen((char*)buf);
+		  t.value.s.buf = pdf_malloc(o->value.s.len);
+		  strncpy(t.value.s.buf, (char*)buf, o->value.s.len);
+		  PUSH_O(t);
 		}
 	    }
 	  break;
 	case '/':
 	  ON_ERROR(pdf_lex_name(b, buf, LEX_BUF_LEN));
+	  t.t = eKey;
+	  t.value.k = pdf_malloc(strlen((char*)buf)+1);
+	  memcpy(t.value.k, buf, (strlen((char*)buf)+1));
+	  PUSH_O(t);
 	  mUNGETCHAR(b);
 	  break;
 	case '.':
@@ -548,8 +596,10 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
 	    case 1:
 	      switch (buf[0])
 		{
-		case '"':  break;
-		case '\'':  break;
+		case '\"':
+		  break;
+		case '\'':
+		  break;
 		case 'b':
 		  break;
 		case 'c':
@@ -557,7 +607,7 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
 		  POP_N(6);
 		  break;
 		case 'd':
-		  x_d(p, &o);
+		  x_d(p, POP_O);
 		  break;
 		case 'f':
 		  break;
@@ -647,7 +697,7 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
 		  break;
 		case (TWO_HASH('c','s')):
 		  {
-		    //x_cs(p);
+		    x_cs(p, POP_O);
 		  }
 		  break;
 		case (TWO_HASH('d','0')):
@@ -667,7 +717,7 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
 		  break;
 		case (TWO_HASH('g','s')):
 		  {
-		    x_gs(p);
+		    x_gs(p, POP_O);
 		  }
 		  break;
 		case TWO_HASH('r','e'):
@@ -689,7 +739,9 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
 		  break;
 		case TWO_HASH('s','c'):
 		  {
+		    int n = pdf_brush_n(p);
 		    //x_sc(p);
+		    POP_N(n);
 		  }
 		  break;
 		case TWO_HASH('s','h'):
@@ -703,12 +755,12 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
 		case TWO_HASH('B', 'X'): x_BX(p); break; // BX
 		case TWO_HASH('C','S'):
 		  {
-		    //x_CS(p);
+		    x_CS(p, POP_O);
 		  }
 		  break;
 		case (TWO_HASH('D','o')):
 		  {
-		    x_Do(p);
+		    x_Do(p, POP_O);
 		  }
 		break;
 		case (TWO_HASH('D','P')):
@@ -726,6 +778,11 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
 		    x_EX(p);
 		  }
 		break;
+		case TWO_HASH('I', 'D'): // ID
+		  {
+		    //x_EX(p);
+		  }
+		break;
 		case TWO_HASH('T', '*'): // T*
 		  x_Tstar(p);
 		  break;
@@ -733,20 +790,22 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
 		  x_Tc(p);
 		  break;
 		case TWO_HASH('T', 'd'): // Td
-		  x_Td(p);
+		  x_Td(p, np[-2], np[-1]);
+		  POP_N(2);
 		  break;
 		case TWO_HASH('T', 'D'): // Td
-		  x_TD(p);
+		  x_TD(p, np[-2], np[-1]);
+		  POP_N(2);
 		  break;
 		case TWO_HASH('T', 'f'): // Tf
-		  x_Tf(p, NULL,  np[-1]);
+		  x_Tf(p, POP_O,  np[-1]);
 		  POP_N(1);
 		  break;
 		case TWO_HASH('T', 'j'): // Tj
-		  x_Tj(p);
+		  x_Tj(p, POP_O);
 		  break;
 		case TWO_HASH('T', 'J'): // TJ
-		  x_TJ(p, &o);
+		  x_TJ(p, POP_O);
 		  break;
 		case TWO_HASH('T', 'L'): // TL
 		  x_TL(p);
@@ -793,7 +852,10 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
 	    case 3:
 	      if (buf[0] == 'B' && buf[1] == 'D' && buf[2] == 'C')
 		{
-		  x_BDC(p);
+		  pdf_obj a, b;
+		  b = POP_O;
+		  a = POP_O;
+		  x_BDC(p, a, b);
 		}
 	      else if (buf[0] == 'B' && buf[1] == 'M' && buf[2] == 'C')
 		{
@@ -805,11 +867,17 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
 		}
 	      else if (buf[0] == 'S' && buf[1] == 'C' && buf[2] == 'N')
 		{
-		  //x_EMC(p);
+		    int n = pdf_pen_n(p);
+		    //x_sc(p);
+		    POP_N(n);
+		  //x_SCN(p);
 		}
 	      else if (buf[0] == 's' && buf[1] == 'c' && buf[2] == 'n')
 		{
-		  //x_EMC(p);
+		    int n = pdf_brush_n(p);
+		    //x_sc(p);
+		    POP_N(n);
+		  //x_scn(p);
 		}
 	      else
 		{

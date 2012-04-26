@@ -704,6 +704,10 @@ read_objstream(pdf_obj *o)
   // construct parser
   oldparser = parser_inst;
   parser_inst = parser_new(NULL, NULL, s_getchar);
+  // switch in the global obj map
+  if (parser_inst->map)
+    pdf_map_delete(parser_inst->map);
+  parser_inst->map = oldparser->map;
   // lex header block for obj/offset pairs
   for (i = 0; i < n; i++)
     {
@@ -803,6 +807,7 @@ parser_new(FILE *in, FILE *out, parser_getchar getchar)
   parser_inst->startxref = -1;
   parser_inst->stackp = -1;
   parser_inst->l.Linearized = 0;
+  parser_inst->map = pdf_map_create();
   return parser_inst;
 }
 ////////////////////////////////////////////////////
@@ -1032,6 +1037,10 @@ int main(int argc, char **argv)
   if (parser_inst->outfile != stdout)
     {
       fclose(parser_inst->outfile);
+    }
+  if (parser_inst->map)
+    {
+      pdf_map_delete(parser_inst->map);
     }
   if (parser_inst)
     pdf_free(parser_inst);
