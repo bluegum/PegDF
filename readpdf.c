@@ -295,9 +295,9 @@ int xref_delete()
 void
 xref_start(int i)
 {
-#ifdef DEBUG
-  printf("startxref = %d\n", i);
-#endif
+  char buf[128];
+  sprintf(buf, "startxref = %d\n", i);
+  DMSG(buf);
   parser_inst->startxref = i;
   return;
 }
@@ -393,9 +393,7 @@ void pop_stream(int pos)
 	{
 	  if (match_string("ndstream") != 0)
 	    {
-#ifdef DEBUG
-	      printf("%s\n", "Stream syntax error!");
-#endif
+	      DMSG("Stream syntax error!");
 	    }
 	}
     }
@@ -413,9 +411,7 @@ void pop_stream(int pos)
 	  // has to match 'endstream"
 	  if (match_string("endstream") != 0)
 	    {
-#ifdef DEBUG
-	      printf("%s\n", "Stream syntax error!");
-#endif
+	      DMSG("Stream syntax error!");
 	    }
 	}
     }
@@ -426,9 +422,7 @@ void pop_stream(int pos)
     {
       if (match_string("ndobj") != 0)
 	{
-#ifdef DEBUG
-	  printf("%s\n", "Stream syntax error!");
-#endif
+	  DMSG("Stream syntax error!");
 	}
     }
 
@@ -927,7 +921,7 @@ int main(int argc, char **argv)
 	l = dict_get(first_obj->value.d.dict, "Linearized");
 	if (l && (l->t == eReal || l->t == eInt))
 	  {
-	    printf("%s\n", "processing linearized pdf file");
+	    DMSG("processing linearized pdf file");
 	    read_linearized_dict(first_obj, &parser_inst->l);
 	  }
       }
@@ -961,9 +955,7 @@ int main(int argc, char **argv)
 	      pdf_obj *o = pdf_obj_find(parser_inst->cur_obj, parser_inst->cur_gen);
 	      if (read_hint(o, &parser_inst->h) == 0)
 		{
-#ifdef DEBUG
-		  printf("%s\n", "Hinting dictionary processed");
-#endif
+		  DMSG("Hinting dictionary processed");
 		  break;
 		}
 	    }
@@ -991,12 +983,12 @@ int main(int argc, char **argv)
 		    {
 		      if (strncmp(t->value.k, "ObjStm", 6) == 0)
 			{
-			  PRINTDEBUG("Procssing Object stream");
+			  DMSG("Procssing Object stream");
 			  read_objstream(o);
 			}
 		      else if (strncmp(t->value.k, "XRef", 4) == 0)
 			{
-			  PRINTDEBUG("Procssing Object stream");
+			  DMSG("Procssing Object stream");
 			  read_xrefstm(o, parser_inst);
 			}
 		    }
@@ -1007,7 +999,7 @@ int main(int argc, char **argv)
 	    {
 	      if (parser_inst->cur_obj == parser_inst->l.O)
 		{
-		  printf("%s\n", "Just parsed the first page");
+		  DMSG("Just parsed the first page");
 		}
 	    }
 	}

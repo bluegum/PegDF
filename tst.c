@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "tst.h"
 #include "pdfmem.h"
 
@@ -214,12 +215,22 @@ void nearsearch(Tptr p, char *s, int d)
 }
 #endif
 
-static char frame[1024];
-static char *f = frame;
-
-void tst_print_reset()
+static char frame[64][32];
+static char (*fp)[32] = frame;
+static char *f;
+char *tst_print_reset(int i)
 {
-  f = frame;
+  if (i > 0)
+    {
+      f = *fp;
+      fp++;
+    }
+  else
+    {
+      fp--;
+      f = *fp;
+    }
+  return f;
 }
 
 void tst_traverse_node(Tptr p, tst_hook callback)
@@ -234,9 +245,8 @@ void tst_traverse_node(Tptr p, tst_hook callback)
    }
    else
    {
-      char *t = frame;
-      *f = 0;
-      callback(t, p->eqkid);
+     *f = 0;
+     callback(*(fp-1), p->eqkid);
    }
    tst_traverse_node(p->hikid, callback);
 }

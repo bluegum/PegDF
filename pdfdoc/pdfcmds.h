@@ -44,6 +44,13 @@ extern pdf_err x_rg(pdf_page *p, float a, float b, float c);
 extern pdf_err x_RG(pdf_page *p, float a, float b, float c);
 extern pdf_err x_cm(pdf_page *p, float a, float b, float c, float d, float e, float f);
 extern pdf_err x_gs(pdf_page *p, pdf_obj);
+extern pdf_err x_ri(pdf_page *p, pdf_obj o);
+extern pdf_err x_sh(pdf_page *p, pdf_obj o);
+extern pdf_err x_i(pdf_page *p, float flatness);
+extern pdf_err x_w(pdf_page *p, float linewidth);
+extern pdf_err x_j(pdf_page *p, int linejoin);
+extern pdf_err x_J(pdf_page *p, int linecap);
+extern pdf_err x_M(pdf_page *p, float miterlimit);
 ///
 extern pdf_err x_Do(pdf_page *p, pdf_obj);
 #endif

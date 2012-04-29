@@ -132,6 +132,10 @@ pdf_lex_array(buffer_stream *s, pdf_obj *a)
 	{
 	  break;
 	}
+      else if (isspace(c))
+	{
+	  continue;
+	}
       else
 	{
 	  if (!p)
@@ -424,6 +428,7 @@ pdf_lex_cmd(buffer_stream *s, unsigned char *out, int max, int *cnt)
       if (isdelim(c))
 	{
 	  *out = 0;
+	  mUNGETCHAR(s);
 	  return pdf_ok;
 	}
       *out++ = c;
@@ -618,8 +623,12 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
 		case 'h':
 		  break;
 		case 'i':
+		  x_i(p, np[-1]); // flatness
+		  POP_N(1);
 		  break;
 		case 'j':
+		  x_j(p, np[-1]); // linejoin
+		  POP_N(1);
 		  break;
 		case 'k':
 		  x_k(p, np[-1], np[-2], np[-3], np[-4]);
@@ -649,6 +658,8 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
 		  POP_N(4);
 		  break;
 		case 'w':
+		  x_w(p, np[-1]); // linewidth
+		  POP_N(1);
 		  break;
 		case 'y':
 		  x_y(p, np[-1], np[-2], np[-3], np[-4]);
@@ -664,12 +675,16 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
 		  POP_N(1);
 		  break;
 		case 'J':
+		  x_J(p, np[-1]); // linecap
+		  POP_N(1);
 		  break;
 		case 'K':
 		  x_K(p, np[-1], np[-2], np[-3], np[-4]);
 		  POP_N(4);
 		  break;
 		case 'M':
+		  x_M(p, np[-1]); // miterlimit
+		  POP_N(1);
 		  break;
 		case 'Q':
 		  break;
@@ -734,7 +749,7 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
 		  break;
 		case TWO_HASH('r','i'):
 		  {
-		    //x_ri(p);
+		    x_ri(p, POP_O); // rendering intents
 		  }
 		  break;
 		case TWO_HASH('s','c'):
@@ -746,7 +761,7 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
 		  break;
 		case TWO_HASH('s','h'):
 		  {
-		    //x_sh(p);
+		    x_sh(p, POP_O);
 		  }
 		  break;
 		case TWO_HASH('B', '*'): x_Bstar(p); break; // B*
@@ -780,7 +795,7 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
 		break;
 		case TWO_HASH('I', 'D'): // ID
 		  {
-		    //x_EX(p);
+		    //x_ID(p);
 		  }
 		break;
 		case TWO_HASH('T', '*'): // T*

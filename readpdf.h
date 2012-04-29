@@ -149,10 +149,13 @@ extern int stream_read(unsigned char*, int);
 extern void init_filestream_parser_instance(pdf_parser *p);
 ///////////////////// non-descriptives
 #ifdef DEBUG
-#define PRINTDEBUG(a)				\
+#define DMSG(a)				\
   fprintf(stderr, "%s\n", a)
+#define _DMSG(a)				\
+  fprintf(stderr, "%s ", a)
 #else
-#define PRINTDEBUG(a)
+#define DMSG(a)
+#define _DMSG(a)
 #endif
 
 

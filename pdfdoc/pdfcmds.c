@@ -4,7 +4,7 @@
 #include "pdfindex.h"
 #include "pdfcmds.h"
 #include "gsdraw.h"
-
+#include "readpdf.h" // for _DMSG
 pdf_err
 x_cs(pdf_page *p, pdf_obj o)
 {
@@ -40,9 +40,7 @@ x_CS(pdf_page *p, pdf_obj o)
 pdf_err
 x_d(pdf_page *p, pdf_obj o)
 {
-#ifdef DEBUG
-  printf("%s ", "d");
-#endif
+  _DMSG("op: d");
   if (o.t == eArray)
     {
       pdf_obj_delete(&o);
@@ -102,6 +100,31 @@ x_y(pdf_page *p, float a, float b, float c, float d)
 {
   return pdf_ok;
 }
+pdf_err
+x_i(pdf_page *p, float flatness)
+{
+  return pdf_ok;
+}
+pdf_err
+x_j(pdf_page *p, int linejoin)
+{
+  return pdf_ok;
+}
+pdf_err
+x_J(pdf_page *p, int linecap)
+{
+  return pdf_ok;
+}
+pdf_err
+x_w(pdf_page *p, float linewidth)
+{
+  return pdf_ok;
+}
+pdf_err
+x_M(pdf_page *p, float miterlimit)
+{
+  return pdf_ok;
+}
 /// B group
 pdf_err
 x_B(pdf_page *p)
@@ -119,9 +142,7 @@ pdf_err x_BI(pdf_page *p)
 }
 pdf_err x_BT(pdf_page *p)
 {
-#ifdef DEBUG
-  printf("%s ", "BT");
-#endif
+  _DMSG("BT");
   return pdf_ok;
 }
 pdf_err x_BX(pdf_page *p)
@@ -156,25 +177,27 @@ pdf_err x_Tstar(pdf_page *p)
 }
 pdf_err x_Tf(pdf_page *p, pdf_obj res, float scale)
 {
-#ifdef DEBUG
-  printf("%s ", "Tf");
-#endif
+  _DMSG("Tf");
+  pdf_obj *r, *f;
+  if (p->resources && p->resources->font)
+    {
+      r = p->resources->font;
+      assert(r->t == eDict);
+      f = dict_get(r->value.d.dict, res.value.k);
+      pdf_obj_resolve(f);
+    }
   pdf_obj_delete(&res);
   return pdf_ok;
 }
 pdf_err x_Tj(pdf_page *p, pdf_obj o)
 {
-#ifdef DEBUG
-  printf("%s ", "Tj");
-#endif
+  _DMSG("Tj");
   pdf_obj_delete(&o);
   return pdf_ok;
 }
 pdf_err x_TJ(pdf_page *p, pdf_obj o)
 {
-#ifdef DEBUG
-  printf("%s ", "TJ");
-#endif
+  _DMSG("TJ");
   if (o.t == eArray)
     {
       pdf_obj_delete(&o);
@@ -183,23 +206,17 @@ pdf_err x_TJ(pdf_page *p, pdf_obj o)
 }
 pdf_err x_Td(pdf_page *p, float a, float b)
 {
-#ifdef DEBUG
-  printf("%s ", "Td");
-#endif
+  _DMSG("Td");
   return pdf_ok;
 }
 pdf_err x_TD(pdf_page *p, float a, float b)
 {
-#ifdef DEBUG
-  printf("%s ", "TD");
-#endif
+  _DMSG("TD");
   return pdf_ok;
 }
 pdf_err x_TL(pdf_page *p)
 {
-#ifdef DEBUG
-  printf("%s ", "Td");
-#endif
+  _DMSG("Td");
   return pdf_ok;
 }
 pdf_err x_Tm(pdf_page *p, float a, float b, float c, float d, float e, float f)
@@ -230,9 +247,7 @@ pdf_err x_Tz(pdf_page *p)
 /// E group
 pdf_err x_ET(pdf_page *p)
 {
-#ifdef DEBUG
-  printf("%s ", "ET");
-#endif
+  _DMSG("ET");
   return pdf_ok;
 }
 pdf_err x_EX(pdf_page *p)
@@ -264,9 +279,28 @@ pdf_err x_gs(pdf_page *p, pdf_obj o)
   pdf_obj_delete(&o);
   return pdf_ok;
 }
+pdf_err x_ri(pdf_page *p, pdf_obj o)
+{
+  pdf_obj_delete(&o);
+  return pdf_ok;
+}
+pdf_err x_sh(pdf_page *p, pdf_obj o)
+{
+  pdf_obj_delete(&o);
+  return pdf_ok;
+}
 ////////
 pdf_err x_Do(pdf_page *p, pdf_obj o)
 {
+  pdf_obj *x;
+  assert(o.t == eKey);
+  if (p->resources && p->resources->xobject)
+    {
+      x = p->resources->xobject;
+      assert(x->t == eDict);
+      x = dict_get(x->value.d.dict, o.value.k);
+      pdf_obj_resolve(x);
+    }
   pdf_obj_delete(&o);
   return pdf_ok;
 }
