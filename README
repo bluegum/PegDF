@@ -1,10 +1,10 @@
-An experienmental PEG grammar pdf parser
+An experimental PEG grammar pdf parser
 
-PEG(Parser Expression Grammer) provided a succinct and expressive way
+PEG(Parser Expression Grammar) provided a succinct and expressive way
 for parsing tasks. In fact it is so cool, makes yacc/lex look
 so overkill on many small languages.
 
-Pdf file structure syntax is considered a set rather elementary 
+PDF file structure syntax is considered a set rather elementary 
 syntasis, mostly involving map parsing, map entry pairing, and
 literal string parsing, etc. In these experiment, PEG grammar proved
 to be very powerful for PDF constructs parsing. However,
