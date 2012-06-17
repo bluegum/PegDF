@@ -17,6 +17,8 @@ typedef struct pdf_structtreeroot_s pdf_structtreeroot;
 typedef struct pdf_resources_s pdf_resources;
 typedef struct pdf_thread_s pdf_thread;
 typedef struct pdf_bead_s pdf_bead;
+typedef struct pdf_encrypt_s pdf_encrypt;
+typedef struct pdf_cryptfilter_s pdf_cryptfilter;
 
 struct pdf_mask_s
 {
@@ -249,6 +251,35 @@ struct pdf_bead_s
   pdf_bead *v; // prev bead
   pdf_page *p; // page it belongs to
   gs_rect r;
+};
+
+struct pdf_cryptfilter_s
+{
+  char *type;
+  char *cfm;
+  enum {eDocOpen, eEFOpen} authevent;
+  int length;
+  // additional entries for public-key
+  void *recipients;
+  int encryptmetadata; // boolean
+};
+
+struct pdf_encrypt_s
+{
+  char *filter;
+  char *subfilter;
+  int v;
+  int length;
+  pdf_cryptfilter *cf;
+  char *stmf;
+  char *strf;
+  char *eff;
+  // standard filter
+  int r;
+  unsigned char o[32];
+  unsigned char u[32];
+  int p;
+  int encrypt_metadata;
 };
 // short hands
 static inline int pdf_brush_n(pdf_page *p) { return p->s->brush.n; }

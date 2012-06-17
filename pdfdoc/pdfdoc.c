@@ -248,7 +248,7 @@ struct pdf_trailer_s
   int size;
   int prev;
   pdf_doc * root;
-  void *encrypt;
+  pdf_encrypt *encrypt;
   pdf_info *info;
   unsigned char *id[2];
   // xrefstream entries
@@ -332,6 +332,52 @@ pdf_info_free(pdf_info *info)
   if (info->moddate)  pdf_free(info->moddate);
 }
 
+pdf_err
+pdf_cf_load(pdf_obj *o, pdf_cryptfilter **cryptfilter)
+{
+  pdf_obj *a;
+  pdf_cryptfilter *c;
+  *cryptfilter = pdf_malloc(sizeof(pdf_cryptfilter));
+  if (!*cryptfilter)
+    return pdf_mem_err;
+  if (!o)
+    return pdf_ok;
+  memset(*cryptfilter, 0, sizeof(pdf_encrypt));
+  c = *cryptfilter;
+  a = dict_get(o->value.d.dict, "Type");
+  a = dict_get(o->value.d.dict, "CFM");
+  a = dict_get(o->value.d.dict, "AuthEvent");
+  a = dict_get(o->value.d.dict, "Length");
+  return pdf_ok;
+}
+
+pdf_err
+pdf_encrypt_load(pdf_obj *o, pdf_encrypt **encrypt)
+{
+  pdf_obj *a;
+  pdf_encrypt *e;
+  *encrypt = pdf_malloc(sizeof(pdf_encrypt));
+  if (!*encrypt)
+    return pdf_mem_err;
+  if (!o)
+    return pdf_ok;
+  memset(*encrypt, 0, sizeof(pdf_encrypt));
+  e = *encrypt;
+  a = dict_get(o->value.d.dict, "Filter");
+  a = dict_get(o->value.d.dict, "SubFilter");
+  a = dict_get(o->value.d.dict, "V");
+  a = dict_get(o->value.d.dict, "Length");
+  a = dict_get(o->value.d.dict, "StmF");
+  a = dict_get(o->value.d.dict, "StrF");
+  a = dict_get(o->value.d.dict, "EFF");
+  a = dict_get(o->value.d.dict, "CF");
+  if (a)
+    {
+      pdf_cf_load(a, &e->cf);
+    }
+  return pdf_ok;
+}
+
 pdf_err pdf_trailer_open(trailer *tr)
 {
   pdf_obj *a, *root, *o;
@@ -363,7 +409,7 @@ pdf_err pdf_trailer_open(trailer *tr)
   a = dict_get(o->value.d.dict, "Encrypt");
   if (a)
     {
-      t.encrypt = a;
+      pdf_encrypt_load(a, &t.encrypt);
     }
   a = dict_get(o->value.d.dict, "Info");
   if (a)
