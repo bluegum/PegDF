@@ -175,10 +175,11 @@ pdf_a85d_read(pdf_filter *f, unsigned char *obuf, int request)
     return 0;
   while (p < e)
     {
+    	int l;
       if (state->eod)
 	return p - obuf;
       // read upstream
-      int l = (up->read)(up, &c, 1);
+      l = (up->read)(up, &c, 1);
       if (l == 0)
 	{ // eof
 	  return p - obuf;
