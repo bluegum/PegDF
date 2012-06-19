@@ -177,8 +177,8 @@ pdf_err x_Tstar(pdf_page *p)
 }
 pdf_err x_Tf(pdf_page *p, pdf_obj res, float scale)
 {
-  _DMSG("Tf");
   pdf_obj *r, *f;
+  _DMSG("Tf");
   if (p->resources && p->resources->font)
     {
       r = p->resources->font;
