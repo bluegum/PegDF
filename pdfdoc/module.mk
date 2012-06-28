@@ -2,7 +2,7 @@ d	:= pdfdoc
 
 LOCAL_LIB	:= $(d)/libpdfdoc.a
 
-SRCS__$(d)	:= pdfdoc.c pdfpage.c pdfcatalog.c pdffilter.c pdfcontentstream.c pdfcmds.c \
+SRCS__$(d)	:= pdfdoc.c pdfpage.c pdfcatalog.c pdffilter.c pdfcontentstream.c pdfcmds.c pdfencrypt.c \
 		md5.c sha256.c rc4_enc.c aes_cbc.c aes_ecb.c aes_core.c \
 		pdfcolorspace.c
 
