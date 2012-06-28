@@ -1,19 +1,25 @@
 An experimental PEG grammar pdf parser
 
 PEG(Parser Expression Grammar) provided a succinct and expressive way
-for parsing tasks. In fact it is so cool, makes yacc/lex look
-so overkill on many small languages.
+for parsing tasks. The fact of not needing a lexer definition alone, makes
+me want to put a simple DSL to test, and PDF specification seems a pretty
+good fit.
 
 PDF file structure syntax is considered a set rather elementary 
-syntasis, mostly involving map parsing, map entry pairing, and
-literal string parsing, etc. In these experiment, PEG grammar proved
-to be very powerful for PDF constructs parsing. However,
-performance could be better if some of the syntactical rules
-made a little slopier and more compentent semantic handlers
-to take some syntax analying role. For example, a nested PDF
-string can be described by PDF in a formal way, and semantic
-hooks need to flatten the tree, which is not the most
-efficient method.
+syntasis, mostly involving data container constructs parsing, eg.
+object parsing, map parsing, map entry pairing, and so on. However some
+syntax has its own quirks, eg, nested literal string and stream object.
+For a nested string, a PEG grammar can be constructed, however, it is more
+complex than it should be. For stream object, a semantic hook is used
+skip the stream data, whenever is possible.
+
+In these experiment, PEG grammar proved to be very expressive for PDF constructs.
+However, the grammar in this project does not cover the whole PDF stream, due
+to the nature of LL(k) of PEG, and to avoid excessive AST. So each grammar
+only covers individual language constructs, and the document correctness is
+enforced by semantic handlers.
+
+Some observations on PDF specificatin, and this PEG grammar on that, even the current grammar specifies PDF nested string construct, However, by using more comprehensive semantic handler may better handle a string AST.
 
 This project is writting in the original PEG syntax.
 peg/leg parser/generater is required to build PegDF.
