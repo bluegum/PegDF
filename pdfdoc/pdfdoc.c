@@ -361,21 +361,114 @@ pdf_encrypt_load(pdf_obj *o, pdf_encrypt **encrypt)
     return pdf_mem_err;
   if (!o)
     return pdf_ok;
+  pdf_obj_resolve(o);
   memset(*encrypt, 0, sizeof(pdf_encrypt));
   e = *encrypt;
   a = dict_get(o->value.d.dict, "Filter");
+  if (a)
+    {
+      pdf_obj_resolve(a);
+      (*encrypt)->filter = pdf_malloc(strlen(a->value.k)+1);
+      memcpy((*encrypt)->filter, a->value.k, strlen(a->value.k));
+      (*encrypt)->filter[strlen(a->value.k)] = 0;
+    }
   a = dict_get(o->value.d.dict, "SubFilter");
+  if (a)
+    {
+      pdf_obj_resolve(a);
+      (*encrypt)->subfilter = pdf_malloc(strlen(a->value.k)+1);
+      memcpy((*encrypt)->subfilter, a->value.k, strlen(a->value.k));
+      (*encrypt)->subfilter[strlen(a->value.k)] = 0;
+    }
   a = dict_get(o->value.d.dict, "V");
+  if (a)
+    {
+      pdf_obj_resolve(a);
+      (*encrypt)->v = pdf_to_int(a);
+    }
   a = dict_get(o->value.d.dict, "Length");
+  if (a)
+    {
+      pdf_obj_resolve(a);
+      (*encrypt)->length = pdf_to_int(a);
+    }
   a = dict_get(o->value.d.dict, "StmF");
+  if (a)
+    {
+      pdf_obj_resolve(a);
+      (*encrypt)->stmf = pdf_malloc(strlen(a->value.k)+1);
+      memcpy((*encrypt)->stmf, a->value.k, strlen(a->value.k));
+      (*encrypt)->stmf[strlen(a->value.k)] = 0;
+    }
   a = dict_get(o->value.d.dict, "StrF");
+  if (a)
+    {
+      pdf_obj_resolve(a);
+      (*encrypt)->strf = pdf_malloc(strlen(a->value.k)+1);
+      memcpy((*encrypt)->strf, a->value.k, strlen(a->value.k));
+      (*encrypt)->strf[strlen(a->value.k)] = 0;
+    }
   a = dict_get(o->value.d.dict, "EFF");
+  if (a)
+    {
+      pdf_obj_resolve(a);
+      (*encrypt)->eff = pdf_malloc(strlen(a->value.k)+1);
+      memcpy((*encrypt)->eff, a->value.k, strlen(a->value.k));
+      (*encrypt)->eff[strlen(a->value.k)] = 0;
+    }
   a = dict_get(o->value.d.dict, "CF");
   if (a)
     {
       pdf_cf_load(a, &e->cf);
     }
+  // standard encryption dictionary (items)
+  a = dict_get(o->value.d.dict, "R");
+  if (a)
+    {
+      pdf_obj_resolve(a);
+      (*encrypt)->r = pdf_to_int(a);
+    }
+  a = dict_get(o->value.d.dict, "O"); // owner password
+  if (a)
+    {
+      // should verify length to 32 bytes
+      pdf_obj_resolve(a);
+      memcpy((*encrypt)->o, a->value.s.buf, a->value.s.len);
+    }
+  a = dict_get(o->value.d.dict, "U"); // user password
+  if (a)
+     {
+      // should verify length to 32 bytes
+      pdf_obj_resolve(a);
+      memcpy((*encrypt)->u, a->value.s.buf, a->value.s.len);
+    }
+  a = dict_get(o->value.d.dict, "P"); // permission flags
+  if (a)
+    {
+      pdf_obj_resolve(a);
+      (*encrypt)->p = pdf_to_int(a);
+    }
+  a = dict_get(o->value.d.dict, "EncryptMetadata");
+  if (a)
+    {
+      pdf_obj_resolve(a);
+      (*encrypt)->encrypt_metadata = a->value.b;
+    }
+
   return pdf_ok;
+}
+
+static void
+pdf_encrypt_free(pdf_encrypt *encrypt)
+{
+  if (encrypt->filter) pdf_free(encrypt->filter);
+  if (encrypt->subfilter) pdf_free(encrypt->subfilter);
+  if (encrypt->stmf) pdf_free(encrypt->stmf);
+  if (encrypt->strf) pdf_free(encrypt->strf);
+  if (encrypt->eff) pdf_free(encrypt->eff);
+  // to free CF
+  // free this
+  pdf_free(encrypt);
 }
 
 pdf_err pdf_trailer_open(trailer *tr)
@@ -458,6 +551,10 @@ pdf_err pdf_trailer_open(trailer *tr)
       if (tr->root.t == eDict && tr->is_xrefstm == 0)
 	dict_free(tr->root.value.d.dict);
       tr = tr->next;
+    }
+  if (t.encrypt)
+    {
+      pdf_encrypt_free(t.encrypt);
     }
   return pdf_ok;
 }
