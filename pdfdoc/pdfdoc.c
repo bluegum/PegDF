@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "pdfdoc.h"
 #include "pdftypes.h"
 #include "pdfindex.h"
@@ -135,7 +136,7 @@ pdf_err pdf_page_tree_load(pdf_doc *d, pdf_obj *o)
   return pdf_ok;
 }
 
-pdf_err pdf_exec_page_content(pdf_page *p)
+pdf_err pdf_exec_page_content(pdf_page *p, pdf_encrypt* encrypt)
 {
     pdf_stream *c;
     if (!p)
@@ -156,15 +157,19 @@ pdf_err pdf_exec_page_content(pdf_page *p)
     return pdf_ok;
 }
 
-pdf_err pdf_page_tree_walk(pdf_doc *d)
+pdf_err pdf_page_tree_walk(pdf_doc *d, pdf_encrypt* encrypt)
 {
   int i;
+  if (encrypt)
+    {
+      pdf_init_crypto(encrypt);
+    }
   for (i = 0; i < d->count; i++)
     {
 #ifdef DEBUG
       printf("processing page#%d\n", i);
 #endif
-      pdf_exec_page_content(d->pages[i]);
+      pdf_exec_page_content(d->pages[i], encrypt);
 #ifdef DEBUG
       printf("%s", "\n");
 #endif
@@ -177,18 +182,13 @@ pdf_doc* pdf_doc_load(pdf_obj *rdoc)
   pdf_obj *a, *d, *c, *kids;
   pdf_doc *doc;
 
-  if (rdoc->t == eRef)
-    {
-      d = pdf_obj_find(rdoc->value.r.num, rdoc->value.r.gen);
-    }
-  else if (rdoc->t == eDict)
-    {
-      d = rdoc;
-    }
-  else
-    {
-      return pdf_ok;
-    }
+  pdf_obj_resolve(rdoc);
+
+  assert (rdoc);
+  assert (rdoc->t == eDict);
+
+  d = rdoc;
+
   if (!d || d->t != eDict)
     return NULL;
   a = dict_get(d->value.d.dict, "Pages");
@@ -218,9 +218,9 @@ pdf_doc* pdf_doc_load(pdf_obj *rdoc)
   return doc;
 }
 
-pdf_err pdf_doc_process(pdf_doc *d)
+pdf_err pdf_doc_process(pdf_doc *d, pdf_encrypt* encrypt)
 {
-  return pdf_page_tree_walk(d);
+  return pdf_page_tree_walk(d, encrypt);
 }
 
 pdf_err  pdf_doc_print_info(pdf_doc *d)
@@ -531,7 +531,7 @@ pdf_err pdf_trailer_open(trailer *tr)
   if (!d)
     goto done;
   d->info = t.info; // pass info as member of doc
-  pdf_doc_process(d);
+  pdf_doc_process(d, t.encrypt);
   pdf_doc_print_info(d);
   pdf_doc_done(d);
  done:

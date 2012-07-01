@@ -1,26 +1,27 @@
 ### Build flags for all targets
 #
-CF_ALL          = -g -Wall -I . -I pdfdoc 
-LF_ALL          = -lz -lm
+INCLUDE_ALL     = -I pdfdoc -I openssl/include/openssl -I openssl
+CF_ALL          = -g -Wall -I . $(INCLUDE_ALL)
+LF_ALL          = -lz -lm -lcrypto -L openssl
 LL_ALL          =
-
 ifeq	"$(YYDEBUG)" "y"
 	CF_ALL += -DYY_DEBUG
 endif
 ifeq	"$(DEBUG)" "y"
 	CF_ALL +=  -DDEBUG
 endif
-
 ### Build tools
 #
 CC              = gcc
 COMP            = $(CC) $(CF_ALL) $(CF_TGT) -o $@ -c $<
 LINK            = $(CC) $(LF_TGT) -o $@ $^ $(LL_TGT) $(LL_ALL) $(LF_ALL)
 COMPLINK        = $(CC) $(CF_ALL) $(CF_TGT) $(LF_ALL) $(LF_TGT) -o $@ $< $(LL_TGT) $(LL_ALL)
-ARCHIVE			= $(AR) $(ARFLAGS) $@ $^
+ARCHIVE         = $(AR) $(ARFLAGS) $@ $^
+MAKE            = make
 #
 vpath %.h . pdfdoc
 # GLOBALS TARGETS
+CRYPTO  = openssl/libcrypto.a
 TGT_LIB	=
 
 APP = readpdf
@@ -35,7 +36,7 @@ all :
 # General dir rules
 include Rules.mk
 
-.PHONY: all
+.PHONY: all realclean
 all : $(APP)
 
 .PHONY: libraries
@@ -47,7 +48,7 @@ pdf.c  : pdf.peg
 
 pdf_parse.c pdf_parse.o:	pdf.c
 
-readpdf : pdf_parse.o readpdf.o tst.o dict.o bplustree.o pdfindex.o pdfmem.o substream.o $(TGT_LIB)
+readpdf : pdf_parse.o readpdf.o tst.o dict.o bplustree.o pdfindex.o pdfmem.o substream.o $(TGT_LIB) $(CRYPTO)
 
 test	:	readpdf
 	@./readpdf examples/simpledict.pdf
@@ -57,3 +58,9 @@ test	:	readpdf
 	else \
 		echo "failed test"; \
 	fi
+## openssl/libcrypto.a
+$(CRYPTO) : 
+	@cd openssl; $(MAKE) build_crypto; cd ..;
+
+realclean: $(CLEAN)
+	@cd openssl; $(MAKE) clean; cd ..;

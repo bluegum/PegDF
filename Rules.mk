@@ -31,7 +31,7 @@ include		$(dir)/module.mk
 
 %.d:	%.c
 	-rm -f $@
-	$(CC) $(CFLAGS) -MM -I. $< >> $@
+	$(CC) $(CFLAGS) -MM -I. $(INCLUDE_ALL) $< >> $@
 # The variables TGT_*, CLEAN and CMD_INST* may be added to by the Makefile
 # fragments in the various subdirectories.
 
