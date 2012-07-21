@@ -24,13 +24,13 @@ pdf_flated_new(pdf_filter **f)
   z_stream *z;
   int ret;
   if (!f)
-    return pdf_ok;
+    return pdf_unknown;
   *f = pdf_malloc(sizeof(pdf_filter));
   if (!(*f))
-    return pdf_ok;
+    return pdf_mem_err;
   z = pdf_malloc(sizeof(z_stream));
   if (!z)
-    return pdf_ok;
+    return pdf_mem_err;
   memset(z, 0, sizeof(z_stream));
   z->zalloc = zalloc;
   z->zfree = zfree;

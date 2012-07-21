@@ -31,6 +31,7 @@ start	<- COMMENT EOL* SPACE*
 	   / DELIM XREF TRAILER 
 	   / DELIM STARTXREF {print_stack();}
 	   / DELIM GARBAGE DELIM
+	   / EOF
 DICT	<- DB 
 	( KEY COMMENT* (VALUE / KWORD / ID)
 	/ COMMENT  
@@ -70,7 +71,7 @@ STRE       <- (
 #string alphabet
 STRA       <- (ESCPAREN / (!STRBGN !STREND .))
 
-HEXSTR	   <- '<' < [0-9a-fA-F\n\r]* > '>' DELIM {push(eString, 0, yytext);}
+HEXSTR	   <- '<' < [0-9a-fA-F\n\r]* > '>' DELIM {push(eHexString, 0, yytext);}
 
 OBJ	<- DELIM NUM  NUM  'obj' DELIM   { push(eObjMarker, 0, NULL); }
 	COMMENT*
@@ -148,3 +149,4 @@ ID		<- (!SPACE !EOL .)* DELIM
 SP		<- ' '
 CR		<- '\r'
 LF		<- '\n'
+EOF             <- !. { parse_finish(); }

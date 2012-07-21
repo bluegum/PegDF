@@ -253,6 +253,14 @@ struct pdf_bead_s
   gs_rect r;
 };
 
+typedef enum pdf_encrypt_kind_e pdf_encrypt_kind;
+enum pdf_encrypt_kind_e
+  {
+    eCryptNone,
+    eCryptRC4,
+    eCryptAES
+  };
+
 struct pdf_cryptfilter_s
 {
   char *type;

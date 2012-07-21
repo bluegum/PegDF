@@ -60,6 +60,7 @@ s_get_char(buffer_stream *s)
   if (s->p == s->e)
     {
       int i;
+      pdf_filter *f = s->f;
       //move last 2 byte to 1st in buffer, in case of unget
       if (s->p != s->buf)
 	{
@@ -67,7 +68,7 @@ s_get_char(buffer_stream *s)
 	  s->buf[1] = *(s->e-1);
 	  s->p = s->buf + 2;
 	}
-      i = (s->f->read)(s->f, s->p, BUFFER_STREAM_BUF_SIZE);
+      i = (f->read)(f, s->p, BUFFER_STREAM_BUF_SIZE);
       if (i == 0)
 	return EOF;
       s->e = s->p + i;

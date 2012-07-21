@@ -6,6 +6,7 @@
 #include "pdftypes.h"
 #include "pdfindex.h"
 #include "pdfmem.h"
+#include "pdfcrypto.h"
 #include "readpdf.h"
 
 static void pdf_info_free(pdf_info *info);
@@ -146,6 +147,10 @@ pdf_err pdf_exec_page_content(pdf_page *p, pdf_encrypt* encrypt)
     p->content_streams = pdf_streams_load(p->contents);
     for (c = p->content_streams; c; c = c->next)
     {
+      if (encrypt)
+	{
+	  pdf_filter *crypt;
+	}
       pdf_cs_parse(p, c);
     }
     if (p->content_streams)
@@ -160,10 +165,7 @@ pdf_err pdf_exec_page_content(pdf_page *p, pdf_encrypt* encrypt)
 pdf_err pdf_page_tree_walk(pdf_doc *d, pdf_encrypt* encrypt)
 {
   int i;
-  if (encrypt)
-    {
-      pdf_init_crypto(encrypt);
-    }
+
   for (i = 0; i < d->count; i++)
     {
 #ifdef DEBUG
@@ -250,7 +252,7 @@ struct pdf_trailer_s
   pdf_doc * root;
   pdf_encrypt *encrypt;
   pdf_info *info;
-  unsigned char *id[2];
+  unsigned char id[2][32];
   // xrefstream entries
   int index[2];
   int w[3];
@@ -473,6 +475,7 @@ pdf_encrypt_free(pdf_encrypt *encrypt)
 
 pdf_err pdf_trailer_open(trailer *tr)
 {
+  pdfcrypto_priv *crypto = NULL;
   pdf_obj *a, *root, *o;
   pdf_trailer t;
   pdf_doc * d;
@@ -512,8 +515,8 @@ pdf_err pdf_trailer_open(trailer *tr)
   a = dict_get(o->value.d.dict, "ID");
   if (a && a->t == eArray)
     {
-      t.id[0] = &a->value.a.items[0];
-      t.id[1] = &a->value.a.items[1];
+      memcpy(t.id[0], a->value.a.items[0].value.s.buf, 32);
+      memcpy(t.id[1], a->value.a.items[1].value.s.buf, 32);
     }
   /// xrefstream entries
   a = dict_get(o->value.d.dict, "Index");
@@ -531,7 +534,35 @@ pdf_err pdf_trailer_open(trailer *tr)
   if (!d)
     goto done;
   d->info = t.info; // pass info as member of doc
+  if (t.encrypt)
+    {
+      unsigned char u[32];
+      crypto = pdf_crypto_init(t.encrypt, t.id[0],
+			       "", // password
+			       0 // password len
+			       );
+      // lazy authentication
+      pdf_crypto_calc_userpassword(crypto, t.id[0],
+				   "", // password
+				   0,  // pwlen
+				   u);
+      if (crypto->rev == 3)
+	{
+	  if (memcmp(u, t.encrypt->u, 16) != 0)
+	    goto done_process;
+	}
+      else if (crypto->rev == 2)
+	{
+	  if (memcmp(u, t.encrypt->u, 32) != 0)
+	    goto done_process;
+	}
+    }
   pdf_doc_process(d, t.encrypt);
+ done_process:
+  if (t.encrypt)
+    {
+      pdf_crypto_destroy(crypto);
+    }
   pdf_doc_print_info(d);
   pdf_doc_done(d);
  done:

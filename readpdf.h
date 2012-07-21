@@ -109,6 +109,7 @@ struct pdf_parser_s
   int file_position;
   int cur_obj, cur_gen;
   int lock;
+  int parse_finished;
   // lex buffer for one-liner parser, for object stream parsing to be specific
   char *oneobj, *p_oneobj;
   int cnt_oneobj;

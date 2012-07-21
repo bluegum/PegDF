@@ -52,6 +52,33 @@ int push(e_pdf_kind t, double n, char *s)
       parser_inst->stack[parser_inst->stackp].value.k = pdf_malloc(strlen(s)+1);
       memcpy(parser_inst->stack[parser_inst->stackp].value.k, s, strlen(s)+1);
       break;
+    case eHexString:
+      {
+	pdf_obj o;
+	o.t = eHexString;
+	if (s)
+	  {
+	    char *pout;
+	    int i;
+	    o.value.s.len = strlen(s)/2;
+	    pout = o.value.s.buf = pdf_malloc(o.value.s.len);
+	    for (i = 0; i < o.value.s.len; i++)
+	      {
+		int a = *s++;
+		if (isdigit(a)) *pout = a - '0';
+		else if (isxdigit(a)) *pout = toupper(a) - 'A' + 10;
+		*pout <<= 4;
+		a = *s++;
+		if (isdigit(a)) *pout += a - '0';
+		else if (isxdigit(a)) *pout += toupper(a) - 'A' + 10;
+		pout++;
+	      }
+	  }
+	else
+	  o.value.s.len = 0;
+	parser_inst->stack[parser_inst->stackp] = o;
+      }
+      break;
     case eString:
       {
 	pdf_obj o;
@@ -59,8 +86,8 @@ int push(e_pdf_kind t, double n, char *s)
 	if (s)
 	  {
 	    o.value.s.len = strlen(s);
-	    o.value.s.buf = pdf_malloc(strlen(s));
-	    memcpy(o.value.s.buf, s, strlen(s));
+	    o.value.s.buf = pdf_malloc(o.value.s.len);
+	    memcpy(o.value.s.buf, s, o.value.s.len);
 	  }
 	else
 	  o.value.s.len = 0;
@@ -158,9 +185,51 @@ pdf_obj push_literal(char *s)
       else
 	{
 	  /* new string */
+	  int len = 0;
+	  char *p = s;
+	  char *d;
+#define isoct(a) ((a)>= '0' && (a)<= '7')
 	  o->value.s.len = strlen(s);
-	  o->value.s.buf = pdf_malloc(o->value.s.len);
-	  memcpy(o->value.s.buf, s, o->value.s.len);
+	  o->value.s.buf = d = pdf_malloc(o->value.s.len);
+	  while (*p)
+	    {
+	      // translate escape sequence to binary
+	      if (*p == '\\')
+		{
+		  if (isoct(*(p+1)) && isoct(*(p+2)) && isoct(*(p+3)))
+		    {
+		      // TODO : tranlate octal string to octal value
+		      *d++ = *p++;
+		    }
+		  else
+		    {
+		      p++;
+		      switch (*p)
+			{
+			case 't':
+			  *d++ = '\t';
+			  break;
+			case 'n':
+			  *d++ = '\n';
+			  break;
+			case 'r':
+			  *d++ = '\r';
+			  break;
+			case 'b':
+			  *d++ = '\b';
+			  break;
+			default:
+			  *d++ = *p;
+			  break;
+			}
+		      p++;
+		    }
+		}
+	      else
+		*d++ = *p++;
+	      len++;
+	    }
+	  o->value.s.len = len;
 	}
     }
   return parser_inst->stack[parser_inst->stackp];
@@ -307,6 +376,10 @@ void pop_comment(char *s, int len)
   parser_inst->comment_string = s;
 }
 
+void parse_finish()
+{
+  parser_inst->parse_finished = 1;
+}
 // return 0 if match
 static int
 match_string(char *m)
@@ -616,9 +689,9 @@ static int f_getchar()
   c = getc(parser_inst->infile);
   parser_inst->file_position += 1;
 #ifdef YY_DEBUG
-   if (EOF != c) printf("<%c>\n", c); 
+  if (EOF != c) printf("<%c>\n", c); 
 #endif
-   return c;
+  return c;
 }
 ///////////////////////////////////////////////////
 /// parser getchar, from stream
@@ -630,7 +703,7 @@ static int s_getchar()
     return *parser_inst->p_oneobj++;
   }
   else
-   return EOF;
+    return EOF;
 }
 
 int  lex_positive_int(pdf_stream *s)
@@ -792,6 +865,7 @@ parser_new(FILE *in, FILE *out, parser_getchar getchar)
   parser_inst = (pdf_parser*)pdf_malloc(sizeof(pdf_parser));
   if (!parser_inst)
     return NULL;
+  parser_inst->parse_finished = 0;
   parser_inst->infile = in;
   parser_inst->outfile = out;
   parser_inst->getchar = getchar;
@@ -973,6 +1047,8 @@ int main(int argc, char **argv)
       else
 	{
 	  /// process obj stream
+	  if (parser_inst->parse_finished)
+	    break;
 	  if (parser_inst->cur_obj != -1)
 	    {
 	      pdf_obj *o = pdf_obj_find(parser_inst->cur_obj, parser_inst->cur_gen);
