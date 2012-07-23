@@ -2,7 +2,7 @@
 #
 INCLUDE_ALL     = -I pdfdoc -I openssl/include/openssl -I openssl
 CF_ALL          = -g -Wall -I . $(INCLUDE_ALL)
-LF_ALL          = -lz -lm -lcrypto -L openssl
+LF_ALL          = -lz -lm -ldl -lcrypto -L openssl
 LL_ALL          =
 ifeq	"$(YYDEBUG)" "y"
 	CF_ALL += -DYY_DEBUG
@@ -21,7 +21,7 @@ MAKE            = make
 #
 vpath %.h . pdfdoc
 # GLOBALS TARGETS
-CRYPTO  = openssl/libcrypto.a
+LIB_CRYPTO  = openssl/libcrypto.a
 TGT_LIB	=
 
 APP = readpdf
@@ -36,19 +36,15 @@ all :
 # General dir rules
 include Rules.mk
 
-.PHONY: all realclean
-all : $(APP)
-
-.PHONY: libraries
-
-libraries: $(TGT_LIB)
-
+.PHONY: all realclean clean
+all :  $(APP)
+$(APP) : $(LIB_CRYPTO)
 pdf.c  : pdf.peg
 	peg -v -o $(@) $(<)
 
 pdf_parse.c pdf_parse.o:	pdf.c
 
-readpdf : pdf_parse.o readpdf.o tst.o dict.o bplustree.o pdfindex.o pdfmem.o substream.o $(TGT_LIB) $(CRYPTO)
+readpdf : pdf_parse.o readpdf.o tst.o dict.o bplustree.o pdfindex.o pdfmem.o substream.o $(TGT_LIB) $(LIB_CRYPTO)
 
 test	:	readpdf
 	@./readpdf examples/simpledict.pdf
@@ -58,9 +54,12 @@ test	:	readpdf
 	else \
 		echo "failed test"; \
 	fi
+# a hack to force build libcrypto.a first
+pdfdoc/pdfcrypto.d : $(LIB_CRYPTO)
 ## openssl/libcrypto.a
-$(CRYPTO) : 
-	@cd openssl; $(MAKE) build_crypto; cd ..;
+$(LIB_CRYPTO) :
+	@cd openssl; ./config; $(MAKE) build_crypto; cd ..;
 
-realclean: $(CLEAN)
-	@cd openssl; $(MAKE) clean; cd ..;
+realclean:
+	$(MAKE) clean;
+	@cd openssl; if test -e Makefile ; then $(MAKE) clean; rm -f Makefile; rm crypto/opensslconf.h; rm include/openssl/evp.h; fi; cd ..;
