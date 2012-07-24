@@ -2,7 +2,7 @@
 #
 INCLUDE_ALL     = -I pdfdoc -I openssl/include/openssl -I openssl
 CF_ALL          = -g -Wall -I . $(INCLUDE_ALL)
-LF_ALL          = -lz -lm -ldl -lcrypto -L openssl
+LF_ALL          = -lz -lm -lcrypto -L openssl -ldl
 LL_ALL          =
 ifeq	"$(YYDEBUG)" "y"
 	CF_ALL += -DYY_DEBUG
