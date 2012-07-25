@@ -6,7 +6,6 @@
 
 all:		targets
 
-
 # Subdirectories, in random order
 
 dir	:= pdfdoc
@@ -31,7 +30,7 @@ include		$(dir)/module.mk
 
 %.d:	%.c
 	-rm -f $@
-	$(CC) $(CFLAGS) -MM -I. $(INCLUDE_ALL) $< >> $@
+	$(CC) $(CFLAGS) -MT $< -I. $(INCLUDE_ALL) $< >> $@
 # The variables TGT_*, CLEAN and CMD_INST* may be added to by the Makefile
 # fragments in the various subdirectories.
 

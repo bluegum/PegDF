@@ -28,7 +28,6 @@ THE SOFTWARE.
 typedef struct pdf_obj_s pdf_obj;
 typedef struct pdf_xref_s pdf_xref;
 
-
 typedef enum pdf_error_e
   {
     pdf_ok,
@@ -85,7 +84,6 @@ struct pdf_obj_s
      pdf_xref r;
    } value;
 };
-
 
 typedef struct gs_matrix_s gs_matrix;
 typedef struct gs_point_s gs_point;

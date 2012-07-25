@@ -1,5 +1,6 @@
 #ifndef PDFDOC_H
 #define PDFDOC_H
+
 #include "pdftypes.h"
 #include "gsdraw.h"
 #include "pdfresource.h"
@@ -8,7 +9,7 @@
 typedef struct pdf_page_s pdf_page;
 typedef struct pdf_doc_s pdf_doc;
 typedef struct pdf_info_s pdf_info;
-//typedef struct pdf_extgstate_s pdf_extgstate;
+// typedef struct pdf_extgstate_s pdf_extgstate;
 typedef struct pdf_group_s pdf_group;
 typedef struct pdf_mask_s pdf_mask;
 typedef struct pdf_annots_s pdf_annots;
@@ -290,6 +291,7 @@ struct pdf_encrypt_s
   int p;
   int encrypt_metadata;
 };
+
 // short hands
 static inline int pdf_brush_n(pdf_page *p) { return p->s->brush.n; }
 static inline int pdf_pen_n(pdf_page *p) { return p->s->pen.n; }
