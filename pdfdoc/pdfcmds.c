@@ -182,6 +182,7 @@ pdf_err x_Tf(pdf_page *p, pdf_obj res, float scale)
   if (p->resources && p->resources->font)
     {
       r = p->resources->font;
+      pdf_obj_resolve(r);
       assert(r->t == eDict);
       f = dict_get(r->value.d.dict, res.value.k);
       pdf_obj_resolve(f);

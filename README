@@ -19,12 +19,15 @@ to the nature of LL(k) of PEG, and to avoid excessive AST. So each grammar
 only covers individual language constructs, and the document correctness is
 enforced by semantic handlers.
 
-Some observations on PDF specificatin, and this PEG grammar on that, even the current grammar specifies PDF nested string construct, However, by using more comprehensive semantic handler may better handle a string AST.
+Some observations on PDF specificatin, and this PEG grammar on that, even the
+current grammar specifies PDF nested string construct, However, by using more 
+comprehensive semantic handler may better handle a string AST.
 
 This project is writting in the original PEG syntax.
 peg/leg parser/generater is required to build PegDF.
 
-The other purpose of this object, is to prove that the "xref" is not essential in interpreting a PDF stream. So far, this is proved to be correct.
+The other purpose of this object, is to prove that the "xref" is not essential 
+in interpreting a PDF stream. So far, this is proved to be correct.
 
 Steps to build:
 1. download peg/leg source code.
