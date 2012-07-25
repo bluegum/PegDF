@@ -173,6 +173,7 @@ pdf_crypto_calc_userpassword(pdfcrypto_priv* c, unsigned char id1[16], char *pw,
       EVP_DigestUpdate(&ctx, pdf_key_padding, 32);
       EVP_DigestUpdate(&ctx, id1, 16);
       EVP_DigestFinal(&ctx, digest, &digest_len);
+      EVP_MD_CTX_cleanup (&ctx);
       /* step 1 - rc4 digest*/
       pdf_crypto_encrypt_arc4(c->key, digest, 16, out, &olen);
       /* step 2 - rc4 19 times */
@@ -192,11 +193,101 @@ pdf_crypto_calc_userpassword(pdfcrypto_priv* c, unsigned char id1[16], char *pw,
   return;
 }
 
-pdf_filter *
-pdf_crypt_new(pdf_filter *src, pdf_encrypt_kind t, unsigned char *key, int len)
+// pdf arc4 cipher
+
+pdf_err
+pdf_filter_arc4_close(pdf_filter *f)
 {
+  EVP_CIPHER_CTX *ctx;
+  if (!f)
+    return 0;
+  ctx = (EVP_CIPHER_CTX*)f->state;
+  EVP_CIPHER_CTX_cleanup(ctx);
+  pdf_free(ctx);
+  pdf_free(f);
+  return pdf_ok;
+}
+
+static int
+pdf_filter_arc4_read(pdf_filter *f, unsigned char *obuf, int request)
+{
+  pdf_filter *up;
+  EVP_CIPHER_CTX *ctx;
+  int tmplen, l;
+
+  if (!f)
+    return 0;
+  ctx = (EVP_CIPHER_CTX*)f->state;
+  up = f->next; // upstream
+  // read upstream
+  l = (up->read)(up, f->ptr, (request < PDF_FILTER_BUF_SIZE)?request:PDF_FILTER_BUF_SIZE);
+  if (l == 0)
+    {
+      if (!EVP_EncryptFinal(ctx, obuf, &tmplen))
+	return 0;
+      else
+	return tmplen;
+   }
+  if(!EVP_DecryptUpdate(ctx, obuf, &request, f->ptr, l))
+    {
+      /* Error */
+      return 0;
+    }
+  return request;
+}
+
+// cipher filter api(s)
+pdf_filter *
+pdf_cryptofilter_new(pdfcrypto_priv *crypto, int num, int gen)
+{
+  unsigned int n;
+  unsigned char key[256];
+  unsigned char final_key[256];
   pdf_filter *f = pdf_malloc(sizeof(pdf_filter));
+  EVP_MD_CTX ctx;
+  const EVP_MD *md = EVP_md5();
   if (!f)
     return NULL;
+  memset(f, 0, sizeof(pdf_filter));
+  n = crypto->len/8;
+  memcpy(key, crypto->key, n);
+  // Pad with obj-num and gen-num
+  key[n] = (num) & 0xff;
+  key[n+1] = (num >> 8) & 0xff;
+  key[n+2] = (num >> 16) & 0xff;
+  key[n+3] = (gen) & 0xff;
+  key[n+4] = (gen >> 8) & 0xff;
+  // md5 to get key
+  n += 5;
+  EVP_DigestInit(&ctx, md);
+  EVP_DigestUpdate(&ctx, key, n);
+  EVP_DigestFinal(&ctx, final_key, &n);
+  EVP_MD_CTX_cleanup (&ctx);
+  // max 16 bytes of key
+  if (n>16)
+    n = 16;
+
+  if (crypto->algo == e40plusbits)
+    {
+      EVP_CIPHER_CTX *ctx; // cipher state
+      const EVP_CIPHER *rc4 = EVP_rc4();
+
+      ctx = pdf_malloc(sizeof(EVP_CIPHER_CTX));
+      if (!ctx)
+	goto cf_fail; // cipher filter fail
+      EVP_CIPHER_CTX_init (ctx);
+      EVP_EncryptInit(ctx, rc4, final_key, NULL); // NULL for rc4 iv
+      f->state = (void*) ctx;
+      f->close = pdf_filter_arc4_close;
+      f->read = pdf_filter_arc4_read;
+      f->ptr = f->buf;
+    }
+  else if (crypto->algo == eCryptAES)
+    {
+    }
   return f;
+ cf_fail:
+  if (f)
+    pdf_free(f);
+  return NULL;
 }

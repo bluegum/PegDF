@@ -739,7 +739,7 @@ int  lex_positive_int(pdf_stream *s)
 
 // return 0 when ok
 static int
-read_objstream(pdf_obj *o)
+read_objstream(pdf_obj *o, int num, int gen)
 {
   dict *d;
   pdf_obj *a;
@@ -766,7 +766,7 @@ read_objstream(pdf_obj *o)
 
   objs = pdf_malloc(sizeof(*objs)*n);
   // construct filter chain and stream interface
-  s = pdf_stream_load(o);
+  s = pdf_stream_load(o, NULL, num, gen);
   if (!s) return 1;
   // construct parser
   oldparser = parser_inst;
@@ -1060,7 +1060,7 @@ int main(int argc, char **argv)
 		      if (strncmp(t->value.k, "ObjStm", 6) == 0)
 			{
 			  DMSG("Procssing Object stream");
-			  read_objstream(o);
+			  read_objstream(o, parser_inst->cur_obj, parser_inst->cur_gen);
 			}
 		      else if (strncmp(t->value.k, "XRef", 4) == 0)
 			{

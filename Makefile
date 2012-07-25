@@ -60,6 +60,5 @@ pdfdoc/pdfcrypto.d : $(LIB_CRYPTO)
 $(LIB_CRYPTO) :
 	@cd openssl; ./config; $(MAKE) build_crypto; cd ..;
 
-realclean:
-	$(MAKE) clean;
+realclean: clean
 	@cd openssl; if test -e Makefile ; then $(MAKE) clean; rm -f Makefile; rm crypto/opensslconf.h; rm include/openssl/evp.h; fi; cd ..;

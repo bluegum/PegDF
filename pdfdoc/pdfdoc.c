@@ -2,12 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include "pdfdoc.h"
 #include "pdftypes.h"
 #include "pdfindex.h"
 #include "pdfmem.h"
-#include "pdfcrypto.h"
 #include "readpdf.h"
+#include "pdfdoc.h"
+#include "pdfcrypto.h"
 
 static void pdf_info_free(pdf_info *info);
 
@@ -137,32 +137,48 @@ pdf_err pdf_page_tree_load(pdf_doc *d, pdf_obj *o)
   return pdf_ok;
 }
 
-pdf_err pdf_exec_page_content(pdf_page *p, pdf_encrypt* encrypt)
+pdf_err pdf_exec_page_content(pdf_page *p, pdfcrypto_priv* encrypt)
 {
-    pdf_stream *c;
-    if (!p)
-      return pdf_ok;
+  pdf_stream *s;
+  if (!p)
+    return pdf_ok;
+  if (!p->contents)
+    return pdf_ok;
+  if (p->contents->t != eDict && p->contents->t != eRef && p->contents->t != eArray)
+    return pdf_ok;
+  //p->content_streams = pdf_streams_load(p->contents);
+  {
+    pdf_obj *oo;
+    int i, n;
+
+    pdf_obj_resolve(p->contents);
     if (!p->contents)
       return pdf_ok;
-    p->content_streams = pdf_streams_load(p->contents);
-    for (c = p->content_streams; c; c = c->next)
-    {
-      if (encrypt)
-	{
-	  pdf_filter *crypt;
-	}
-      pdf_cs_parse(p, c);
-    }
-    if (p->content_streams)
+    if (p->contents->t == eArray)
       {
-	pdf_streams_free(p->content_streams);
-	p->content_streams = NULL;
+        n = p->contents->value.a.len;
+        oo = &p->contents->value.a.items[0];
       }
+    else if (p->contents->t == eDict)
+      {
+        n = 1;
+        oo = p->contents;
+      }
+    else
+      return pdf_ok;
 
-    return pdf_ok;
+    for (i = 0; i < n && oo; i++, oo++)
+      {
+	s = pdf_stream_load(oo, encrypt, oo->value.r.num, oo->value.r.gen);
+	pdf_cs_parse(p, s);
+	pdf_stream_free(s);
+      }
+  }
+
+  return pdf_ok;
 }
 
-pdf_err pdf_page_tree_walk(pdf_doc *d, pdf_encrypt* encrypt)
+pdf_err pdf_page_tree_walk(pdf_doc *d, pdfcrypto_priv* encrypt)
 {
   int i;
 
@@ -220,7 +236,7 @@ pdf_doc* pdf_doc_load(pdf_obj *rdoc)
   return doc;
 }
 
-pdf_err pdf_doc_process(pdf_doc *d, pdf_encrypt* encrypt)
+pdf_err pdf_doc_process(pdf_doc *d, pdfcrypto_priv* encrypt)
 {
   return pdf_page_tree_walk(d, encrypt);
 }
@@ -515,8 +531,8 @@ pdf_err pdf_trailer_open(trailer *tr)
   a = dict_get(o->value.d.dict, "ID");
   if (a && a->t == eArray)
     {
-      memcpy(t.id[0], a->value.a.items[0].value.s.buf, 32);
-      memcpy(t.id[1], a->value.a.items[1].value.s.buf, 32);
+      memcpy(t.id[0], a->value.a.items[0].value.s.buf, 16);
+      memcpy(t.id[1], a->value.a.items[1].value.s.buf, 16);
     }
   /// xrefstream entries
   a = dict_get(o->value.d.dict, "Index");
@@ -557,7 +573,7 @@ pdf_err pdf_trailer_open(trailer *tr)
 	    goto done_process;
 	}
     }
-  pdf_doc_process(d, t.encrypt);
+  pdf_doc_process(d, crypto);
  done_process:
   if (t.encrypt)
     {
@@ -615,13 +631,14 @@ pdf_resources_load(pdf_obj *o)
 }
 
 pdf_stream*
-pdf_stream_load(pdf_obj* o)
+pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
 {
-  pdf_filter *last = NULL, *raw;
+  pdf_filter *last = NULL, *raw, *crypt = NULL;
   pdf_stream *s;
   sub_stream *ss;
   pdf_obj *x, *xx, *y;
   int m, mm;
+
   // fill stream info
   pdf_obj_resolve(o);
   y = o;
@@ -629,10 +646,6 @@ pdf_stream_load(pdf_obj* o)
     {
       return NULL;
     }
-  /// internal struct. raw stream object
-  ss = dict_get(y->value.d.dict, "S_O");
-  if (!ss)
-    return NULL;
   x = dict_get(y->value.d.dict, "Length");
   if (!x || (x->t != eInt && x->t != eRef))
     {
@@ -645,12 +658,24 @@ pdf_stream_load(pdf_obj* o)
     return NULL;
   memset(s, 0, sizeof(pdf_stream));
   s->length = x->value.i;
-  ss->len = s->length;
-  //
-  x = dict_get(y->value.d.dict, "Filter");
   // make raw filter
+  /// internal struct. raw stream object
+  ss = dict_get(y->value.d.dict, "S_O");
+  if (!ss)
+    return NULL;
+  ss->len = s->length;
   raw = pdf_rawfilter_new(ss);
-  last = raw;
+  // chain crypto filter
+  if (crypto)
+    {
+      crypt = pdf_cryptofilter_new(crypto, numobj, numgen);
+      if (!crypt)
+	return NULL;
+      crypt->next = raw;
+    }
+  // chain rest
+  x = dict_get(y->value.d.dict, "Filter");
+  last = (crypt)?crypt:raw;
   if (!x)
     {
       goto done;
@@ -863,7 +888,7 @@ pdf_annots_free(pdf_annots *a)
     }
   return pdf_ok;
 }
-
+#if 0
 pdf_stream*
 pdf_streams_load(pdf_obj* o)
 {
@@ -918,7 +943,7 @@ pdf_streams_free(pdf_stream *s)
     }
   return pdf_ok;
 }
-
+#endif
 pdf_err
 pdf_stream_free(pdf_stream *s)
 {

@@ -87,6 +87,7 @@ pdf_flated_read(pdf_filter *f, unsigned char *obuf, int request)
   else
     {
       // read upstream
+    read_upstream:
       in = (up->read)(up, f->ptr, PDF_FILTER_BUF_SIZE);
       z->next_in = f->ptr;
       z->avail_in = in;
@@ -98,6 +99,9 @@ pdf_flated_read(pdf_filter *f, unsigned char *obuf, int request)
     }
   else
     {
+      if (request == z->avail_out)
+	if (in)
+	  goto read_upstream;
       return request - z->avail_out;
     }
 }

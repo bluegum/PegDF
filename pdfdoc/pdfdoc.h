@@ -19,6 +19,7 @@ typedef struct pdf_thread_s pdf_thread;
 typedef struct pdf_bead_s pdf_bead;
 typedef struct pdf_encrypt_s pdf_encrypt;
 typedef struct pdf_cryptfilter_s pdf_cryptfilter;
+typedef struct pdfcrypto_priv_s pdfcrypto_priv;
 
 struct pdf_mask_s
 {
@@ -299,7 +300,7 @@ extern pdf_extgstate* pdf_extgstate_load(pdf_obj *o);
 extern pdf_annots* pdf_annots_load(pdf_obj* o);
 extern pdf_stream* pdf_streams_load(pdf_obj* o);
 extern pdf_err pdf_streams_free(pdf_stream* s);
-extern pdf_stream* pdf_stream_load(pdf_obj* o);
+extern pdf_stream* pdf_stream_load(pdf_obj* o, pdfcrypto_priv*, int, int);
 extern pdf_err pdf_stream_free(pdf_stream *s);
 extern pdf_err pdf_annots_free(pdf_annots *a);
 extern pdf_err pdf_resources_free(pdf_resources*);

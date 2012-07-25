@@ -1,0 +1,5 @@
+*.[doa]
+*~
+lib
+pdf.c
+readpdf
