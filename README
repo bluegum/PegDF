@@ -24,6 +24,8 @@ Some observations on PDF specificatin, and this PEG grammar on that, even the cu
 This project is writting in the original PEG syntax.
 peg/leg parser/generater is required to build PegDF.
 
+The other purpose of this object, is to prove that the "xref" is not essential in interpreting a PDF stream. So far, this is proved to be correct.
+
 Steps to build:
 1. download peg/leg source code.
 2. "cd peg-0.1.4"
@@ -32,7 +34,9 @@ Steps to build:
 5. make
 6. ./readpdf -o outfile infile
 
-enjoy.
+To make a debug build:
+you@machin:export DEBUG=y
+This will print out all the internal node id's and command digests.
 
 TODO:
 	formalize API for semantic functions
