@@ -4,8 +4,8 @@
 
 typedef struct dict_s
 {
-  Tptr dict;
-  int n;
+      Tptr dict;
+      int n;
 } dict;
 
 extern dict*   dict_new();

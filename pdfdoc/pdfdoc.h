@@ -24,183 +24,183 @@ typedef struct pdfcrypto_priv_s pdfcrypto_priv;
 
 struct pdf_mask_s
 {
-  char *s;
-  pdf_stream *g;
-  pdf_obj *bc;
-  void *tr;
+      char *s;
+      pdf_stream *g;
+      pdf_obj *bc;
+      void *tr;
 };
 
 struct pdf_group_s
 {
-  void *cs;
-  int i;
-  int k;
+      void *cs;
+      int i;
+      int k;
 };
 
 enum pdf_annotation_type_e
-  {
-    eText,
-    eLink,
-    eFreeText,
-    eLine,
-    eSquare,
-    eCircle, 
-    ePolygon,
-    ePolyLine,
-    eHighlight, 
-    eUnderline, 
-    eSquiggly, 
-    eStrikeOut, 
-    eStamp, 
-    eCaret, 
-    eInk, 
-    ePopup, 
-    eFileAttachment, 
-    eSound, 
-    eMovie, 
-    eWidget, 
-    eScreen, 
-    ePrinterMark, 
-    eTrapNet, 
-    eWatermark, 
-    e3D, 
-    eRedact,
-  };
+{
+      eText,
+      eLink,
+      eFreeText,
+      eLine,
+      eSquare,
+      eCircle,
+      ePolygon,
+      ePolyLine,
+      eHighlight,
+      eUnderline,
+      eSquiggly,
+      eStrikeOut,
+      eStamp,
+      eCaret,
+      eInk,
+      ePopup,
+      eFileAttachment,
+      eSound,
+      eMovie,
+      eWidget,
+      eScreen,
+      ePrinterMark,
+      eTrapNet,
+      eWatermark,
+      e3D,
+      eRedact,
+};
 
 struct pdf_annots_s
 {
-  void *subtype;
-  gs_rect rect;
-  char *contents;
-  pdf_obj *p;
-  char *nm;
-  char *m;
-  int f;
-  pdf_obj *ap;
-  void *as;
-  int *boarder;
-  float *c;
-  int structparent;
-  pdf_obj *oc;
-  // private
-  pdf_annots *next;
+      void *subtype;
+      gs_rect rect;
+      char *contents;
+      pdf_obj *p;
+      char *nm;
+      char *m;
+      int f;
+      pdf_obj *ap;
+      void *as;
+      int *boarder;
+      float *c;
+      int structparent;
+      pdf_obj *oc;
+      // private
+      pdf_annots *next;
 };
 
 struct pdf_resources_s
 {
-  pdf_extgstate *extgstate;
-  pdf_obj *colorspace;
-  pdf_obj *pattern;
-  pdf_obj *shading;
-  pdf_obj *xobject;
-  pdf_obj *font;
-  char **procset;
-  pdf_obj *properties;
+      pdf_extgstate *extgstate;
+      pdf_obj *colorspace;
+      pdf_obj *pattern;
+      pdf_obj *shading;
+      pdf_obj *xobject;
+      pdf_obj *font;
+      char **procset;
+      pdf_obj *properties;
 };
 
 struct pdf_page_s
 {
-  pdf_obj *parent;
-  char *lastmodified;
-  pdf_resources * resources;
-  gs_rect mediabox;
-  pdf_obj *contents;
-  int rotate;
-  pdf_group *group;
-  pdf_obj *thumb;
-  void *b;
-  void *dur;
-  void *trans;
-  pdf_annots *annots;
-  void *aa;
-  void *metadata;
-  void *pieceinfo;
-  void *structparents;
-  unsigned char *id;
-  int pz;
-  void *separationinfo;
-  void *tabs;
-  void *templateinstantiated;
-  void *pressteps;
-  int userunit;
-  void *vp;
-  // private
-  pdf_stream *content_streams;
-  pdf_prs sstk[32], *s; // Ought to be enough for g/G?
+      pdf_obj *parent;
+      char *lastmodified;
+      pdf_resources * resources;
+      gs_rect mediabox;
+      pdf_obj *contents;
+      int rotate;
+      pdf_group *group;
+      pdf_obj *thumb;
+      void *b;
+      void *dur;
+      void *trans;
+      pdf_annots *annots;
+      void *aa;
+      void *metadata;
+      void *pieceinfo;
+      void *structparents;
+      unsigned char *id;
+      int pz;
+      void *separationinfo;
+      void *tabs;
+      void *templateinstantiated;
+      void *pressteps;
+      int userunit;
+      void *vp;
+      // private
+      pdf_stream *content_streams;
+      pdf_prs sstk[32], *s; // Ought to be enough for g/G?
 };
 
 typedef enum pdf_pagemode_e pdf_pagemode;
 enum pdf_pagemode_e
-  {
-    UseNone,
-    UseOutlines,
-    UseThumbs,
-    FullScreen,
-    UseOC,
-    UseAttachments
-  };
+{
+      UseNone,
+      UseOutlines,
+      UseThumbs,
+      FullScreen,
+      UseOC,
+      UseAttachments
+};
 
 struct pdf_info_s
 {
-  char *title;
-  char *author;
-  char *subject;
-  char *keywords;
-  char *creator;
-  char *producer;
-  char *creationdate;
-  char *moddate;
-  enum {UNknown, TRue, FAlse} trapped;
+      char *title;
+      char *author;
+      char *subject;
+      char *keywords;
+      char *creator;
+      char *producer;
+      char *creationdate;
+      char *moddate;
+      enum {UNknown, TRue, FAlse} trapped;
 };
 
 struct pdf_doc_s
 {
-  // catalog
-  int version;
-  void *extentions;
-  void *pagelabels;
-  void *names;
-  void *dests;
-  void *viewerpreferences;
-  void *pagelayout;
-  pdf_pagemode pagemode;
-  void *outlines;
-  void *threads;
-  void *openaction;
-  void *aa;
-  void *uri;
-  void *acroform;
-  void *metadata;
-  void *structtreeroot;
-  void *markinfo;
-  char *lang;
-  void *spiderinfo;
-  void *outputintents;
-  void *pieceinfo;
-  void *ocproperties;
-  void *perms;
-  void *legal;
-  void *requirements;
-  void *collection;
-  int needsrendering; // boolean
-  // page tree
-  pdf_page **pages;
-  int count;
-  // internal
-  int pageidx;
-  pdf_info *info;
+      // catalog
+      int version;
+      void *extentions;
+      void *pagelabels;
+      void *names;
+      void *dests;
+      void *viewerpreferences;
+      void *pagelayout;
+      pdf_pagemode pagemode;
+      void *outlines;
+      void *threads;
+      void *openaction;
+      void *aa;
+      void *uri;
+      void *acroform;
+      void *metadata;
+      void *structtreeroot;
+      void *markinfo;
+      char *lang;
+      void *spiderinfo;
+      void *outputintents;
+      void *pieceinfo;
+      void *ocproperties;
+      void *perms;
+      void *legal;
+      void *requirements;
+      void *collection;
+      int needsrendering; // boolean
+      // page tree
+      pdf_page **pages;
+      int count;
+      // internal
+      int pageidx;
+      pdf_info *info;
 };
 
 struct pdf_stream_s
 {
-  int length;
-  void *decodeparms;
-  void *f;
-  pdf_filter *ffilter; // filter train
-  void *fdecodeparms;
-  int dl;
-  // private
-  pdf_stream *next;
+      int length;
+      void *decodeparms;
+      void *f;
+      pdf_filter *ffilter; // filter train
+      void *fdecodeparms;
+      int dl;
+      // private
+      pdf_stream *next;
 };
 
 /*
@@ -211,85 +211,85 @@ typedef struct pdf_xobject_s pdf_xobject;
 
 struct pdf_xobject_s
 {
-        int refs;
-        gs_matrix matrix;
-        gs_rect bbox;
-        int isolated;
-        int knockout;
-        int transparency;
-        pdf_obj *resources;
-  //fz_buffer *contents;
+      int refs;
+      gs_matrix matrix;
+      gs_rect bbox;
+      int isolated;
+      int knockout;
+      int transparency;
+      pdf_obj *resources;
+      //fz_buffer *contents;
 };
 
 // logical document layout
 struct pdf_structtreeroot_s
 {
-  char *type;
-  void *k;
-  void *idtree;
-  void *parenttree;
-  int parenttreenextkey;
-  void *rolemap;
-  void *classmap;
+      char *type;
+      void *k;
+      void *idtree;
+      void *parenttree;
+      int parenttreenextkey;
+      void *rolemap;
+      void *classmap;
 };
 
 struct pdf_pagelabel_s
 {
-  enum {D, R, r, A, a} s;
-  char *p;
-  int st;
+      enum {D, R, r, A, a} s;
+      char *p;
+      int st;
 };
 
 struct pdf_thread_s
 {
-  pdf_bead *f;
-  pdf_info *i;
+      pdf_bead *f;
+      pdf_info *i;
 };
 
 struct pdf_bead_s
 {
-  pdf_thread *t; // thread
-  pdf_bead *n; // next bead
-  pdf_bead *v; // prev bead
-  pdf_page *p; // page it belongs to
-  gs_rect r;
+      pdf_thread *t; // thread
+      pdf_bead *n; // next bead
+      pdf_bead *v; // prev bead
+      pdf_page *p; // page it belongs to
+      gs_rect r;
 };
 
 typedef enum pdf_encrypt_kind_e pdf_encrypt_kind;
 enum pdf_encrypt_kind_e
-  {
-    eCryptNone,
-    eCryptRC4,
-    eCryptAES
-  };
+{
+      eCryptNone,
+      eCryptRC4,
+      eCryptAES
+};
 
 struct pdf_cryptfilter_s
 {
-  char *type;
-  char *cfm;
-  enum {eDocOpen, eEFOpen} authevent;
-  int length;
-  // additional entries for public-key
-  void *recipients;
-  int encryptmetadata; // boolean
+      char *type;
+      char *cfm;
+      enum {eDocOpen, eEFOpen} authevent;
+      int length;
+      // additional entries for public-key
+      void *recipients;
+      int encryptmetadata; // boolean
 };
 
 struct pdf_encrypt_s
 {
-  char *filter;
-  char *subfilter;
-  int v;
-  int length;
-  pdf_cryptfilter *cf;
-  char *stmf;
-  char *strf;
-  char *eff;
-  // standard filter
-  int r;
-  unsigned char o[32];
-  unsigned char u[32];
-  int p;
-  int encrypt_metadata;
+      char *filter;
+      char *subfilter;
+      int v;
+      int length;
+      pdf_cryptfilter *cf;
+      char *stmf;
+      char *strf;
+      char *eff;
+      // standard filter
+      int r;
+      unsigned char o[32];
+      unsigned char u[32];
+      int p;
+      int encrypt_metadata;
 };
 
 // short hands

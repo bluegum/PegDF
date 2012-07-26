@@ -9,22 +9,22 @@ typedef void(*leaf_action)(void *);
 typedef struct s_bpt_node bpt_node;
 struct s_bpt_node
 {
-   int leaf;
-   int *k;
+      int leaf;
+      int *k;
 #ifdef BPT_LEAF_LINEAR
-   int low;
+      int low;
 #endif
-   int cnt;
-   union {
-      bpt_node * n;
-      void *d;
-   } *v;
-   bpt_node *next;
+      int cnt;
+      union {
+            bpt_node * n;
+            void *d;
+      } *v;
+      bpt_node *next;
 } ;
 
 typedef struct
 {
-   bpt_node *root;
+      bpt_node *root;
 } bpt_tree;
 
 typedef void (*bpt_callback)(bpt_node *n, leaf_action);
