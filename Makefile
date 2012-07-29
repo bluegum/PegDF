@@ -25,7 +25,7 @@ LIB_CRYPTO  = openssl/libcrypto.a
 TGT_LIB	=
 
 APP = readpdf
-CLEAN = $(APP) pdf.c pdf_parse.o readpdf.o
+CLEAN = $(APP) readpdf.o
 
 COMMON_HEADERS := *.h
 #######
@@ -39,12 +39,8 @@ include Rules.mk
 .PHONY: all realclean clean
 all :  $(APP)
 $(APP) : $(LIB_CRYPTO)
-pdf.c  : pdf.peg
-	peg -v -o $(@) $(<)
 
-pdf_parse.c pdf_parse.o:	pdf.c
-
-readpdf : pdf_parse.o readpdf.o $(TGT_LIB) $(LIB_CRYPTO)
+readpdf : readpdf.o $(TGT_LIB) $(LIB_CRYPTO)
 
 test	:	readpdf
 	@./readpdf examples/simpledict.pdf
