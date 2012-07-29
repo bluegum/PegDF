@@ -307,6 +307,11 @@ extern pdf_err pdf_stream_free(pdf_stream *s);
 extern pdf_err pdf_annots_free(pdf_annots *a);
 extern pdf_err pdf_resources_free(pdf_resources*);
 extern pdf_err pdf_extgstate_free(pdf_extgstate*);
-extern pdf_err pdf_trailer_open(trailer *trailer);
 extern pdf_err pdf_cs_parse(pdf_page *, pdf_stream *s);
+extern pdf_err pdf_cf_load(pdf_obj *o, pdf_cryptfilter **cryptfilter);
+extern pdf_err pdf_info_load(pdf_obj *o, pdf_info **info);
+extern pdf_doc* pdf_doc_load(pdf_obj *rdoc);
+extern void pdf_doc_done(pdf_doc *d);
+extern pdf_err  pdf_doc_print_info(pdf_doc *d);
+extern pdf_err pdf_doc_process(pdf_doc *d, pdfcrypto_priv* encrypt);
 #endif

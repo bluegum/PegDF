@@ -2,62 +2,61 @@
 # Standard stuff
 
 .SUFFIXES:
-.SUFFIXES:	.c .o
+.SUFFIXES:      .c .o
 
-all:		targets
+all:            targets
 
 # Subdirectories, in random order
 
-dir	:= pdfdoc
-include		$(dir)/module.mk
-dir	:= pdfdraw
-include		$(dir)/module.mk
+include         pdfread/module.mk
+include         pdfdoc/module.mk
+include         pdfdraw/module.mk
 
 
 # General directory independent rules
 
-%.o:		%.c
-		$(COMP)
+%.o:            %.c
+	$(COMP)
 
-%:		%.o
-		$(LINK)
+%:              %.o
+	$(LINK)
 
-%:		%.c
-		$(COMPLINK)
+%:              %.c
+	$(COMPLINK)
 
-%.a:	%.o
+%.a:    %.o
 	$(AR) r $% $*.o
 
-%.d:	%.c
+%.d:    %.c
 	-rm -f $@
-	$(CC) $(CFLAGS) -M -MT $< -I. $(INCLUDE_ALL) $< >> $@
+	$(CC) -MM -MT $(subst .c,.o,$<) $(INCLUDE_ALL) $< >> $@
 # The variables TGT_*, CLEAN and CMD_INST* may be added to by the Makefile
 # fragments in the various subdirectories.
 
-.PHONY:		targets
-targets:	$(TGT_BIN) $(TGT_SBIN) $(TGT_ETC) $(TGT_LIB)
+.PHONY:         targets
+targets:        $(TGT_BIN) $(TGT_SBIN) $(TGT_ETC) $(TGT_LIB)
 
-.PHONY:		clean
+.PHONY:         clean
 clean:
-		rm -f $(CLEAN) $(TGT_LIB)
+	rm -f $(CLEAN) $(TGT_LIB)
 
-.PHONY:		install
-install:	targets 
-		$(INST) $(TGT_BIN) -m 755 -d $(DIR_BIN)
-		$(CMD_INSTBIN)
-		$(INST) $(TGT_SBIN) -m 750 -d $(DIR_SBIN)
-		$(CMD_INSTSBIN)
+.PHONY:         install
+install:        targets 
+	$(INST) $(TGT_BIN) -m 755 -d $(DIR_BIN)
+	$(CMD_INSTBIN)
+	$(INST) $(TGT_SBIN) -m 750 -d $(DIR_SBIN)
+	$(CMD_INSTSBIN)
 ifeq ($(wildcard $(DIR_ETC)/*),)
-		$(INST) $(TGT_ETC) -m 644 -d $(DIR_ETC)
-		$(CMD_INSTETC)
+	$(INST) $(TGT_ETC) -m 644 -d $(DIR_ETC)
+	$(CMD_INSTETC)
 else
-		@echo Configuration directory $(DIR_ETC) already present -- skipping
+	@echo Configuration directory $(DIR_ETC) already present -- skipping
 endif
-		$(INST) $(TGT_LIB) -m 750 -d $(DIR_LIB)
-		$(CMD_INSTLIB)
+	$(INST) $(TGT_LIB) -m 750 -d $(DIR_LIB)
+	$(CMD_INSTLIB)
 
 
 # Prevent make from removing any build targets, including intermediate ones
 
-.SECONDARY:	$(CLEAN)
+.SECONDARY:     $(CLEAN)
 

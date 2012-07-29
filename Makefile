@@ -1,6 +1,6 @@
 ### Build flags for all targets
 #
-INCLUDE_ALL     = -I pdfdoc -I openssl/include/openssl -I openssl
+INCLUDE_ALL     = -I . -I pdfdoc -I pdfread -I openssl/include/openssl -I openssl
 CF_ALL          = -g -Wall -I . $(INCLUDE_ALL)
 LF_ALL          = -lz -lm -lcrypto -L openssl -ldl
 LL_ALL          =

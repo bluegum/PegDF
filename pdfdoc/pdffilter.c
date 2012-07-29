@@ -1,7 +1,7 @@
 #include <assert.h>
 #include "zlib.h"
 #include "pdftypes.h"
-#include "readpdf.h"
+#include "pdfread.h"
 #include "pdfmem.h"
 #include "pdffilter.h"
 

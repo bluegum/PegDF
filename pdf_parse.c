@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "pdftypes.h"
-#include "readpdf.h"
+#include "pdfread.h"
 #include "pdfindex.h"
 #include "dict.h"
 

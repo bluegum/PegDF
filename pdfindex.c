@@ -4,7 +4,7 @@
 #include "bplustree.h"
 #include "pdfindex.h"
 #include "pdfmem.h"
-#include "readpdf.h"
+#include "pdfread.h"
 
 extern pdf_parser *parser_inst;
 

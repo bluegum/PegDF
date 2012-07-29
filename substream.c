@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "pdftypes.h"
-#include "readpdf.h"
+#include "pdfread.h"
 #include "pdfdoc.h"
 #include "pdfcmds.h"
 

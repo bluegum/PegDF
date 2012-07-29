@@ -4,7 +4,7 @@
 #include "pdfindex.h"
 #include "pdfcmds.h"
 #include "gsdraw.h"
-#include "readpdf.h" // for _DMSG
+#include "pdfread.h" // for _DMSG
 pdf_err
 x_cs(pdf_page *p, pdf_obj o)
 {

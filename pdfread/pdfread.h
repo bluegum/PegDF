@@ -158,5 +158,6 @@ extern void init_filestream_parser_instance(pdf_parser *p);
 #define DMSG(a)
 #define _DMSG(a)
 #endif
-
+////////////////////////////////
+extern void parse_finish();
 #endif
