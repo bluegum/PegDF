@@ -2,7 +2,7 @@ d               := pdfread
 
 LOCAL_LIB       := $(d)/libpdfread.a
 
-SRCS__$(d)      := pdfread.c bplustree.c
+SRCS__$(d)      := pdfread.c bplustree.c dict.c tst.c pdfindex.c pdfmem.c substream.c
 
 SRCS_$(d)       := $(addprefix $(d)/, $(SRCS__$(d)))
 
