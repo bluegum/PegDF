@@ -1,5 +1,6 @@
 #include <assert.h>
 #include "pdftypes.h"
+#include "pdffilter.h"
 #include "pdfdoc.h"
 #include "pdfindex.h"
 #include "pdfcmds.h"

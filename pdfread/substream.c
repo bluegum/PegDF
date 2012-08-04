@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include "pdftypes.h"
-#include "pdfread.h"
+#include "pdffilter.h"
 #include "pdfdoc.h"
+#include "pdfread.h"
 #include "pdfcmds.h"
 
 typedef struct file_stream_s file_stream;

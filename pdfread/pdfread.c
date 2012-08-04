@@ -25,12 +25,13 @@
 #include <string.h>
 #include <ctype.h>
 #include "pdftypes.h"
-#include "pdfread.h"
 #include "pdfindex.h"
 #include "dict.h"
+#include "pdffilter.h"
 #include "pdfdoc.h"
 #include "pdfmem.h"
 #include "pdfcrypto.h"
+#include "pdfread.h"
 
 extern int yyparse();
 extern char *yytext;
@@ -604,15 +605,6 @@ int read_xrefstm(pdf_obj *o, pdf_parser *p)
       if (!t)
             return -1;
       memset(t, 0, sizeof(trailer));
-      if (p->trailer)
-      {
-            t->next = p->trailer;
-            p->trailer = t;
-      }
-      else
-      {
-            p->trailer = t;
-      }
 #if 0
       a = dict_get(d, "Root");
       if (a && (a->t == eDict || a->t == eRef))
@@ -628,6 +620,15 @@ int read_xrefstm(pdf_obj *o, pdf_parser *p)
             ss->close(ss);
       }
 #endif
+      if (p->trailer)
+      {
+            t->next = p->trailer;
+            p->trailer = t;
+      }
+      else
+      {
+            p->trailer = t;
+      }
       return 0;
 }
 // return 0: ok
@@ -749,6 +750,10 @@ int  lex_positive_int(pdf_stream *s)
       }
       return i;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+/// End of parser actions
+///////////////////////////////////////////////////////////////////////////////
 
 extern pdf_stream* pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen);
 
@@ -875,6 +880,8 @@ read_objstream(pdf_obj *o, int num, int gen)
 static void
 pdf_encrypt_free(pdf_encrypt *encrypt)
 {
+      if (!encrypt)
+	    return;
       if (encrypt->filter) pdf_free(encrypt->filter);
       if (encrypt->subfilter) pdf_free(encrypt->subfilter);
       if (encrypt->stmf) pdf_free(encrypt->stmf);
@@ -1014,141 +1021,114 @@ pdf_encrypt_load(pdf_obj *o, pdf_encrypt **encrypt)
       return pdf_ok;
 }
 
-
-typedef struct pdf_trailer_s pdf_trailer;
-struct pdf_trailer_s
-{
-      int size;
-      int prev;
-      pdf_doc * root;
-      pdf_encrypt *encrypt;
-      pdf_info *info;
-      unsigned char id[2][32];
-      // xrefstream entries
-      int index[2];
-      int w[3];
-};
-
 static
-pdf_err pdf_trailer_open(trailer *tr)
+pdf_err
+pdf_trailer_open(trailer *tr, pdf_trailer ** out)
 {
-      pdfcrypto_priv *crypto = NULL;
-      pdf_obj *a, *root, *o;
-      pdf_trailer t;
-      pdf_doc * d;
-      trailer *head = tr;
+      pdf_obj *a, *o;
+
   prev_trailer:
       o = &tr->root;
       if (!o || (o->t != eDict && o->t != eRef))
-            goto done;
-
+            return pdf_trailer_err;
       pdf_obj_resolve(o);
 
-      memset(&t, 0, sizeof(pdf_trailer));
-      root = dict_get(o->value.d.dict, "Root");
-      if (!root || root->t != eRef)
-            goto done;
+      a = dict_get(o->value.d.dict, "Root");
+      if (!a || a->t != eRef)
+            return pdf_trailer_err;
 
+      *out = pdf_malloc(sizeof(pdf_trailer));
+      memset(*out, 0, sizeof(pdf_trailer));
+      (*out)->root_obj = a;
       a = dict_get(o->value.d.dict, "Size");
       if (a && a->t == eInt)
       {
-            t.size = a->value.i;
+            (*out)->size = a->value.i;
       }
       a = dict_get(o->value.d.dict, "Prev");
       if (a && a->t == eInt)
       {
-            t.prev = a->value.i;
+            (*out)->prev = a->value.i;
       }
       a = dict_get(o->value.d.dict, "Encrypt");
       if (a)
       {
-            pdf_encrypt_load(a, &t.encrypt);
+            pdf_encrypt_load(a, &(*out)->encrypt);
       }
       a = dict_get(o->value.d.dict, "Info");
       if (a)
       {
-            pdf_info_load(a, &t.info);
+            pdf_info_load(a, &(*out)->info);
       }
       a = dict_get(o->value.d.dict, "ID");
       if (a && a->t == eArray)
       {
-            memcpy(t.id[0], a->value.a.items[0].value.s.buf, 16);
-            memcpy(t.id[1], a->value.a.items[1].value.s.buf, 16);
+            memcpy((*out)->id[0], a->value.a.items[0].value.s.buf, 16);
+            memcpy((*out)->id[1], a->value.a.items[1].value.s.buf, 16);
       }
       /// xrefstream entries
       a = dict_get(o->value.d.dict, "Index");
       if (a)
       {
-            pdf_to_int_array(a, t.index);
+            pdf_to_int_array(a, (*out)->index);
       }
       a = dict_get(o->value.d.dict, "W");
       if (a)
       {
-            pdf_to_int_array(a, t.w);
+            pdf_to_int_array(a, (*out)->w);
       }
-      ///
-      d = pdf_doc_load(root);
-      if (!d)
-            goto done;
-      d->info = t.info; // pass info as member of doc
-      if (t.encrypt)
-      {
-            unsigned char u[32];
-            crypto = pdf_crypto_init(t.encrypt, t.id[0],
-                                     "", // password
-                                     0 // password len
-                  );
-            // lazy authentication
-            pdf_crypto_calc_userpassword(crypto, t.id[0],
-                                         "", // password
-                                         0,  // pwlen
-                                         u);
-            if (crypto->rev == 3)
-            {
-                  if (memcmp(u, t.encrypt->u, 16) != 0)
-                        goto done_process;
-            }
-            else if (crypto->rev == 2)
-            {
-                  if (memcmp(u, t.encrypt->u, 32) != 0)
-                        goto done_process;
-            }
-      }
-      pdf_doc_process(d, crypto);
-  done_process:
-      if (t.encrypt)
-      {
-            pdf_crypto_destroy(crypto);
-      }
-      pdf_doc_print_info(d);
-      pdf_doc_done(d);
-  done:
+
       if (tr->next)
       {
-            if (t.info)
-                  pdf_free(t.info);
             tr = tr->next;
             goto prev_trailer;
       }
+
+      return pdf_ok;
+}
+
+static void
+pdf_info_free(pdf_info *info)
+{
+      if (!info)
+            return;
+      if (info->title)  pdf_free(info->title);
+      if (info->author)  pdf_free(info->author);
+      if (info->subject)  pdf_free(info->subject);
+      if (info->keywords)  pdf_free(info->keywords);
+      if (info->creator)  pdf_free(info->creator);
+      if (info->producer)  pdf_free(info->producer);
+      if (info->creationdate) pdf_free(info->creationdate);
+      if (info->moddate)  pdf_free(info->moddate);
+}
+
+pdf_err
+pdf_trailer_free(pdf_trailer * tr)
+{
+      trailer *tt, *t = parser_inst->trailer;
       // really done
-      if (t.info)
-            pdf_free(t.info);
-      tr = head;
-      while (tr)
+      if (tr->info)
       {
-            if (tr->root.t == eDict && tr->is_xrefstm == 0)
-                  dict_free(tr->root.value.d.dict);
-            tr = tr->next;
+	    pdf_info_free(tr->info);
+            pdf_free(tr->info);
+	    pdf_encrypt_free(tr->encrypt);
       }
-      if (t.encrypt)
+      pdf_free(tr);
+      // free trailer train
+      while (t)
       {
-            pdf_encrypt_free(t.encrypt);
+	    tt = t->next;
+            if (t->root.t == eDict && t->is_xrefstm == 0)
+                  dict_free(t->root.value.d.dict);
+	    pdf_free(t);
+	    t = tt;
       }
+
       return pdf_ok;
 }
 
 pdf_err
-pdf_read(char *in, char *out)
+pdf_read(char *in, char *out, pdf_doc **doc)
 {
       FILE *inf=stdin, *outf=stdout;
       if (in)
@@ -1317,19 +1297,20 @@ pdf_read(char *in, char *out)
       pdf_obj_walk();
 #endif
       if (parser_inst->trailer)
-            pdf_trailer_open(parser_inst->trailer);
       {
-            trailer *t = parser_inst->trailer;
-            while (t)
-            {
-                  trailer *tt = t->next;
-                  pdf_free(t);
-                  t = tt;
-            }
+	    pdf_trailer *trailer;
+            pdf_trailer_open(parser_inst->trailer, &trailer);
+	    *doc = pdf_doc_load(trailer);
       }
+  done:
+      return pdf_ok;
+}
+
+pdf_err
+pdf_finish(pdf_doc *doc)
+{
       xref_delete();
       pdf_obj_free();
-  done:
       if (parser_inst->infile != stdin)
       {
             fclose(parser_inst->infile);

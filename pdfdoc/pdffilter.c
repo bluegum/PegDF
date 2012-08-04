@@ -1,9 +1,10 @@
 #include <assert.h>
 #include "zlib.h"
 #include "pdftypes.h"
-#include "pdfread.h"
 #include "pdfmem.h"
 #include "pdffilter.h"
+#include "pdfdoc.h"
+#include "pdfread.h"
 
 static int pdf_flated_read(pdf_filter *f, unsigned char *obuf, int request);
 static pdf_err pdf_flated_close(pdf_filter *f);

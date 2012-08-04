@@ -4,11 +4,13 @@ INCLUDE_ALL     = -I . -I pdfdoc -I pdfread -I openssl/include/openssl -I openss
 CF_ALL          = -g -Wall -I . $(INCLUDE_ALL)
 LF_ALL          = -lz -lm -lcrypto -L openssl -ldl
 LL_ALL          =
+OPENSSL_DEBUG   =
 ifeq	"$(YYDEBUG)" "y"
 	CF_ALL += -DYY_DEBUG
 endif
 ifeq	"$(DEBUG)" "y"
 	CF_ALL +=  -DDEBUG
+	OPENSSL_DEBUG = -d
 endif
 ### Build tools
 #
@@ -54,7 +56,7 @@ test	:	readpdf
 pdfdoc/pdfcrypto.d : $(LIB_CRYPTO)
 ## openssl/libcrypto.a
 $(LIB_CRYPTO) :
-	@cd openssl; ./config; $(MAKE) build_crypto; cd ..;
+	@cd openssl; ./config $(OPENSSL_DEBUG); $(MAKE) build_crypto; cd ..;
 
 realclean: clean
 	@cd openssl; if test -e Makefile ; then $(MAKE) clean; rm -f Makefile; rm crypto/opensslconf.h; rm include/openssl/evp.h; fi; cd ..;

@@ -5,6 +5,7 @@
 #include "pdftypes.h"
 #include "pdfmem.h"
 #include "pdfindex.h"
+#include "pdffilter.h"
 #include "pdfdoc.h"
 #include "pdfcmds.h"
 

@@ -24,28 +24,48 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "pdftypes.h"
-#include "pdfread.h"
-#include "pdfindex.h"
-#include "dict.h"
+//#include "pdftypes.h"
+//#include "pdfindex.h"
+//#include "dict.h"
+#include "pdffilter.h"
 #include "pdfdoc.h"
-#include "pdfmem.h"
+//#include "pdfmem.h"
+//#include "pdfread.h"
 ////////////////////////////////////////////////////
 // example application
 ////////////////////////////////////////////////////
-extern pdf_err pdf_read(char *in, char *out);
+
+static void
+print_help()
+{
+      printf("%s\n",
+"\n\"readpdf\" reads a pdf file and iterate through pages using stub functions for pdf stream operators.\n\
+Usage:\n\
+    readpdf infile [outfile] [-p passwd] [--help]\n"
+	    );
+}
 
 int main(int argc, char **argv)
 {
       int i = 1;
       char *in = NULL;
       char *out = NULL;
-      FILE *inf=stdin, *outf=stdout;
+      pdf_doc *doc;
+      char *passwd = NULL;
+
       if (argc > 1)
       {
             while (i < argc)
             {
-                  if (argv[i][0] == '-')
+                  if (argv[i][0] == '-' && argv[i][1] == '-')
+		  {
+			if (strncmp(argv[i], "--help", sizeof("--help")-1) == 0)
+			{
+			      print_help();
+			      return 0;
+			}
+		  }
+		  else if (argv[i][0] == '-')
                   {
                         char opt = argv[i][1];
                         switch (opt)
@@ -60,6 +80,7 @@ int main(int argc, char **argv)
                               }
                               break;
                               case 'p':
+				    passwd = argv[i];
                                     break;
                               default:
                                     break;
@@ -72,26 +93,24 @@ int main(int argc, char **argv)
                   i += 1;
             }
       }
-      if (in)
-      {
-            printf("reading = %s\n", in);
-            inf = fopen(in, "rb");
-            if (!inf)
-            {
-                  fprintf(stderr, "Can not open %s.\n", in);
-                  return 1;
-            }
-      }
-      if (out)
-      {
-            printf("writing = %s\n", out);
-            outf = fopen(out, "wb");
-            if (!outf)
-            {
-                  fprintf(stderr, "Can not open %s.\n", out);
-                  return 1;
-            }
-      }
       
-      return pdf_read(in, out);
+      pdf_read(in, out, &doc);
+      pdf_doc_print_info(doc);
+      if (!passwd && pdf_doc_need_passwd(doc) && pdf_doc_authenticate_user_password(doc, "", 0) != 0)
+      {
+	    printf("%s\n", "Need user password, use -p option");
+	    goto done;
+      }
+      if (!passwd || !pdf_doc_need_passwd(doc))
+      {
+	    pdf_doc_process_all(doc, "", 0);
+      }
+      else if (passwd && pdf_doc_need_passwd(doc))
+      {
+	    pdf_doc_process_all(doc, passwd, strlen(passwd));
+      }
+  done:
+      pdf_doc_done(doc);
+      pdf_finish(doc);
+      return 0;
 }

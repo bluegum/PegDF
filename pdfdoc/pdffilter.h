@@ -1,7 +1,7 @@
 #ifndef PDFFILTER_H
 #define PDFFILTER_H
 #include "pdftypes.h"
-#include "pdfread.h"
+//#include "pdfread.h"
 
 typedef enum pdf_filterkind_e pdf_filterkind;
 typedef struct pdf_filter_s pdf_filter;
@@ -37,5 +37,4 @@ struct pdf_filter_s
 
 extern pdf_err pdf_flated_new(pdf_filter **f);
 extern pdf_filter* pdf_filter_new(pdf_filterkind t);
-extern pdf_filter* pdf_rawfilter_new(sub_stream *ss);
 #endif

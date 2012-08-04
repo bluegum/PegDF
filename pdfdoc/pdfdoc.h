@@ -4,7 +4,7 @@
 #include "pdftypes.h"
 #include "gsdraw.h"
 #include "pdfresource.h"
-#include "pdffilter.h"
+//#include "pdffilter.h"
 
 typedef struct pdf_page_s pdf_page;
 typedef struct pdf_doc_s pdf_doc;
@@ -21,6 +21,8 @@ typedef struct pdf_bead_s pdf_bead;
 typedef struct pdf_encrypt_s pdf_encrypt;
 typedef struct pdf_cryptfilter_s pdf_cryptfilter;
 typedef struct pdfcrypto_priv_s pdfcrypto_priv;
+typedef struct pdf_stream_s pdf_stream;
+typedef struct pdf_trailer_s pdf_trailer;
 
 struct pdf_mask_s
 {
@@ -186,9 +188,11 @@ struct pdf_doc_s
       // page tree
       pdf_page **pages;
       int count;
-      // internal
+      // internal parking spot
       int pageidx;
-      pdf_info *info;
+      //pdf_info *info;
+      //pdf_encrypt *encrypt;
+      pdf_trailer *trailer;
 };
 
 struct pdf_stream_s
@@ -292,6 +296,20 @@ struct pdf_encrypt_s
       int encrypt_metadata;
 };
 
+/// The splayed trailer
+struct pdf_trailer_s
+{
+      int size;
+      int prev;
+      pdf_obj * root_obj;
+      pdf_encrypt *encrypt;
+      pdf_info *info;
+      unsigned char id[2][32];
+      // xrefstream entries
+      int index[2];
+      int w[3];
+};
+
 // short hands
 static inline int pdf_brush_n(pdf_page *p) { return p->s->brush.n; }
 static inline int pdf_pen_n(pdf_page *p) { return p->s->pen.n; }
@@ -310,8 +328,14 @@ extern pdf_err pdf_extgstate_free(pdf_extgstate*);
 extern pdf_err pdf_cs_parse(pdf_page *, pdf_stream *s);
 extern pdf_err pdf_cf_load(pdf_obj *o, pdf_cryptfilter **cryptfilter);
 extern pdf_err pdf_info_load(pdf_obj *o, pdf_info **info);
-extern pdf_doc* pdf_doc_load(pdf_obj *rdoc);
+extern pdf_doc* pdf_doc_load(pdf_trailer*);
 extern void pdf_doc_done(pdf_doc *d);
 extern pdf_err  pdf_doc_print_info(pdf_doc *d);
 extern pdf_err pdf_doc_process(pdf_doc *d, pdfcrypto_priv* encrypt);
+extern pdf_err pdf_read(char *in, char *out,  pdf_doc **doc);
+extern pdf_err pdf_finish(pdf_doc *doc);
+extern int pdf_doc_authenticate_user_password(pdf_doc *doc, unsigned char *pw, int pwlen);
+extern pdf_err pdf_doc_process_all(pdf_doc *doc, unsigned char *pw, int pwlen);
+extern int pdf_doc_need_passwd(pdf_doc *doc);
+
 #endif

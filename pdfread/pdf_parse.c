@@ -22,9 +22,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "pdftypes.h"
-#include "pdfread.h"
 #include "pdfindex.h"
 #include "dict.h"
+#include "pdffilter.h"
+#include "pdfread.h"
 
 extern pdf_parser *parser_inst;
 

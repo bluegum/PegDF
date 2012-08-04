@@ -81,7 +81,6 @@ struct trailer_s
       int is_xrefstm;
       trailer *next;
 };
-typedef struct pdf_stream_s pdf_stream;
 
 struct pdf_parser_s
 {
@@ -160,4 +159,5 @@ extern void init_filestream_parser_instance(pdf_parser *p);
 #endif
 ////////////////////////////////
 extern void parse_finish();
+extern pdf_filter* pdf_rawfilter_new(sub_stream *ss);
 #endif

@@ -3,6 +3,7 @@
 #include <assert.h>
 #include "evp.h"
 #include "pdftypes.h"
+#include "pdffilter.h"
 #include "pdfdoc.h"
 #include "pdfcrypto.h"
 

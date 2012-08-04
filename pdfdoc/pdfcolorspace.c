@@ -1,5 +1,6 @@
 #include "pdftypes.h"
 #include "gsdraw.h"
+#include "pdffilter.h"
 #include "pdfdoc.h"
 
 #define pdf_to_name(o) (o).value.k

@@ -5,11 +5,10 @@
 #include "pdftypes.h"
 #include "pdfindex.h"
 #include "pdfmem.h"
-#include "pdfread.h"
+#include "pdffilter.h"
 #include "pdfdoc.h"
 #include "pdfcrypto.h"
-
-static void pdf_info_free(pdf_info *info);
+#include "pdfread.h"
 
 static inline pdf_group*
 pdf_group_load(pdf_obj *o)
@@ -196,11 +195,15 @@ pdf_err pdf_page_tree_walk(pdf_doc *d, pdfcrypto_priv* encrypt)
 }
 
 pdf_doc*
-pdf_doc_load(pdf_obj *rdoc)
+pdf_doc_load(pdf_trailer *trailer)
 {
+      pdf_obj *rdoc;
       pdf_obj *a, *d, *c, *kids;
       pdf_doc *doc;
 
+      if (!trailer)
+	    return NULL;
+      rdoc = trailer->root_obj;
       pdf_obj_resolve(rdoc);
 
       assert (rdoc);
@@ -234,6 +237,12 @@ pdf_doc_load(pdf_obj *rdoc)
       memset(doc->pages, 0, (sizeof(pdf_page*) * doc->count));
       doc->pageidx = 0;
       pdf_page_tree_load(doc, kids);
+      /// shuffle in some auxillary info
+      ///
+      doc->trailer = trailer;
+      //doc->info = trailer->info; // pass info as member of doc
+      //doc->encrypt = trailer->encrypt; // pass encrypt
+      //trailer->encrypt = NULL; // TODO: move it out
       return doc;
 }
 
@@ -244,8 +253,8 @@ pdf_err pdf_doc_process(pdf_doc *d, pdfcrypto_priv* encrypt)
 
 pdf_err  pdf_doc_print_info(pdf_doc *d)
 {
-      if (d->info)
-            pdf_info_print(d->info);
+      if (d->trailer->info)
+            pdf_info_print(d->trailer->info);
       return pdf_ok;
 }
 
@@ -256,7 +265,7 @@ void pdf_doc_done(pdf_doc *d)
       {
             pdf_page_free(d->pages[i]);
       }
-      pdf_info_free(d->info);
+      pdf_trailer_free(d->trailer);
       pdf_free(d->pages);
       pdf_free(d);
 }
@@ -323,20 +332,6 @@ pdf_err pdf_info_print(pdf_info *info)
       return pdf_ok;
 }
 
-static void
-pdf_info_free(pdf_info *info)
-{
-      if (!info)
-            return;
-      if (info->title)  pdf_free(info->title);
-      if (info->author)  pdf_free(info->author);
-      if (info->subject)  pdf_free(info->subject);
-      if (info->keywords)  pdf_free(info->keywords);
-      if (info->creator)  pdf_free(info->creator);
-      if (info->producer)  pdf_free(info->producer);
-      if (info->creationdate) pdf_free(info->creationdate);
-      if (info->moddate)  pdf_free(info->moddate);
-}
 
 pdf_err
 pdf_cf_load(pdf_obj *o, pdf_cryptfilter **cryptfilter)
@@ -700,4 +695,65 @@ pdf_stream_free(pdf_stream *s)
       }
       pdf_free(s);
       return pdf_ok;
+}
+
+int
+pdf_authenticate_user_password(pdf_encrypt *encrypt, unsigned char id[16], unsigned char *pw, int pwlen)
+{
+      pdfcrypto_priv *crypto = NULL;
+      unsigned char u[32];
+      int rev;
+      crypto = pdf_crypto_init(encrypt, id,
+			       pw, // password
+			       pwlen // password len
+	    );
+      rev = crypto->rev;
+      // lazy authentication
+      pdf_crypto_calc_userpassword(crypto, id,
+				   pw, // password
+				   pwlen,  // pwlen
+				   u);
+      pdf_crypto_destroy(crypto);
+      if (rev == 3)
+      {
+	    return (memcmp(u, encrypt->u, 16));
+      }
+      else if (rev == 2)
+      {
+	    return (memcmp(u, encrypt->u, 32));
+      }
+      return 1;
+}
+
+int
+pdf_doc_authenticate_user_password(pdf_doc *doc, unsigned char *pw, int pwlen)
+{
+      return pdf_authenticate_user_password(doc->trailer->encrypt,
+					    doc->trailer->id[0],
+					    pw, pwlen);
+}
+
+pdf_err
+pdf_doc_process_all(pdf_doc *doc, unsigned char *pw, int pwlen)
+{
+      pdfcrypto_priv *crypto = NULL;
+      unsigned char u[32];
+      if (doc->trailer->encrypt)
+      {
+	    crypto = pdf_crypto_init(doc->trailer->encrypt,
+				     doc->trailer->id[0],
+				     pw, // password
+				     pwlen // password len
+		  );
+      }
+      pdf_doc_process(doc, crypto);
+      if (crypto)
+	    pdf_crypto_destroy(crypto);
+      return pdf_ok;
+}
+
+int
+pdf_doc_need_passwd(pdf_doc *doc)
+{
+      return (doc->trailer->encrypt?1:0);
 }

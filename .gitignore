@@ -1,5 +1,7 @@
 *.[doa]
 *~
 lib
-pdf.c
+pdfread/pdf.c
 readpdf
+openssl/Makefile
+openssl/crypto
