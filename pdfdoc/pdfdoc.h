@@ -338,4 +338,6 @@ extern int pdf_doc_authenticate_user_password(pdf_doc *doc, unsigned char *pw, i
 extern pdf_err pdf_doc_process_all(pdf_doc *doc, unsigned char *pw, int pwlen);
 extern int pdf_doc_need_passwd(pdf_doc *doc);
 
+extern pdf_err pdf_write_pdf(pdf_doc *doc, char *ofile, int version, int pg1st, int pglast, char *upw, char *opw);
+
 #endif

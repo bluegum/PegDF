@@ -41,7 +41,7 @@ print_help()
       printf("%s\n",
 "\n\"readpdf\" reads a pdf file and iterate through pages using stub functions for pdf stream operators.\n\
 Usage:\n\
-    readpdf infile [outfile] [-p passwd] [--help]\n"
+    readpdf infile [outfile] [-o outfile] [-p passwd] [--help]\n"
 	    );
 }
 
@@ -88,12 +88,16 @@ int main(int argc, char **argv)
                   }
                   else
                   {
-                        in = argv[i];
+			if (i == 1)
+			      in = argv[i];
+			else if (i == 2)
+			      out = argv[i];
                   }
                   i += 1;
             }
       }
-      
+      if (!out)
+	    printf("\n%s%s\n\n", "Dry run on ", in);
       pdf_read(in, out, &doc);
       pdf_doc_print_info(doc);
       if (!passwd && pdf_doc_need_passwd(doc) && pdf_doc_authenticate_user_password(doc, "", 0) != 0)
@@ -108,6 +112,11 @@ int main(int argc, char **argv)
       else if (passwd && pdf_doc_need_passwd(doc))
       {
 	    pdf_doc_process_all(doc, passwd, strlen(passwd));
+      }
+      // writing out pdf using doc structure.
+      if (out)
+      {
+	    pdf_write_pdf(doc, out, 17, 1, -1, NULL, NULL);
       }
   done:
       pdf_doc_done(doc);
