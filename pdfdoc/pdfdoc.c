@@ -365,7 +365,7 @@ pdf_resources_load(pdf_obj *o)
       if (!r)
             return NULL;
       d = o->value.d.dict;
-      r->extgstate = pdf_extgstate_load(dict_get(d, "ExtGState"));
+      r->extgstate = dict_get(d, "ExtGState");
       r->colorspace = dict_get(d, "ColorSpace");
       r->pattern = dict_get(d, "Pattern");
       r->shading = dict_get(d, "Shading");
@@ -522,11 +522,10 @@ pdf_resources_free(pdf_resources *r)
 {
       if (!r)
             return pdf_ok;
-      if (r->extgstate)
-            pdf_extgstate_free(r->extgstate);
       pdf_free(r);
       return pdf_ok;
 }
+
 pdf_extgstate*
 pdf_extgstate_load(pdf_obj *o)
 {
@@ -551,6 +550,8 @@ pdf_extgstate_load(pdf_obj *o)
       g->OP = pdf_to_int(dict_get(d, "OP"));
       g->OPM = pdf_to_int(dict_get(d, "OPM"));
       g->op = pdf_to_int(dict_get(d, "op"));
+      g->BM = dict_get(d, "BM");
+      g->SA = pdf_to_int(dict_get(d, "SA"));
       // font
       // bg
       g->CA = pdf_to_float(dict_get(d, "CA"));

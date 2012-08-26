@@ -90,7 +90,7 @@ struct pdf_annots_s
 
 struct pdf_resources_s
 {
-      pdf_extgstate *extgstate;
+      pdf_obj *extgstate;
       pdf_obj *colorspace;
       pdf_obj *pattern;
       pdf_obj *shading;

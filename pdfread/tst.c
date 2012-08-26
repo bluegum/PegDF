@@ -233,36 +233,37 @@ char *tst_print_reset(int i)
       return f;
 }
 
-void tst_traverse_node(Tptr p, tst_hook callback)
+void tst_traverse_node(Tptr p, tst_hook callback, void *v)
 {
       if (!p) {return;}
-      tst_traverse_node(p->lokid, callback);
+      tst_traverse_node(p->lokid, callback, v);
       if (p->splitchar)
       {
             *f++ = p->splitchar;
-            tst_traverse_node(p->eqkid, callback);
+            tst_traverse_node(p->eqkid, callback, v);
             f--;
       }
       else
       {
-            *f = 0;
-            callback(*(fp-1), p->eqkid);
+            *f = 0; // To terminate string
+            callback(*(fp-1), p->eqkid, v);
       }
-      tst_traverse_node(p->hikid, callback);
+      tst_traverse_node(p->hikid, callback, v);
 }
-void tst_traverse(Tptr p, tst_hook callback)
+void tst_traverse(Tptr p, tst_hook callback, void *v)
 {
       if (!p) {return;}
-      tst_traverse_node(p->hikid, callback);
+      tst_traverse_node(p->hikid, callback, v);
       *f++ = p->splitchar;
-      tst_traverse_node(p->eqkid, callback);
+      tst_traverse_node(p->eqkid, callback, v);
       f--;
-      tst_traverse_node(p->lokid, callback);
+      tst_traverse_node(p->lokid, callback, v);
 }
 Tptr tst_init()
 {
       return  tst_insert(0, 0, 0);
 }
+
 int tst_attach(Tptr p, void *val)
 {
       if (!p->splitchar)
@@ -272,6 +273,7 @@ int tst_attach(Tptr p, void *val)
       }
       return 1;
 }
+
 void* tst_retrieve(Tptr p)
 {
       if (!p->splitchar)

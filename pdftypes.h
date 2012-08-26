@@ -23,10 +23,11 @@
 #define PDFTYPES_H
 #include <string.h>
 #include "pdfmem.h"
-#include "dict.h"
+//#include "dict.h"
 
 typedef struct pdf_obj_s pdf_obj;
 typedef struct pdf_xref_s pdf_xref;
+typedef struct dict_s dict;
 
 typedef enum pdf_error_e
 {
@@ -118,7 +119,7 @@ struct gs_bbox_s
 static inline int
 pdf_to_int(pdf_obj *o)
 {
-      if (!o || o->t != eInt)
+      if (!o || (o->t != eInt && o->t != eBool))
             return 0; // should be NAN
       return o->value.i;
 }

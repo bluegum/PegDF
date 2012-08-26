@@ -278,6 +278,20 @@ pdf_err x_cm(pdf_page *p, float a, float b, float c, float d, float e, float f)
 }
 pdf_err x_gs(pdf_page *p, pdf_obj o)
 {
+      pdf_resources *r = p->resources;
+      pdf_obj *extg, *thisg;
+      pdf_extgstate* g = NULL;
+      if (o.t != eKey)
+	    return pdf_ok;
+      // find it in resources
+      extg = r->extgstate;
+      pdf_obj_resolve(extg);
+      thisg = dict_get(extg->value.d.dict, o.value.k);
+      if (thisg)
+	    pdf_obj_resolve(thisg);
+      g = pdf_extgstate_load(thisg);
+      // TODO: save g in interpreter state
+      if (g) pdf_extgstate_free(g);
       pdf_obj_delete(&o);
       return pdf_ok;
 }

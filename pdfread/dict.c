@@ -8,7 +8,10 @@ dict* dict_new()
 {
       dict * d = pdf_malloc(sizeof(dict));
       if (d)
+      {
             d->dict = NULL;
+	    d->n = 0;
+      }
       return d;
 }
 dict* dict_insert(dict* d, char *key, void *val)
@@ -23,6 +26,7 @@ dict* dict_insert(dict* d, char *key, void *val)
             {
                   d->dict = tst_insert(NULL, key, val);
             }
+	    d->n += 1;
       }
       return NULL;
 }
@@ -33,7 +37,7 @@ void*   dict_get(dict* d, char *key)
 }
 
 static void
-dict_free_val(char *key, void *val)
+dict_free_val(char *key, void *val, void *x)
 {
       pdf_obj *o;
       extern void pdf_obj_delete(void *o);
@@ -91,8 +95,9 @@ array_print(pdf_obj *a)
       }
       printf("%s ", "]");
 }
+
 static void
-dict_print_keyval(char *key, void *val)
+dict_print_keyval(char *key, void *val, void *x)
 {
       if (!val)
             printf("dict_print_key: %s\n", key);
@@ -118,17 +123,18 @@ dict_print_keyval(char *key, void *val)
                         printf("%s = f(%f)\n", key, o->value.f);
                         break;
                   case eArray:
-                  {
                         printf("%s = ", key);
                         array_print(o);
                         printf("\n");
-                  }
-                  break;
+			break;
                   case eDict:
                         printf("%s = << ", key);
                         dict_dump(o->value.d.dict);
                         printf(">>\n");
                         break;
+		  case eBool:
+                        printf("%s = B(%d)\n", key, o->value.i);
+			break;
                   default:
                         printf("%s:%d\n", key, o->t);
                         break;
@@ -143,7 +149,7 @@ void  dict_free(dict* d)
             if (d->dict)
             {
                   tst_print_reset(1);
-                  tst_traverse(d->dict, dict_free_val);
+                  tst_traverse(d->dict, dict_free_val, NULL);
                   tst_cleanup(d->dict);
                   tst_print_reset(-1);
             }
@@ -160,8 +166,75 @@ void dict_dump(dict* d)
             if (d->dict)
             {
                   tst_print_reset(1);
-                  tst_traverse(d->dict, dict_print_keyval);
+                  tst_traverse(d->dict, dict_print_keyval, NULL);
                   tst_print_reset(-1);
             }
       }
+}
+
+// TODO: insert to head, and return head of list.
+static
+void
+dict_list_append(char *key, void *v, dict_list* l)
+{
+      if (!l)
+	    return;
+      if (l->last)
+	    l = l->last;
+      l->key = pdf_malloc(strlen(key)+1);
+      memcpy(l->key, key, strlen(key)+1);
+      l->val = *((pdf_obj*)v);
+      if (!l->last)
+      {
+	    l->last = (dict_list*)pdf_malloc(sizeof(dict_list));
+	    l->last->key = NULL;
+	    l->next = l->last;
+	    l->next->next = l->next->last = NULL;
+      }
+}
+
+// returned object belongs to caller.
+// Experimental: using list as target by imitating "LISP" style.
+dict_list*
+dict_to_list(dict *d)
+{
+      dict_list *l = pdf_malloc(sizeof(dict_list));
+      l->next = l->last = NULL;
+      if (d && d->dict)
+      {
+	    tst_print_reset(1);
+	    tst_traverse(d->dict, (tst_hook)dict_list_append, l);
+	    tst_print_reset(-1);
+      }
+      return l;
+}
+
+static
+void
+dict_array_append(char *key, void *v, dict_array* a)
+{
+      a->items[a->cur].key = pdf_malloc(strlen(key)+1);
+      memcpy(a->items[a->cur].key, key, strlen(key)+1);
+      a->items[a->cur].val = *((pdf_obj*)v);
+      a->cur += 1;
+}
+
+// returned object belongs to caller.
+dict_array*
+dict_to_array(dict *d)
+{
+      dict_array *a = pdf_malloc(sizeof(dict_array));
+      if (!a)
+	    return a;
+      a->cur = 0;
+      a->items = pdf_malloc((sizeof(char*) + sizeof(pdf_obj))* d->n);
+      if (!a->items)
+	    return NULL;
+      if (d && d->dict)
+      {
+	    tst_print_reset(1);
+	    tst_traverse(d->dict, (tst_hook)dict_array_append, a);
+	    tst_print_reset(-1);
+      }
+      return a;
 }

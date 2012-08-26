@@ -3,14 +3,14 @@
 #define TST_H
 
 typedef struct tnode *Tptr;
-typedef void (*tst_hook)(char *, void* val);
+typedef void (*tst_hook)(char *, void* val, void *out);
 
 extern Tptr tst_insert(Tptr p, char *s, void *val);
 extern Tptr tst_search(Tptr p, char *s);
 extern int tst_rsearch(Tptr p, char *s);
 extern void * tst_delete(Tptr p, char *s);
 extern void tst_cleanup(Tptr p);
-extern void tst_traverse(Tptr p, tst_hook f);
+extern void tst_traverse(Tptr p, tst_hook f, void*);
 extern char *tst_print_reset(int i);
 
 /* user data */
