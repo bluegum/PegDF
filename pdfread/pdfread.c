@@ -1034,6 +1034,14 @@ pdf_trailer_open(trailer *tr, pdf_trailer ** out)
       pdf_obj_resolve(o);
 
       a = dict_get(o->value.d.dict, "Root");
+      if (!a)
+      {
+	    if (tr->next)
+	    {
+		  tr = tr->next;
+		  goto prev_trailer;
+	    }
+      }
       if (!a || a->t != eRef)
             return pdf_trailer_err;
 
@@ -1302,6 +1310,8 @@ pdf_read(char *in, char *out, pdf_doc **doc)
             pdf_trailer_open(parser_inst->trailer, &trailer);
 	    *doc = pdf_doc_load(trailer);
       }
+      else
+	    *doc = NULL;
   done:
       return pdf_ok;
 }

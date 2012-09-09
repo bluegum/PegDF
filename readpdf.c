@@ -99,6 +99,8 @@ int main(int argc, char **argv)
       if (!out)
 	    printf("\n%s%s\n\n", "Dry run on ", in);
       pdf_read(in, out, &doc);
+      if (!doc)
+	    goto done;
       pdf_doc_print_info(doc);
       if (!passwd && pdf_doc_need_passwd(doc) && pdf_doc_authenticate_user_password(doc, "", 0) != 0)
       {

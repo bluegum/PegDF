@@ -253,6 +253,8 @@ pdf_err pdf_doc_process(pdf_doc *d, pdfcrypto_priv* encrypt)
 
 pdf_err  pdf_doc_print_info(pdf_doc *d)
 {
+      if (!d)
+	    return pdf_ok;
       if (d->trailer->info)
             pdf_info_print(d->trailer->info);
       return pdf_ok;
@@ -261,6 +263,8 @@ pdf_err  pdf_doc_print_info(pdf_doc *d)
 void pdf_doc_done(pdf_doc *d)
 {
       int i;
+      if (!d)
+	    return;
       for (i = 0; i < d->count; i++)
       {
             pdf_page_free(d->pages[i]);

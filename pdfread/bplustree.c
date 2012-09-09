@@ -17,7 +17,7 @@ bpt_split bpt_insert_leaf(bpt_node *r, int i, void *d);
 int bpt_upper(bpt_node *n);
 int bpt_lower(bpt_node *n);
 
-static bpt_node*
+bpt_node*
 bpt_new_node(int leaf)
 {
       bpt_node *node;
@@ -126,8 +126,11 @@ bpt_insert_leaf(bpt_node *r, int i, void *d)
       else
       {
             /* insert is easy */
+	    if (!n->v[i-r->low].d)
+	    {
+		  n->cnt += 1;
+	    }
             n->v[i-r->low].d = d;
-            n->cnt += 1;
       }
       return s;
 #else
@@ -515,23 +518,52 @@ bpt_destroy(bpt_tree *t)
       t->root = NULL;
 }
 
-static void
+// bpt_free() frees bpt's nodes only, and leaves user data in leaf nodes alone.
+void
+bpt_node_free(bpt_node *n)
+{
+      if (n->leaf)
+      {
+	    pdf_free(n->v);
+            pdf_free(n);
+      }
+      else
+      {
+	    int c = 0;
+	    for (; c <= n->cnt && n->v[c].n; c++)
+	    {
+		  if (n->v[c].n->leaf)
+		  {
+			pdf_free(n->v[c].n);
+			pdf_free(n->v[c].n->v);
+		  }
+		  else
+			bpt_node_free(n->v[c].n);
+	    }
+	    pdf_free(n->k);
+	    pdf_free(n->v);
+            pdf_free(n);
+      }
+}
+
+static int
 bpt_walk_node(bpt_node* n, bpt_callback c, leaf_action a)
 {
-      int i;
+      int i, cnt;
       if (!n)
-            return;
-      c(n, a);
+            return 0;
+      cnt = c(n, a);
       if (!n->leaf)
       {
             for (i = 0; i <= n->cnt; i++)
             {
-                  bpt_walk_node(n->v[i].n, c, a);
+                  cnt += bpt_walk_node(n->v[i].n, c, a);
             }
       }
+      return cnt;
 }
 
-static void
+static int
 bpt_print_node(bpt_node *n, leaf_action a)
 {
       int i;
@@ -556,9 +588,10 @@ bpt_print_node(bpt_node *n, leaf_action a)
       {
             printf("inner: \n");
       }
+      return 0;
 }
 
-static void
+static int
 bpt_delete_leaf(bpt_node *n, leaf_action a)
 {
       int i;
@@ -568,7 +601,12 @@ bpt_delete_leaf(bpt_node *n, leaf_action a)
             for (i = 0; i < BPT_ORDER_LEAF; i++)
             {
                   if (n->v[i].n)
+		  {
+#if 0
+			printf("%d..", n->low+i);
+#endif
                         (a)((void*)(n->v[i].d));
+		  }
             }
 #else
             for (i = 0; i < n->cnt; i++)
@@ -577,6 +615,7 @@ bpt_delete_leaf(bpt_node *n, leaf_action a)
             }
 #endif
       }
+      return 0;
 }
 
 void
@@ -594,4 +633,22 @@ bpt_delete_node(bpt_tree* t, leaf_action a)
       if (!t)
             return;
       bpt_walk_node(t->root, bpt_delete_leaf, a);
+}
+
+static
+int
+bpt_return_leaf_cnt(bpt_node *n, leaf_action a)
+{
+      if (n && n->leaf)
+	    return n->cnt;
+      else
+	    return 0;
+}
+
+int
+bpt_count_leaf(bpt_tree* t)
+{
+      if (!t)
+            return 0;
+      return bpt_walk_node(t->root, bpt_return_leaf_cnt, NULL);
 }

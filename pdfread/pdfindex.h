@@ -19,6 +19,7 @@ extern void pdf_obj_free();
 extern void pdf_obj_delete(pdf_obj *o);
 extern pdf_map * pdf_map_create();
 extern void pdf_map_delete(pdf_map*);
+extern int pdf_obj_count();
 
 #define pdf_obj_resolve(o)                                              \
       if ((o)->t == eRef) (o) = pdf_obj_find((o)->value.r.num, (o)->value.r.gen)

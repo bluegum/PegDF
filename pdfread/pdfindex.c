@@ -34,7 +34,7 @@ pdf_map_delete(pdf_map *m)
 pdf_map *
 pdf_map_insert(int n, int gen)
 {
-      pdf_map * m = parser_inst->map;//&a_pdf_map;
+      pdf_map * m = parser_inst->map;
       while (m->generation != gen)
       {
             m = m->next;
@@ -143,3 +143,14 @@ pdf_obj_free()
       }
 }
 
+int
+pdf_obj_count()
+{
+      int c = 0;
+      pdf_map * i = parser_inst->map;
+      for (; i!=0; i=i->next)
+      {
+            c += bpt_count_leaf(i->head);
+      }
+      return c;
+}

@@ -8,6 +8,7 @@
 #include "pdffilter.h"
 #include "pdfdoc.h"
 #include "pdfcmds.h"
+#include "dict.h"
 
 #define mGETCHAR(s) s_get_char(s)
 #define mUNGETCHAR(s) s_unget_char(s)
@@ -606,6 +607,8 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
                                                 case '\"':
                                                       break;
                                                 case '\'':
+						      x_Tstar(p);
+                                                      x_Tj(p, POP_O);
                                                       break;
                                                 case 'b':
                                                       break;

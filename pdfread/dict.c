@@ -1,3 +1,4 @@
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "pdftypes.h"
@@ -177,19 +178,28 @@ static
 void
 dict_list_append(char *key, void *v, dict_list* l)
 {
+      dict_list *head = l;
       if (!l)
 	    return;
       if (l->last)
 	    l = l->last;
       l->key = pdf_malloc(strlen(key)+1);
       memcpy(l->key, key, strlen(key)+1);
-      l->val = *((pdf_obj*)v);
+      if (strcmp(key, "S_O") == 0)
+      {
+	    l->val.value.i = v;
+      }
+      else
+      {
+	    l->val = *((pdf_obj*)v);
+      }
       if (!l->last)
       {
 	    l->last = (dict_list*)pdf_malloc(sizeof(dict_list));
 	    l->last->key = NULL;
 	    l->next = l->last;
-	    l->next->next = l->next->last = NULL;
+	    l->next->next = l->next->last = l->last->last = NULL;
+	    head->last = l->last;
       }
 }
 

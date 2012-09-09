@@ -34,4 +34,20 @@ extern void*   dict_get(dict*, char *key);
 extern void    dict_free(dict*);
 extern void    dict_dump(dict* d);
 
+static inline void
+dict_list_free(dict_list *l)
+{
+      while (l)
+      {
+	    dict_list *n = l->next;
+	    if (l->key)
+		  pdf_free(l->key);
+	    pdf_free(l);
+	    l = n;
+      }
+}
+
+extern dict_array* dict_to_array(dict *d);
+extern dict_list* dict_to_list(dict *d);
+
 #endif
