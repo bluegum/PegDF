@@ -149,8 +149,10 @@ pdf_obj push_array(void)
       while (parser_inst->stack[i--].t != eArrayMarker);
       o.t = eArray;
       o.value.a.len = parser_inst->stackp-i-1;
-      o.value.a.items = pdf_malloc(sizeof(pdf_obj)*(o.value.a.len));
-
+      if (o.value.a.len)
+	    o.value.a.items = pdf_malloc(sizeof(pdf_obj)*(o.value.a.len));
+      else
+	    o.value.a.items = NULL;
       for (k = o.value.a.len - 1, p = pop(); p.t != eArrayMarker; k--)
       {
             o.value.a.items[k] = p;
@@ -1026,7 +1028,7 @@ pdf_err
 pdf_trailer_open(trailer *tr, pdf_trailer ** out)
 {
       pdf_obj *a, *o;
-
+      pdf_trailer *last = NULL;
   prev_trailer:
       o = &tr->root;
       if (!o || (o->t != eDict && o->t != eRef))
@@ -1047,6 +1049,7 @@ pdf_trailer_open(trailer *tr, pdf_trailer ** out)
 
       *out = pdf_malloc(sizeof(pdf_trailer));
       memset(*out, 0, sizeof(pdf_trailer));
+      (*out)->last = last;
       (*out)->root_obj = a;
       a = dict_get(o->value.d.dict, "Size");
       if (a && a->t == eInt)
@@ -1089,6 +1092,7 @@ pdf_trailer_open(trailer *tr, pdf_trailer ** out)
       if (tr->next)
       {
             tr = tr->next;
+	    last = *out;
             goto prev_trailer;
       }
 
@@ -1115,13 +1119,19 @@ pdf_trailer_free(pdf_trailer * tr)
 {
       trailer *tt, *t = parser_inst->trailer;
       // really done
-      if (tr->info)
+      while (tr)
       {
-	    pdf_info_free(tr->info);
-            pdf_free(tr->info);
-	    pdf_encrypt_free(tr->encrypt);
+	    pdf_trailer *last;
+	    if (tr->info)
+	    {
+		  pdf_info_free(tr->info);
+		  pdf_free(tr->info);
+		  pdf_encrypt_free(tr->encrypt);
+	    }
+	    last = tr->last;
+	    pdf_free(tr);
+	    tr = last;
       }
-      pdf_free(tr);
       // free trailer train
       while (t)
       {

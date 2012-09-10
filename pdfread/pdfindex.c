@@ -95,6 +95,8 @@ void free_array(pdf_obj *o)
             }
             if (o->value.a.len)
                   pdf_free(o->value.a.items);
+	    //else if (o->value.a.items)
+	    //	  pdf_free(o->value.a.items);
       }
 }
 

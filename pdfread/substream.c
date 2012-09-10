@@ -190,6 +190,7 @@ im_read(sub_stream* s, unsigned char *buf, int len)
       {
             len = ms->e - ms->p;
             memcpy(buf, ms->p, len);
+	    ms->p = ms->e;
             return len;
       }
 }

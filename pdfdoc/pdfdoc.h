@@ -310,6 +310,8 @@ struct pdf_trailer_s
       // xrefstream entries
       int index[2];
       int w[3];
+      // chain
+      pdf_trailer *last;
 };
 
 // short hands
