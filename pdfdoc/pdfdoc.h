@@ -193,6 +193,8 @@ struct pdf_doc_s
       //pdf_info *info;
       //pdf_encrypt *encrypt;
       pdf_trailer *trailer;
+      // member functions
+      gs_rect *(*get_mediabox)(pdf_doc*);
 };
 
 struct pdf_stream_s

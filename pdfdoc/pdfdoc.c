@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include "dict.h"
 #include "pdftypes.h"
 #include "pdfindex.h"
 #include "pdfmem.h"
@@ -20,7 +21,7 @@ pdf_group_load(pdf_obj *o)
       if (!g)
             return NULL;
       memset(g, 0, sizeof(pdf_group));
-      g->cs = dict_get(o->value.d.dict, "CS");
+      g->cs = (pdf_obj*)dict_get(o->value.d.dict, "CS");
       g->i = pdf_to_int(dict_get(o->value.d.dict, "I"));
       g->k = pdf_to_int(dict_get(o->value.d.dict, "K"));
       return g;
@@ -32,9 +33,9 @@ pdf_group_free(pdf_group *g)
       return pdf_ok;
 }
 
-pdf_err pdf_page_load(pdf_obj *o, pdf_page **page)
+pdf_err pdf_page_load(pdf_doc *doc, pdf_obj *o, pdf_page **page)
 {
-      pdf_page *p;
+      pdf_page *p, *mediabox;
       dict *d = o->value.d.dict;
       pdf_obj *v;
 
@@ -44,18 +45,26 @@ pdf_err pdf_page_load(pdf_obj *o, pdf_page **page)
       p->s = p->sstk;
       // parse tree dict
       p->parent = dict_get(d, "Parent");
-      p->mediabox = pdf_rect_resolve(dict_get(d, "MediaBox"));
+      mediabox = dict_get(d, "MediaBox");
+      if (mediabox)
+	    p->mediabox = pdf_rect_resolve(mediabox);
+      else
+      {
+	    gs_rect *r = doc->get_mediabox(doc);
+	    if (r)
+		  p->mediabox = *r;
+      }
       p->resources = pdf_resources_load(dict_get(d, "Resources"));
       // optionals
-      p->contents = dict_get(d, "Contents");
-      v = dict_get(d, "Rotate");
+      p->contents = (pdf_obj*)dict_get(d, "Contents");
+      v = (pdf_obj*)dict_get(d, "Rotate");
       if (v)
             p->rotate = v->value.i;
       p->group = pdf_group_load(dict_get(d, "Group"));
       p->annots = pdf_annots_load(dict_get(d, "Annots"));
-      p->metadata = dict_get(d, "Metadata");
-      p->pieceinfo = dict_get(d, "PieceInfo");
-      p->lastmodified = dict_get(d, "LastModified");
+      p->metadata = (pdf_obj*)dict_get(d, "Metadata");
+      p->pieceinfo = (pdf_obj*)dict_get(d, "PieceInfo");
+      p->lastmodified = (pdf_obj*)dict_get(d, "LastModified");
       return pdf_ok;
 }
 
@@ -100,7 +109,7 @@ pdf_err pdf_page_tree_load(pdf_doc *d, pdf_obj *o)
                   }
                   else if (strcmp(a->value.k, "Page") == 0)
                   {
-                        pdf_page_load(o, &d->pages[d->pageidx]);
+                        pdf_page_load(d, o, &d->pages[d->pageidx]);
                         d->pageidx += 1;
                         return pdf_ok;
                   }
@@ -117,7 +126,7 @@ pdf_err pdf_page_tree_load(pdf_doc *d, pdf_obj *o)
       pdf_obj_resolve(kids);
       if (kids->t == eDict)
       {
-            pdf_page_load(kids, &d->pages[d->pageidx]);
+            pdf_page_load(d, kids, &d->pages[d->pageidx]);
             d->pageidx += 1;
       }
       else if (kids->t == eArray)
@@ -194,13 +203,29 @@ pdf_err pdf_page_tree_walk(pdf_doc *d, pdfcrypto_priv* encrypt)
       return pdf_ok;
 }
 
+// The purpose of having private doc struct is to provide members to be referenced by other objects, however
+// the referencing is actually forced to perform a copy on referencing, so the private members stay atomic and invisible.
+// private members also can only be accessed by a read_only member function of the public API.
+typedef struct pdf_doc_private_s
+{
+      pdf_doc doc;
+      gs_rect mediabox;
+} pdf_doc_private;
+
+static
+gs_rect* pdf_doc_get_mediabox(pdf_doc* doc)
+{
+      pdf_doc_private *pdoc = (pdf_doc_private*)doc;
+      return &pdoc->mediabox;
+}
+
 pdf_doc*
 pdf_doc_load(pdf_trailer *trailer)
 {
       pdf_obj *rdoc;
       pdf_obj *a, *d, *c, *kids;
       pdf_doc *doc;
-
+      pdf_doc_private *pdoc;
       if (!trailer)
 	    return NULL;
       rdoc = trailer->root_obj;
@@ -222,11 +247,22 @@ pdf_doc_load(pdf_trailer *trailer)
       c = dict_get(a->value.d.dict, "Count");
       if (!c || c->t != eInt)
             return NULL;
-      doc = pdf_malloc(sizeof(pdf_doc));
+      pdoc = doc = pdf_malloc(sizeof(pdf_doc_private));
       if (!doc)
             return NULL;
       memset(doc, 0, sizeof(pdf_doc));
       doc->count = c->value.i;
+      c = dict_get(a->value.d.dict, "MediaBox");
+      if (c)
+      {
+	    pdf_obj_resolve(c);
+	    pdoc->mediabox = pdf_rect_resolve(c);
+	    doc->get_mediabox = pdf_doc_get_mediabox;
+      }
+      else
+      {
+	    doc->get_mediabox = null_val;
+      }
       kids = dict_get(a->value.d.dict, "Kids");
       if (!kids || (kids->t != eArray && kids->t != eRef))
       {
@@ -294,23 +330,23 @@ pdf_info_load(pdf_obj *o, pdf_info **info)
             return pdf_ok;
       }
       i = *info;
-      a = dict_get(o->value.d.dict, "Title");
+      a = (pdf_obj*)dict_get(o->value.d.dict, "Title");
       if (a) {i->title = pdf_malloc(a->value.s.len+1); memcpy(i->title, a->value.s.buf, a->value.s.len); i->title[a->value.s.len] = 0;}
-      a = dict_get(o->value.d.dict, "Author");
+      a = (pdf_obj*)dict_get(o->value.d.dict, "Author");
       if (a) {i->author = pdf_malloc(a->value.s.len+1); memcpy(i->author, a->value.s.buf, a->value.s.len); i->author[a->value.s.len] = 0;}
-      a = dict_get(o->value.d.dict, "Subject");
+      a = (pdf_obj*)dict_get(o->value.d.dict, "Subject");
       if (a) {i->subject = pdf_malloc(a->value.s.len+1); memcpy(i->subject, a->value.s.buf, a->value.s.len); i->subject[a->value.s.len] = 0;}
-      a = dict_get(o->value.d.dict, "Keywords");
+      a = (pdf_obj*)dict_get(o->value.d.dict, "Keywords");
       if (a) {i->keywords = pdf_malloc(a->value.s.len+1); memcpy(i->keywords, a->value.s.buf, a->value.s.len); i->keywords[a->value.s.len] = 0;}
-      a = dict_get(o->value.d.dict, "Creator");
+      a = (pdf_obj*)dict_get(o->value.d.dict, "Creator");
       if (a) {i->creator = pdf_malloc(a->value.s.len+1); memcpy(i->creator, a->value.s.buf, a->value.s.len); i->creator[a->value.s.len] = 0;}
-      a = dict_get(o->value.d.dict, "Producer");
+      a = (pdf_obj*)dict_get(o->value.d.dict, "Producer");
       if (a) {i->producer = pdf_malloc(a->value.s.len+1); memcpy(i->producer, a->value.s.buf, a->value.s.len); i->producer[a->value.s.len] = 0;}
-      a = dict_get(o->value.d.dict, "CreationDate");
+      a = (pdf_obj*)dict_get(o->value.d.dict, "CreationDate");
       if (a) {i->creationdate = pdf_malloc(a->value.s.len+1); memcpy(i->creationdate, a->value.s.buf, a->value.s.len); i->creationdate[a->value.s.len] = 0;}
-      a = dict_get(o->value.d.dict, "ModDate");
+      a = (pdf_obj*)dict_get(o->value.d.dict, "ModDate");
       if (a) {i->moddate = pdf_malloc(a->value.s.len+1); memcpy(i->moddate, a->value.s.buf, a->value.s.len); i->moddate[a->value.s.len] = 0;}
-      a = dict_get(o->value.d.dict, "Trapped");
+      a = (pdf_obj*)dict_get(o->value.d.dict, "Trapped");
       i->trapped = UNknown;
       if (a)
       {
@@ -742,7 +778,7 @@ pdf_err
 pdf_doc_process_all(pdf_doc *doc, unsigned char *pw, int pwlen)
 {
       pdfcrypto_priv *crypto = NULL;
-      unsigned char u[32];
+      //unsigned char u[32];
       if (doc->trailer->encrypt)
       {
 	    crypto = pdf_crypto_init(doc->trailer->encrypt,

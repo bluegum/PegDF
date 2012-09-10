@@ -202,4 +202,6 @@ pdf_obj pdf_key_to_obj(char *s)
       return o;
 }
 
+static inline
+void * null_val() { return 0; }
 #endif
