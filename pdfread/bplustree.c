@@ -370,7 +370,10 @@ bpt_search_node(bpt_node *n, int i)
 {
       if (n->leaf)
       {
-            return n->v[i-n->low].d;
+	    if (i >= n->low + BPT_ORDER_INNER)
+		  return NULL;
+	    else
+		  return n->v[i-n->low].d;
       }
       else
       {

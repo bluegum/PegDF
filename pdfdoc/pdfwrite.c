@@ -39,6 +39,7 @@ pdf_xref_internal_create(int n, int npages)
       pdf_xref_internal* x;
       if (!n)
             return NULL;
+      n ++;
       x = pdf_malloc(sizeof(pdf_xref_internal));
       memset(x, 0, sizeof(pdf_xref_internal));
       x->n = 0;
@@ -131,10 +132,10 @@ pdf_xref_write(pdf_xref_internal *x, FILE *o)
       startxref = ftell(o);
       fprintf(o, "%s\n", "xref");
       fprintf(o, "%d %d\n", 0, x->xref->cur);
-      fprintf(o, "%010d %05d f\n", 0, 65535);
+      fprintf(o, "%010d %05d f \n", 0, 65535);
       for (i = 1; i < x->xref->cur; i++)
       {
-            fprintf(o, "%010d %05d n\n", x->xref->offsets[i], 0);
+            fprintf(o, "%010d %05d n \n", x->xref->offsets[i], 0);
       }
       return startxref;
 }
@@ -209,6 +210,9 @@ pdf_write_obj(pdf_obj* o, pdf_xref_internal *x, FILE *f)
 			      {
 				    strmlen = l->val.value.i;
 			      }
+			      fprintf(f, "/Length %d\n", strmlen);
+			      l = l->next;
+			      continue;
 			}
                         fprintf(f, "/%s ", l->key);
                         pdf_write_obj(&l->val, x, f);
@@ -259,9 +263,11 @@ int
 pdf_write_contents(pdf_obj *c, pdf_xref_internal *xref, FILE *out)
 {
       int content_ref = xref->xref->cur;
+      int off = ftell(out);
       fprintf(out, "%d 0 obj\n", xref->xref->cur);
       pdf_write_obj(c, xref, out);
       fprintf(out, "%s\n", "endobj");
+      xref->xref->offsets[xref->xref->cur] = off;
       xref->xref->cur ++;
       return content_ref;
 }
@@ -321,6 +327,13 @@ pdf_write_resources(pdf_resources *r, pdf_xref_internal *x, FILE *o)
             pdf_write_obj(font, x, o);
             fprintf(o, "%s", "\n");
       }
+      if (r->xobject)
+      {
+            pdf_obj_resolve(r->xobject);
+            fprintf(o, "%s", "/XObject");
+            pdf_write_obj(r->xobject, x, o);
+            fprintf(o, "%s", "\n");
+      }
       // end resources
       fprintf(o, "%s",  ">> ");
 }
@@ -349,6 +362,11 @@ pdf_scan_object(pdf_obj *o, pdf_xref_internal *x)
 			      l = l->next;
 			      continue;
 			}
+			if (strcmp(l->key, "Length") == 0)
+			{
+			      l = l->next;
+			      continue;
+			}
                         if (l->val.t == eRef)
                         {
                               pdf_xref_internal_append(x, l->val.value.r.num, l->val.value.r.gen);
@@ -358,6 +376,10 @@ pdf_scan_object(pdf_obj *o, pdf_xref_internal *x)
                               pdf_scan_object(&l->val, x);
                         }
 			else if (l->val.t == eArray)
+			{
+                              pdf_scan_object(&l->val, x);
+			}
+			else if (l->val.t == eDict)
 			{
                               pdf_scan_object(&l->val, x);
 			}
@@ -423,6 +445,7 @@ pdf_scan_resources(pdf_resources *r, pdf_xref_internal* x)
       }
       if (r->xobject)
       {
+	    pdf_scan_object(r->xobject, x);
       }
 }
 
