@@ -41,7 +41,7 @@ print_help()
       printf("%s\n",
 "\n\"readpdf\" reads a pdf file and iterate through pages using stub functions for pdf stream operators.\n\
 Usage:\n\
-    readpdf infile [outfile] [-o outfile] [-p passwd] [-x pagenum] [--help]\n"
+    readpdf [-p passwd] [-x pagenum] [--help] infile [outfile] [-o outfile] \n"
 	    );
 }
 

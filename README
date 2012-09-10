@@ -35,7 +35,13 @@ Steps to build:
 3. "make; make install"
 4. "cd PegDF"
 5. make
-6. ./readpdf -o outfile infile
+6. ./readpdf infile [-o outfile] [outfile]
+
+Usage on "readpdf":
+    readpdf [-p passwd] [-x pagenum] [--help] infile [outfile] [-o outfile]
+
+OPTIONS:
+	-x :  with pagenum, extract the single page at pagenum and writen out as a single page pdf file.
 
 To make a debug build:
 you@machin:export DEBUG=y
@@ -43,3 +49,16 @@ This will print out all the internal node id's and command digests.
 
 TODO:
 	formalize API for semantic functions
+
+IMPLEMENTATION NOTES:
+
+The current affair of this project is still in exploration stage.
+Things to improve, as I am now aware, are many, big items are listed below:
+* peg/leg parser to be instantialized.
+* peg/leg parser build to be part of whole build.
+* dictionary implementation need to be redone, the "tst" is too heavy of memory.
+  * a string/value pair in a linked list is one option.
+  * intern string(key), and (interned string)/value pair in a linked list is another option. But interned string need to be reference counted, and free'd properly.
+* pdfwrite is ad hoc.
+* pdfwrite does not have an API.
+* back-end API for drawing/converting.

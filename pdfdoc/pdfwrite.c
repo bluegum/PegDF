@@ -334,6 +334,13 @@ pdf_write_resources(pdf_resources *r, pdf_xref_internal *x, FILE *o)
             pdf_write_obj(r->xobject, x, o);
             fprintf(o, "%s", "\n");
       }
+      if (r->colorspace)
+      {
+            pdf_obj_resolve(r->colorspace);
+            fprintf(o, "%s", "/ColorSpace");
+            pdf_write_obj(r->colorspace, x, o);
+            fprintf(o, "%s", "\n");
+      }
       // end resources
       fprintf(o, "%s",  ">> ");
 }
@@ -447,6 +454,10 @@ pdf_scan_resources(pdf_resources *r, pdf_xref_internal* x)
       {
 	    pdf_scan_object(r->xobject, x);
       }
+      if (r->colorspace)
+      {
+	    pdf_scan_object(r->colorspace, x);
+      }
 }
 
 static
@@ -463,6 +474,11 @@ pdf_scan_page(pdf_page* pg, pdf_xref_internal* x)
       }
       if (pg->contents)
       {
+	    pdf_obj_resolve(pg->contents);
+	    if (pg->contents->t == eArray)
+	    {
+		  pdf_scan_object(pg->contents, x);
+	    }
       }
 }
 
