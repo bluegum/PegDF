@@ -106,7 +106,7 @@ pdf_catalog_write(pdf_xref_internal *x, FILE *o)
 
 static
 void
-pdf_pages_obj_write(pdf_xref_internal *x, int num, FILE *o)
+pdf_pages_obj_write(pdf_xref_internal *x, int pg1st, int num, FILE *o)
 {
       int i;
       x->xref->offsets[1] = ftell(o);
@@ -117,7 +117,7 @@ pdf_pages_obj_write(pdf_xref_internal *x, int num, FILE *o)
       fprintf(o, "/Kids [\n");
       for (i = 0; i < num; i++)
       {
-	    fprintf(o, "%d %d R\n", x->page_ref_buf[i], 0);
+	    fprintf(o, "%d %d R\n", x->page_ref_buf[i+pg1st], 0);
       }
       fprintf(o, "]\n");
       fprintf(o, "%s\n", ">>");
@@ -540,21 +540,21 @@ pdf_write_pdf(pdf_doc *doc, char *ofile, int version, int pg1st, int pglast, cha
       out = fopen(ofile, "wb");
       if (!out)
             return pdf_ok;
-      sprintf(linebuf, "%%%%PDF-%d.%d\n", version/10, version%10);
+      sprintf(linebuf, "%%PDF-%d.%d\n", version/10, version%10);
       fputs(linebuf, out);
-      fputs("%%\333\332\331\330\n", out);
+      fputs("%\333\332\331\330\n", out);
       // scan pages
-      xref = pdf_xref_internal_create(pdf_obj_count(), pglast-pg1st+1);
+      xref = pdf_xref_internal_create(pdf_obj_count(), doc->count);
       if (!xref)
             goto done;
       pdf_catalog_write(xref, out);
-      for (i = pg1st-1; i <= pglast-1; i++)
+      for (i = pg1st; i <= pglast; i++)
       {
             pdf_scan_page(doc->pages[i], xref);
             pdf_write_indirect_objs(xref, out);
             pdf_write_page_obj(doc->pages[i], i, xref, out);
       }
-      pdf_pages_obj_write(xref, pglast-pg1st+1, out);
+      pdf_pages_obj_write(xref, pg1st, pglast-pg1st+1, out);
       // write xref table
       startxref = pdf_xref_write(xref, out);
       pdf_trailer_write(xref, startxref, out);
