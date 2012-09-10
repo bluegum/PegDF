@@ -529,10 +529,10 @@ pdf_write_pdf(pdf_doc *doc, char *ofile, int version, int pg1st, int pglast, cha
       int i, startxref;
       pdf_xref_internal *xref;
 
-      if (pg1st < 1)
-            pg1st = 1;
+      if (pg1st < 0)
+            pg1st = 0;
       if (pglast < 0)
-            pglast = doc->count;
+            pglast = doc->count-1;
       if (pglast < pg1st)
             pglast = pg1st;
       if (!ofile)
