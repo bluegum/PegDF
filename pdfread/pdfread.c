@@ -699,18 +699,6 @@ static int f_getchar()
 #endif
       return c;
 }
-///////////////////////////////////////////////////
-/// parser getchar, from stream
-//extern int pdf_stream_getchar(pdf_stream *s);
-int
-pdf_stream_getchar(pdf_stream *s)
-{
-      unsigned char c;
-      if ((s->ffilter->read)(s->ffilter, &c, 1) == 0)
-            return EOF;
-      else
-            return c;
-}
 
 static int s_getchar()
 {

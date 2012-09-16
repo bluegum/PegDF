@@ -326,6 +326,7 @@ extern pdf_stream* pdf_streams_load(pdf_obj* o);
 extern pdf_err pdf_streams_free(pdf_stream* s);
 extern pdf_stream* pdf_stream_load(pdf_obj* o, pdfcrypto_priv*, int, int);
 extern pdf_err pdf_stream_free(pdf_stream *s);
+extern int pdf_stream_getchar(pdf_stream *s);
 extern pdf_err pdf_annots_free(pdf_annots *a);
 extern pdf_err pdf_resources_free(pdf_resources*);
 extern pdf_err pdf_extgstate_free(pdf_extgstate*);
@@ -342,6 +343,10 @@ extern int pdf_doc_authenticate_user_password(pdf_doc *doc, unsigned char *pw, i
 extern pdf_err pdf_doc_process_all(pdf_doc *doc, unsigned char *pw, int pwlen);
 extern int pdf_doc_need_passwd(pdf_doc *doc);
 
-extern pdf_err pdf_write_pdf(pdf_doc *doc, char *ofile, int version, int pg1st, int pglast, char *upw, char *opw);
+#define WRITE_PDF_LINEARIZED           0x01
+#define WRITE_PDF_INCREMENT            0x02
+#define WRITE_PDF_CONTENT_INFLATE      0x10
+#define WRITE_PDF_DECIPHER             0x20
+extern pdf_err pdf_write_pdf(pdf_doc *doc, char *ofile, unsigned long write_flag, int version, int pg1st, int pglast, char *upw, char *opw);
 
 #endif

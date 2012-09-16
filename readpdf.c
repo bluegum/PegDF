@@ -41,7 +41,13 @@ print_help()
       printf("%s\n",
 "\n\"readpdf\" reads a pdf file and iterate through pages using stub functions for pdf stream operators.\n\
 Usage:\n\
-    readpdf [-p passwd] [-x pagenum] [--help] infile [outfile] [-o outfile] \n"
+    readpdf [-p passwd] [-x pagenum] [-i] [--help] infile [outfile] [-o outfile]\n\
+    Options:\n\
+           -p : user password\n\
+           -x : extract a single at pagenum, start from 1\n\
+           -i : inflate content streams\n\
+           --help : print this\n\
+\n"
 	    );
 }
 
@@ -54,6 +60,8 @@ int main(int argc, char **argv)
       char *passwd = NULL;
       int firstpage = 1;
       int lastpage = -1;
+      int inflate = 0;
+      unsigned char write_flag = 0;
 
       if (argc > 1)
       {
@@ -98,6 +106,9 @@ int main(int argc, char **argv)
 				    lastpage = firstpage;
 			      }
 			      break;
+			      case 'i':
+				    inflate = 1;
+				    break;
                               default:
                                     break;
                         }
@@ -134,7 +145,9 @@ int main(int argc, char **argv)
       // writing out pdf using doc structure.
       if (out)
       {
-	    pdf_write_pdf(doc, out, 17, firstpage-1, lastpage-1, NULL, NULL);
+	    if (inflate)
+		  write_flag |= WRITE_PDF_CONTENT_INFLATE;
+	    pdf_write_pdf(doc, out, write_flag, 17, firstpage-1, lastpage-1, NULL, NULL);
       }
   done:
       pdf_doc_done(doc);

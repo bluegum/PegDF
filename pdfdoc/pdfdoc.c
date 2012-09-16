@@ -738,6 +738,17 @@ pdf_stream_free(pdf_stream *s)
       return pdf_ok;
 }
 
+//extern int pdf_stream_getchar(pdf_stream *s);
+int
+pdf_stream_getchar(pdf_stream *s)
+{
+      unsigned char c;
+      if ((s->ffilter->read)(s->ffilter, &c, 1) == 0)
+            return EOF;
+      else
+            return c;
+}
+
 int
 pdf_authenticate_user_password(pdf_encrypt *encrypt, unsigned char id[16], unsigned char *pw, int pwlen)
 {

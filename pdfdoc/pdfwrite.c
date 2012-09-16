@@ -260,12 +260,41 @@ pdf_write_obj(pdf_obj* o, pdf_xref_internal *x, FILE *f)
 
 static
 int
-pdf_write_contents(pdf_obj *c, pdf_xref_internal *xref, FILE *out)
+pdf_page_contents_write(pdf_obj *c, unsigned long write_flag, pdf_xref_internal *xref, FILE *out)
 {
       int content_ref = xref->xref->cur;
       int off = ftell(out);
       fprintf(out, "%d 0 obj\n", xref->xref->cur);
-      pdf_write_obj(c, xref, out);
+      if (write_flag & WRITE_PDF_CONTENT_INFLATE)
+      {
+	    pdf_stream *s;
+	    int ll;
+	    fprintf(out, "<<\n");
+	    fprintf(out, "/Length %s\n", "           ");
+	    ll = ftell(out) - 11;
+	    fprintf(out, ">>");
+	    s = pdf_stream_load(c, NULL, 0, 0);
+	    if (s)
+	    {
+		  int c;
+		  int curx;
+		  int strmoff;
+		  fprintf(out, "stream\n");
+		  strmoff = ftell(out);
+		  while ((c = pdf_stream_getchar(s)) != EOF)
+			fputc(c, out);
+		  pdf_stream_free(s);
+		  curx = ftell(out);
+		  fseek(out, ll, SEEK_SET);
+		  fprintf(out, "%10d", curx - strmoff);
+		  fseek(out, curx, SEEK_SET);
+		  fprintf(out, "endstream\n");
+	    }
+      }
+      else
+      {
+	    pdf_write_obj(c, xref, out);
+      }
       fprintf(out, "%s\n", "endobj");
       xref->xref->offsets[xref->xref->cur] = off;
       xref->xref->cur ++;
@@ -510,12 +539,12 @@ pdf_write_indirect_objs(pdf_xref_internal *xref, FILE *out)
 
 static
 void
-pdf_write_page_obj(pdf_page *page, int pgidx, pdf_xref_internal *xref, FILE *out)
+pdf_page_obj_write(pdf_page *page, int pgidx, unsigned long write_flag, pdf_xref_internal *xref, FILE *out)
 {
       int content_ref = 0;
       if (page->contents)
       {
-            content_ref = pdf_write_contents(page->contents, xref, out);
+            content_ref = pdf_page_contents_write(page->contents, write_flag, xref, out);
       }
 
       xref->xref->offsets[xref->xref->cur] = ftell(out);
@@ -538,7 +567,7 @@ pdf_write_page_obj(pdf_page *page, int pgidx, pdf_xref_internal *xref, FILE *out
 }
 
 pdf_err
-pdf_write_pdf(pdf_doc *doc, char *ofile, int version, int pg1st, int pglast, char *upw, char *opw)
+pdf_write_pdf(pdf_doc *doc, char *ofile, unsigned long write_flag, int version, int pg1st, int pglast, char *upw, char *opw)
 {
       FILE* out;
       char linebuf[1024];
@@ -568,7 +597,7 @@ pdf_write_pdf(pdf_doc *doc, char *ofile, int version, int pg1st, int pglast, cha
       {
             pdf_scan_page(doc->pages[i], xref);
             pdf_write_indirect_objs(xref, out);
-            pdf_write_page_obj(doc->pages[i], i, xref, out);
+            pdf_page_obj_write(doc->pages[i], i, write_flag, xref, out);
       }
       pdf_pages_obj_write(xref, pg1st, pglast-pg1st+1, out);
       // write xref table
