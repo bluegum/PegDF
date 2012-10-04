@@ -2,6 +2,7 @@
 #include <math.h>
 #include <assert.h>
 #include <ctype.h>
+#include <string.h>
 #include "pdftypes.h"
 #include "pdfmem.h"
 #include "pdfindex.h"
@@ -18,8 +19,32 @@ typedef struct buffer_stream_s buffer_stream;
 #define LEX_BUF_LEN 1024*64+1
 #define OP_STK_SIZE 1024
 #define ON_ERROR(exp) if (pdf_ok != (exp)) goto error;
-static pdf_err pdf_parse_dict(buffer_stream *s, pdf_obj *o);
+static pdf_err pdf_parse_dict(buffer_stream *s, pdf_obj *o, int);
 extern pdf_err pdf_lex_obj(buffer_stream *s, pdf_obj *);
+// -------- CopyRight Notice
+// -------- specialChars are copy and pasted from "Poppler"
+// --------
+// A '1' in this array means the character is white space.  A '1' or
+// '2' means the character ends a name or command.
+static const char specialChars[256] = {
+  1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0,   // 0x
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   // 1x
+  1, 0, 0, 0, 0, 2, 0, 0, 2, 2, 0, 0, 0, 0, 0, 2,   // 2x
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0,   // 3x
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   // 4x
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 0,   // 5x
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   // 6x
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 0,   // 7x
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   // 8x
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   // 9x
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   // ax
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   // bx
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   // cx
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   // dx
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   // ex
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0    // fx
+};
+
 //////////////////////////////////////////
 static inline
 int
@@ -328,7 +353,7 @@ pdf_err
 pdf_lex_obj(buffer_stream *s, pdf_obj *o)
 {
       int c;
-      unsigned char buf[LEX_BUF_LEN];
+      unsigned char tokenbuf[LEX_BUF_LEN];
       pdf_err e = pdf_ok;
       float n;
 
@@ -364,11 +389,11 @@ pdf_lex_obj(buffer_stream *s, pdf_obj *o)
                   mUNGETCHAR(s);
                   break;
             case '(':
-                  ON_ERROR(pdf_lex_string(s, buf, LEX_BUF_LEN));
+                  ON_ERROR(pdf_lex_string(s, tokenbuf, LEX_BUF_LEN));
                   o->t = eString;
-                  o->value.s.len = strlen((char*)buf);
+                  o->value.s.len = strlen((char*)tokenbuf);
                   o->value.s.buf = pdf_malloc(o->value.s.len);
-                  strncpy(o->value.s.buf, (char*)buf, o->value.s.len);
+                  strncpy(o->value.s.buf, (char*)tokenbuf, o->value.s.len);
                   break;
             case '[':
                   ON_ERROR(pdf_lex_array(s, o));
@@ -380,28 +405,61 @@ pdf_lex_obj(buffer_stream *s, pdf_obj *o)
                         goto error;
                   if (c == '<')
                   {
-                        ON_ERROR(pdf_parse_dict(s, o));
+                        ON_ERROR(pdf_parse_dict(s, o, 0));
                   }
                   else
                   {
                         mUNGETCHAR(s);
-                        ON_ERROR(pdf_lex_hexstring(s, buf, LEX_BUF_LEN));
+                        ON_ERROR(pdf_lex_hexstring(s, tokenbuf, LEX_BUF_LEN));
                         o->t = eHexString;
-                        o->value.s.len = strlen((char*)buf);
+                        o->value.s.len = strlen((char*)tokenbuf);
                         o->value.s.buf = pdf_malloc(o->value.s.len);
-                        strncpy(o->value.s.buf, (char*)buf, o->value.s.len);
+                        strncpy(o->value.s.buf, (char*)tokenbuf, o->value.s.len);
                   }
                   break;
             case '/':
-                  ON_ERROR(pdf_lex_name(s, buf, LEX_BUF_LEN));
+                  ON_ERROR(pdf_lex_name(s, tokenbuf, LEX_BUF_LEN));
                   o->t = eKey;
-                  o->value.k = pdf_malloc(strlen((char*)buf)+1);
-                  memcpy(o->value.k, buf, (strlen((char*)buf)+1));
+                  o->value.k = pdf_malloc(strlen((char*)tokenbuf)+1);
+                  memcpy(o->value.k, tokenbuf, (strlen((char*)tokenbuf)+1));
                   mUNGETCHAR(s);
                   break;
             default:
+	    {
+		  unsigned char *p = tokenbuf;
+		  unsigned char *pp = tokenbuf + LEX_BUF_LEN;
+		  *p++ = c;
+		  while (p < pp && ((c = mGETCHAR(s)) != EOF))
+		  {
+			if (specialChars[c])
+			      break;
+			*p++ = c;
+		  }
+		  *p = 0;
+		  if (specialChars[c]>1)
+			mUNGETCHAR(s);
+		  c = tokenbuf[0];
+		  if (c == 't' && strcmp(tokenbuf, "true") == 0)
+		  {
+			o->t = eBool;
+			o->value.b = 1;
+		  }
+		  else if (c == 'f' && strcmp(tokenbuf, "false") == 0)
+		  {
+			o->t = eBool;
+			o->value.b = 0;
+		  }
+		  else if (c == 'n' && strcmp(tokenbuf, "null") == 0)
+			o->t = eNull;
+		  else
+		  {
+			o->t = eId; // should not happen in content-stream context
+			o->value.id = pdf_malloc(strlen(tokenbuf)+1);
+			strcpy(o->value.id, tokenbuf);
+		  }
                   goto done;
-                  break;
+	    }
+	    break;
       }
   error:
   done:
@@ -446,7 +504,7 @@ pdf_lex_cmd(buffer_stream *s, unsigned char *out, int max, int *cnt)
 // ONLY for direct dictionary parsing in a content stream
 static
 pdf_err
-pdf_parse_dict(buffer_stream *s, pdf_obj *o)
+pdf_parse_dict(buffer_stream *s, pdf_obj *o, int inlineimg)
 {
       int c;
       pdf_obj k, v;
@@ -468,7 +526,7 @@ pdf_parse_dict(buffer_stream *s, pdf_obj *o)
             {
                   if (((c = mGETCHAR(s)) != EOF) && (c == '<'))
                   {
-                        pdf_parse_dict(s, o);
+                        pdf_parse_dict(s, o, 0);
                   }
             }
             else if (c == '/')
@@ -484,6 +542,13 @@ pdf_parse_dict(buffer_stream *s, pdf_obj *o)
                   dict_insert(d, k.value.k, val);
                   pdf_obj_delete(&k);
             }
+	    else if (inlineimg && c == 'I')
+	    {
+                  if (((c = mGETCHAR(s)) != EOF) && (c == 'D'))
+		  {
+			break;
+		  }
+	    }
             else if (!isspace(c))
             {
                   printf ("%s\n", "Expecting a name in dictionary key!");
@@ -560,7 +625,7 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
                         {
                               if (c == '<')
                               {
-                                    ON_ERROR(pdf_parse_dict(b, &t));
+                                    ON_ERROR(pdf_parse_dict(b, &t, 0));
                                     PUSH_O(t);
                               }
                               else
@@ -770,7 +835,24 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
                                                 }
                                                 break;
                                                 case TWO_HASH('B', '*'): x_Bstar(p); break; // B*
-                                                case TWO_HASH('B', 'I'): x_BI(p); break;// BI
+                                                case TWO_HASH('B', 'I'):  // BI
+						{
+						      ON_ERROR(pdf_parse_dict(b, &t, 1));
+						      PUSH_O(t);
+						      x_BI(p, POP_O);
+						      POP_O;
+						      // temporarily scan stream to "EI"
+						      while ((c = mGETCHAR(b)) != EOF)
+						      {
+							    if (c == '\n' || c == '\r')
+							    {
+								  if ((c = mGETCHAR(b)) != EOF && c == 'E')
+									if ((c = mGETCHAR(b)) != EOF && c == 'I')
+									      break;
+							    }
+						      }
+						      break;
+						}
                                                 case TWO_HASH('B', 'T'): x_BT(p); break; // BT
                                                 case TWO_HASH('B', 'X'): x_BX(p); break; // BX
                                                 case TWO_HASH('C','S'):
@@ -904,7 +986,27 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
                                                 goto syntax_err;
                                           }
                                           break;
-                                    default:
+				    case 4:
+					  if (strcmp(buf, "true") == 0)
+					  {
+						t.t = eBool;
+						t.value.b = 1;
+						PUSH_O(t);
+					  }
+					  else
+						goto syntax_err;
+					  break;
+				    case 5:
+					  if (strcmp(buf, "false") == 0)
+					  {
+						t.t = eBool;
+						t.value.b = 0;
+						PUSH_O(t);
+					  }
+					  else
+						goto syntax_err;
+					  break;
+				    default:
                                           goto syntax_err;
                               } // cmd switch
             } // lex switch

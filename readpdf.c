@@ -94,10 +94,10 @@ int main(int argc, char **argv)
                                     break;
 			      case 'x':
                               {
-                                    if (isspace(argv[i][2]))
+                                    if (isspace(argv[i][2]) || strlen(argv[i])==2)
                                     {
-                                          argv += 1;
-					  firstpage = atoi(argv);
+                                          i++;
+					  firstpage = atoi(argv[i]);
                                     }
 				    else
 				    {

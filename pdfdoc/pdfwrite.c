@@ -80,10 +80,10 @@ pdf_xref_internal_append(pdf_xref_internal *x, int n, int g)
 {
       // ignore generation number for now.
       int a;
-      a = bpt_search(x->entry, n);
+      a = (int)bpt_search(x->entry, n);
       if (a == 0)
       {
-	    bpt_insert(x->entry, n, -1);
+	    bpt_insert(x->entry, n, (void*)-1);
 	    x->n += 1;
       }
       return x;
@@ -191,7 +191,7 @@ pdf_write_obj(pdf_obj* o, pdf_xref_internal *x, FILE *f)
                   {
 			if (l->key[0] == 'S' && l->key[1] == '_' && l->key[2] == 'O')
 			{
-			      strm = l->val.value.i;
+			      strm = (sub_stream*)l->val.value.i;
 			      l = l->next;
 			      continue;
 			}
@@ -222,7 +222,7 @@ pdf_write_obj(pdf_obj* o, pdf_xref_internal *x, FILE *f)
                   fprintf(f, "%s", ">>");
 		  if (strm)
 		  {
-			int c;
+			unsigned char c;
 			fprintf(f, "%s\n", "stream");
 			strm->len = strmlen;
 			while (strm->read(strm, &c, 1))
@@ -246,7 +246,7 @@ pdf_write_obj(pdf_obj* o, pdf_xref_internal *x, FILE *f)
             break;
             case eRef:
             {
-                  int a = bpt_search(x->entry, o->value.r.num);
+                  int a = (int)bpt_search(x->entry, o->value.r.num);
                   if (a <= 0)
                         fprintf(f, "%d %d R ", o->value.r.num, o->value.r.gen);
                   else
@@ -268,27 +268,33 @@ pdf_page_contents_write(pdf_obj *c, unsigned long write_flag, pdf_xref_internal 
       if (write_flag & WRITE_PDF_CONTENT_INFLATE)
       {
 	    pdf_stream *s;
-	    int ll;
-	    fprintf(out, "<<\n");
-	    fprintf(out, "/Length %s\n", "           ");
-	    ll = ftell(out) - 11;
-	    fprintf(out, ">>");
 	    s = pdf_stream_load(c, NULL, 0, 0);
 	    if (s)
 	    {
 		  int c;
 		  int curx;
 		  int strmoff;
+		  int ll;
+		  fprintf(out, "<<\n");
+		  fprintf(out, "/Length %s\n", "           ");
+		  ll = ftell(out) - 11;
+		  fprintf(out, ">>");
 		  fprintf(out, "stream\n");
 		  strmoff = ftell(out);
+		  //
 		  while ((c = pdf_stream_getchar(s)) != EOF)
 			fputc(c, out);
 		  pdf_stream_free(s);
+		  //
 		  curx = ftell(out);
 		  fseek(out, ll, SEEK_SET);
 		  fprintf(out, "%10d", curx - strmoff);
 		  fseek(out, curx, SEEK_SET);
 		  fprintf(out, "endstream\n");
+	    }
+	    else
+	    {
+		  pdf_write_obj(c, xref, out);
 	    }
       }
       else
@@ -520,7 +526,7 @@ pdf_write_indirect_objs(pdf_xref_internal *xref, FILE *out)
             int i;
             for (i = xref->page_obj_idx - 1; i >=0; i--)
             {
-                  int a = bpt_search(xref->entry, xref->page_obj_buf[i]);
+                  int a = (int)bpt_search(xref->entry, xref->page_obj_buf[i]);
                   if (a == -1)
                   {
                         pdf_obj *o = pdf_obj_find(xref->page_obj_buf[i], 0);
@@ -529,7 +535,7 @@ pdf_write_indirect_objs(pdf_xref_internal *xref, FILE *out)
                         pdf_write_obj(o, xref, out);
                         fprintf(out, "\n%s\n", "endobj");
                         // update entry
-                        bpt_insert(xref->entry, xref->page_obj_buf[i], xref->xref->cur);
+                        bpt_insert(xref->entry, xref->page_obj_buf[i], (void*)xref->xref->cur);
                         // inc new xref counter
                         xref->xref->cur ++;
                   }

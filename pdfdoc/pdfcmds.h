@@ -14,7 +14,7 @@ extern pdf_err x_v(pdf_page *p, float a, float b, float c, float d);
 extern pdf_err x_y(pdf_page *p, float a, float b, float c, float d);
 extern pdf_err x_B(pdf_page *p);
 extern pdf_err x_Bstar(pdf_page *p);
-extern pdf_err x_BI(pdf_page *p);
+extern pdf_err x_BI(pdf_page *p, pdf_obj);
 extern pdf_err x_BT(pdf_page *p);
 extern pdf_err x_BX(pdf_page *p);
 extern pdf_err x_BDC(pdf_page *p, pdf_obj, pdf_obj);

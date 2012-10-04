@@ -137,8 +137,13 @@ pdf_err x_Bstar(pdf_page *p)
       return pdf_ok;
 }
 
-pdf_err x_BI(pdf_page *p)
+pdf_err x_BI(pdf_page *p, pdf_obj o)
 {
+      _DMSG("BI");
+      if (o.t == eDict)
+      {
+	    dict_free(o.value.d.dict);
+      }
       return pdf_ok;
 }
 pdf_err x_BT(pdf_page *p)

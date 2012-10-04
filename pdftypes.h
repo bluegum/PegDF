@@ -51,6 +51,7 @@ typedef enum pdf_kind
       eObjMarker,
       eDictMarker,
       eArrayMarker,
+      eNull,
       eBool,
       eInt,
       eReal,
@@ -60,6 +61,7 @@ typedef enum pdf_kind
       eHexString,
       eArray,
       eDict,
+      eId,
       eLimit
 } e_pdf_kind;
 
@@ -73,6 +75,7 @@ struct pdf_obj_s
             int b;
             int i;
             double f;
+	    char *id;
             struct {
                   unsigned short len;
                   char *buf;
