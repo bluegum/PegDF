@@ -117,6 +117,7 @@ pdf_obj pop_dict(void)
 
       o.t = eDict;
       o.value.d.dict = d;
+      o.value.d.stm_offset = -1; // not a stream (yet)
       while (parser_inst->stack[parser_inst->stackp--].t != eDictMarker)
       {
             if (i%2)
@@ -150,9 +151,9 @@ pdf_obj push_array(void)
       o.t = eArray;
       o.value.a.len = parser_inst->stackp-i-1;
       if (o.value.a.len)
-	    o.value.a.items = pdf_malloc(sizeof(pdf_obj)*(o.value.a.len));
+            o.value.a.items = pdf_malloc(sizeof(pdf_obj)*(o.value.a.len));
       else
-	    o.value.a.items = NULL;
+            o.value.a.items = NULL;
       for (k = o.value.a.len - 1, p = pop(); p.t != eArrayMarker; k--)
       {
             o.value.a.items[k] = p;
@@ -258,10 +259,12 @@ dup_pdf_obj(pdf_obj *o)
       return n;
 }
 
-int pop_obj(void)
+obj_num_gen pop_obj(void)
 {
       int n, gen;
       pdf_obj *o;
+      obj_num_gen x;
+
 #ifdef YY_DEBUG
       printf("%s", "pop-obj:\n");
       printf ("object..\n");
@@ -272,7 +275,10 @@ int pop_obj(void)
       n = pop().value.i; // obj num
       parser_inst->cur_obj = n;
       parser_inst->cur_gen = gen;
-      return pdf_obj_insert(n, gen, o);
+      pdf_obj_insert(n, gen, o);
+      x.obj = n;
+      x.gen = gen;
+      return x;
 }
 
 int read_trailer(void)
@@ -416,15 +422,17 @@ void pop_stream(int pos)
       pdf_obj *o;
       dict *d;
       sub_stream *s;
-      int i, length;
+      int i, length = 0;
       int c;
       int cache_stm = 0;
-      char *cache = NULL;
+      unsigned char *cache = NULL;
+      obj_num_gen x;
 #ifdef YY_DEBUG
       printf("stream starts at %d.\n", pos);
 #endif
       if (parser_inst->stack[parser_inst->stackp].t != eDict)
             return;
+      parser_inst->stack[parser_inst->stackp].value.d.stm_offset = pos;
       d = parser_inst->stack[parser_inst->stackp].value.d.dict;
       o = dict_get(d, "Length");
       if (o && o->t != eRef)
@@ -442,7 +450,7 @@ void pop_stream(int pos)
             if (//parser_inst->l.Linearized ||
                   cache_stm)
             {
-                  char *pcache;
+                  unsigned char *pcache;
                   cache = pdf_malloc(length);
                   if (!cache)
                         return;
@@ -505,19 +513,20 @@ void pop_stream(int pos)
             }
       }
 
-      // S_O stands for stream_object
       // insert stream object
       if (cache_stm)
       {
-            extern sub_stream* in_mem_stream_new(int pos, int len);
-            s = in_mem_stream_new((int)cache, length);
+            extern sub_stream* in_mem_stream_new(unsigned char *cache, int pos, int len, int, int);
+            s = in_mem_stream_new(cache, pos, length, 0, 0);
       }
       else
       {
-            s = (parser_inst->create_stream)(pos, 0);
+            s = (parser_inst->create_stream)(NULL, pos, length, 0, 0);
       }
-      dict_insert(d, "S_O", s);
-      pop_obj();
+      x = pop_obj();
+      s->obj = x.obj;
+      s->gen = x.gen;
+      d->stream = s;
 }
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -616,9 +625,9 @@ int read_xrefstm(pdf_obj *o, pdf_parser *p)
 #else
       t->root = *o;
       t->is_xrefstm = 1;
-      if ((o = dict_get(o->value.d.dict, "S_O")) != NULL)
+      if (o->value.d.dict->stream)
       {
-            sub_stream *ss = (sub_stream*)o;
+	    sub_stream *ss = (sub_stream*)o->value.d.dict->stream;
             ss->close(ss);
       }
 #endif
@@ -680,7 +689,7 @@ int read_hint(pdf_obj *o, hint *h)
       if (a && a->t == eInt)
             h->B = pdf_to_int(a);
       {
-            sub_stream* ss = dict_get(d, "S_O");
+	    sub_stream* ss = d->stream;
             if (!ss)
                   return 0;
             ss->close(ss);
@@ -710,7 +719,7 @@ static int s_getchar()
             return EOF;
 }
 
-int  lex_positive_int(pdf_stream *s)
+int  lex_positive_int(pdf_stream *s, int *o)
 {
       int c;
       int i=0;
@@ -724,6 +733,8 @@ int  lex_positive_int(pdf_stream *s)
             else
                   break;
       }
+      if (c == EOF)
+            return EOF;
       i = c - '0';
       while (1)
       {
@@ -738,7 +749,8 @@ int  lex_positive_int(pdf_stream *s)
             else
                   break;
       }
-      return i;
+      *o = i;
+      return 1;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -748,9 +760,10 @@ int  lex_positive_int(pdf_stream *s)
 extern pdf_stream* pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen);
 
 // return 0 when ok
-int
-read_objstream(pdf_obj *o, int num, int gen)
+static pdf_err
+objstream_read(pdf_obj *o, int num, int gen, pdfcrypto_priv *crypto)
 {
+      pdf_err err = pdf_ok;
       dict *d;
       pdf_obj *a;
       int i, first, n;
@@ -767,20 +780,22 @@ read_objstream(pdf_obj *o, int num, int gen)
       if (a && a->t == eInt)
             first = pdf_to_int(a);
       else
-            return 1;
+            return pdf_syntax_err;
       a = dict_get(d, "N");
       if (a && a->t == eInt)
             n = pdf_to_int(a);
       else
-            return 1;
+            return pdf_syntax_err;
 
       objs = pdf_malloc(sizeof(*objs)*n);
       // construct filter chain and stream interface
-      s = pdf_stream_load(o, NULL, num, gen);
-      if (!s) return 1;
+      s = pdf_stream_load(o, crypto, num, gen);
+      if (!s)
+            goto fail1;
       // construct parser
       oldparser = parser_inst;
       parser_inst = parser_new(NULL, NULL, s_getchar);
+      parser_inst->infile = oldparser->infile;
       // switch in the global obj map
       if (parser_inst->map)
             pdf_map_delete(parser_inst->map);
@@ -788,8 +803,21 @@ read_objstream(pdf_obj *o, int num, int gen)
       // lex header block for obj/offset pairs
       for (i = 0; i < n; i++)
       {
-            objs[i].obj = lex_positive_int(s);
-            objs[i].off = lex_positive_int(s);
+            int t;
+            if (lex_positive_int(s, &t) != EOF)
+                  objs[i].obj = t;
+            else
+            {
+                  err = pdf_syntax_err;
+                  goto fail;
+            }
+            if (lex_positive_int(s, &t) != EOF)
+                  objs[i].off = t;
+            else
+            {
+                  err = pdf_syntax_err;
+                  goto fail;
+            }
       }
       // parse each obj string using yyparse
       for (i = 0; i < n-1; i++)
@@ -815,7 +843,7 @@ read_objstream(pdf_obj *o, int num, int gen)
                   printf("%s\n", "Invalid obj");
             pdf_free(buf);
       }
-      // last one
+      // last object
       {
             int cc;
             int len = 0, ll1, ll2, max = 1024;
@@ -860,24 +888,27 @@ read_objstream(pdf_obj *o, int num, int gen)
             pdf_free(buf);
       }
       ////////////////////
+  fail:
       pdf_free(parser_inst);
       parser_inst = oldparser;
       pdf_stream_free(s);
+  fail1:
       pdf_free(objs);
-      return 0;
+      return err;
 }
 
 static void
 pdf_encrypt_free(pdf_encrypt *encrypt)
 {
       if (!encrypt)
-	    return;
+            return;
       if (encrypt->filter) pdf_free(encrypt->filter);
       if (encrypt->subfilter) pdf_free(encrypt->subfilter);
       if (encrypt->stmf) pdf_free(encrypt->stmf);
       if (encrypt->strf) pdf_free(encrypt->strf);
       if (encrypt->eff) pdf_free(encrypt->eff);
       // to free CF
+      if (encrypt->cf) pdf_free(encrypt->cf);
       // free this
       pdf_free(encrypt);
 }
@@ -1026,11 +1057,11 @@ pdf_trailer_open(trailer *tr, pdf_trailer ** out)
       a = dict_get(o->value.d.dict, "Root");
       if (!a)
       {
-	    if (tr->next)
-	    {
-		  tr = tr->next;
-		  goto prev_trailer;
-	    }
+            if (tr->next)
+            {
+                  tr = tr->next;
+                  goto prev_trailer;
+            }
       }
       if (!a || a->t != eRef)
             return pdf_trailer_err;
@@ -1080,7 +1111,7 @@ pdf_trailer_open(trailer *tr, pdf_trailer ** out)
       if (tr->next)
       {
             tr = tr->next;
-	    last = *out;
+            last = *out;
             goto prev_trailer;
       }
 
@@ -1109,33 +1140,84 @@ pdf_trailer_free(pdf_trailer * tr)
       // really done
       while (tr)
       {
-	    pdf_trailer *last;
-	    if (tr->info)
-	    {
-		  pdf_info_free(tr->info);
-		  pdf_free(tr->info);
-		  pdf_encrypt_free(tr->encrypt);
-	    }
-	    last = tr->last;
-	    pdf_free(tr);
-	    tr = last;
+            pdf_trailer *last;
+            if (tr->info)
+            {
+                  pdf_info_free(tr->info);
+                  pdf_free(tr->info);
+                  pdf_encrypt_free(tr->encrypt);
+            }
+            last = tr->last;
+            pdf_free(tr);
+            tr = last;
       }
       // free trailer train
       while (t)
       {
-	    tt = t->next;
+            tt = t->next;
             if (t->root.t == eDict && t->is_xrefstm == 0)
                   dict_free(t->root.value.d.dict);
-	    pdf_free(t);
-	    t = tt;
+            pdf_free(t);
+            t = tt;
       }
 
       return pdf_ok;
 }
 
+typedef struct objstream_ref objstream_ref;
+
+struct objstream_ref
+{
+      int num, gen;
+      objstream_ref* next;
+};
+
+static objstream_ref *
+objstream_mark(objstream_ref *obj, int num, int gen)
+{
+      if (!obj)
+      {
+            obj = pdf_malloc(sizeof(objstream_ref));
+            memset(obj, 0, sizeof(objstream_ref));
+            obj->num = num;
+            obj->gen = gen;
+            return obj;
+      }
+      else
+      {
+            objstream_ref *t = obj;
+            while (t->next)
+            {
+                  t = t->next;
+            };
+            t->next = pdf_malloc(sizeof(objstream_ref));
+            memset(t->next, 0, sizeof(objstream_ref));
+            t->next->num = num;
+            t->next->gen = gen;
+      }
+      return obj;
+}
+
+static void
+objstream_mark_free(objstream_ref *obj)
+{
+      while (obj->next)
+      {
+            objstream_ref *t = obj->next;
+            pdf_free(obj);
+            obj = t;
+      }
+      if (obj)
+            pdf_free(obj);
+}
+
+// pdf_read reads the file sequentially and parse objects in fly most of time,
+// except when object stream is encrypted.
 pdf_err
 pdf_read(char *in, char *out, pdf_doc **doc)
 {
+      pdf_err err = pdf_ok;
+      objstream_ref *objstms = NULL;
       FILE *inf=stdin, *outf=stdout;
       if (in)
       {
@@ -1216,6 +1298,24 @@ pdf_read(char *in, char *out, pdf_doc **doc)
                         DMSG("processing linearized pdf file");
                         read_linearized_dict(first_obj, &parser_inst->l);
                   }
+                  else
+                  {
+                        l = dict_get(first_obj->value.d.dict, "Type");
+                        if (l && l->t == eKey && (strncmp(l->value.k, "ObjStm", 6) == 0))
+                        {
+                              DMSG("Procssing Object stream");
+                              err = objstream_read(first_obj, parser_inst->cur_obj, parser_inst->cur_gen, NULL);
+                              if (err != pdf_ok)
+                              {
+                                    objstms = objstream_mark(objstms, parser_inst->cur_obj, parser_inst->cur_gen);
+                              }
+                        }
+                        else if (l && l->t == eKey && (strncmp(l->value.k, "XRef", 4) == 0))
+                        {
+                              DMSG("Procssing xref stream");
+                              read_xrefstm(first_obj, parser_inst);
+                        }
+                  }
             }
       }
       // process linearized headers
@@ -1278,11 +1378,15 @@ pdf_read(char *in, char *out, pdf_doc **doc)
                                     if (strncmp(t->value.k, "ObjStm", 6) == 0)
                                     {
                                           DMSG("Procssing Object stream");
-                                          read_objstream(o, parser_inst->cur_obj, parser_inst->cur_gen);
+                                          err = objstream_read(o, parser_inst->cur_obj, parser_inst->cur_gen, NULL);
+                                          if (err != pdf_ok)
+                                          {
+                                                objstms = objstream_mark(objstms, parser_inst->cur_obj, parser_inst->cur_gen);
+                                          }
                                     }
                                     else if (strncmp(t->value.k, "XRef", 4) == 0)
                                     {
-                                          DMSG("Procssing Object stream");
+                                          DMSG("Procssing xref stream");
                                           read_xrefstm(o, parser_inst);
                                     }
                               }
@@ -1298,19 +1402,59 @@ pdf_read(char *in, char *out, pdf_doc **doc)
                   }
             }
       }
-      parser_free();
+      if (!objstms)
+	    parser_free();
 #ifdef DEBUG
       pdf_obj_walk();
 #endif
       if (parser_inst->trailer)
       {
-	    pdf_trailer *trailer;
+            pdf_trailer *trailer;
             pdf_trailer_open(parser_inst->trailer, &trailer);
-	    *doc = pdf_doc_load(trailer);
+            if (objstms && trailer->encrypt)
+            {
+                  pdfcrypto_priv *crypto = NULL;
+                  objstream_ref *p = objstms;
+                  if (trailer->encrypt)
+                  {
+                        crypto = pdf_crypto_init(trailer->encrypt,
+                                                 trailer->id[0],
+                                                 "", // password
+                                                 0 // password len
+                              );
+                  }
+                  if (!crypto)
+                  {
+                        goto done;
+                  }
+                  while (p)
+                  {
+                        pdf_obj o, *oo;
+                        objstream_ref *t = p->next;
+                        o.t = eRef;
+                        o.value.r.num = p->num;
+                        o.value.r.gen = p->gen;
+                        oo = &o;
+                        pdf_obj_resolve(oo);
+                        objstream_read(oo, p->num, p->gen, crypto);
+                        p = t;
+                  }
+                  if (crypto)
+                        pdf_crypto_destroy(crypto);
+            }
+            *doc = pdf_doc_load(trailer);
+            if (!*doc && trailer)
+                  pdf_trailer_free(trailer);
       }
       else
-	    *doc = NULL;
+      {
+            *doc = NULL;
+      }
   done:
+      if (objstms)
+	    parser_free();
+      if (objstms)
+            objstream_mark_free(objstms);
       return pdf_ok;
 }
 

@@ -101,7 +101,7 @@ struct pdf_parser_s
       int (*unget)(unsigned char);
       int (*close)();
       unsigned char* (*cache)(int len);
-      sub_stream* (*create_stream)(int, int);
+      sub_stream* (*create_stream)(void *, int, int, int, int);
       /// private
       FILE* infile;
       FILE* outfile;
@@ -122,7 +122,13 @@ struct sub_stream_s
       int (*read)(sub_stream*, unsigned char *, int);
       int (*close)(sub_stream*);
       int len;
+      int obj, gen;
 };
+
+typedef struct obj_num_gen_s
+{
+      int obj, gen;
+} obj_num_gen;
 
 /// The ONLY Global
 extern pdf_parser *parser_inst;
@@ -134,7 +140,7 @@ extern pdf_obj push_array(void);
 extern pdf_obj push_literal(char *s);
 extern pdf_obj pop(void);
 extern pdf_obj pop_dict(void);
-extern int pop_obj(void);
+extern obj_num_gen pop_obj(void);
 extern int read_trailer(void);
 extern void print_stack();
 extern int xref_new(int off, int n);

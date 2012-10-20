@@ -12,7 +12,7 @@ struct file_stream_s
       int (*reset)(sub_stream*);
       int (*read)(sub_stream*, unsigned char *, int);
       int (*close)(sub_stream*);
-      int len;
+      int len, obj, gen;
       // private
       pdf_parser *p; // global object
       int offset;
@@ -52,9 +52,9 @@ fs_reset(sub_stream* s)
       int ret = 0;
       file_stream *fs = (file_stream*)s;
       if (!fs)
-            return 0;
+            return 1;
       if (!fs->p)
-            return 0;
+            return 1;
       if (fs->r)
       {
             fs->r = 0;
@@ -115,7 +115,7 @@ fs_close(sub_stream* s)
 
 static
 sub_stream*
-file_stream_new(int pos, int len)
+file_stream_new(void *priv, int pos, int len, int obj, int gen)
 {
       file_stream *f;
       f = pdf_malloc(sizeof(file_stream));
@@ -157,7 +157,8 @@ struct in_mem_stream_s
       int (*reset)(sub_stream*);
       int (*read)(sub_stream*, unsigned char *, int);
       int (*close)(sub_stream*);
-      int len;
+      int pos; // file offset
+      int len, obj, gen;
       // private
       unsigned char *s; // start
       unsigned char *p; // current
@@ -169,8 +170,11 @@ im_reset(sub_stream* s)
 {
       in_mem_stream *ms = (in_mem_stream*)s;
       if (!ms)
-            return 0;
-      return 0;
+            return 1;
+      if (ms->s)
+	    return 0;
+      else
+	    return 1;
 }
 static int
 im_read(sub_stream* s, unsigned char *buf, int len)
@@ -201,19 +205,22 @@ im_close(sub_stream* s)
       in_mem_stream *ms = (in_mem_stream*)s;
       if (!ms || !ms->s)
             return 0;
+      // we need to find a way to replenish ms->s
       pdf_free(ms->s);
+      ms->s = NULL;
       return 0;
 }
 
 sub_stream*
-in_mem_stream_new(int pos, int len)
+in_mem_stream_new(unsigned char *cache, int pos, int len, int obj, int gen)
 {
       in_mem_stream *s;
       s = pdf_malloc(sizeof(in_mem_stream));
       if (!s)
             return NULL;
+      s->pos = pos;
       s->len = len;
-      s->s = (unsigned char*)pos;
+      s->s = cache;
       s->p = s->s;
       s->e = s->s + s->len;
       s->reset = im_reset;

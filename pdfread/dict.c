@@ -12,6 +12,7 @@ dict* dict_new()
       {
             d->dict = NULL;
 	    d->n = 0;
+	    d->stream = 0;
       }
       return d;
 }
@@ -154,6 +155,10 @@ void  dict_free(dict* d)
                   tst_cleanup(d->dict);
                   tst_print_reset(-1);
             }
+	    if (d->stream)
+	    {
+		  pdf_free(d->stream);
+	    }
             pdf_free(d);
       }
       return;
@@ -185,14 +190,7 @@ dict_list_append(char *key, void *v, dict_list* l)
 	    l = l->last;
       l->key = pdf_malloc(strlen(key)+1);
       memcpy(l->key, key, strlen(key)+1);
-      if (strcmp(key, "S_O") == 0)
-      {
-	    l->val.value.i = v;
-      }
-      else
-      {
-	    l->val = *((pdf_obj*)v);
-      }
+      l->val = *((pdf_obj*)v);
       if (!l->last)
       {
 	    l->last = (dict_list*)pdf_malloc(sizeof(dict_list));
@@ -210,11 +208,17 @@ dict_to_list(dict *d)
 {
       dict_list *l = pdf_malloc(sizeof(dict_list));
       l->next = l->last = NULL;
+      l->val.t = eLimit;
       if (d && d->dict)
       {
 	    tst_print_reset(1);
 	    tst_traverse(d->dict, (tst_hook)dict_list_append, l);
 	    tst_print_reset(-1);
+      }
+      if (l->val.t == eLimit)
+      {
+	    pdf_free(l);
+	    l = NULL;
       }
       return l;
 }

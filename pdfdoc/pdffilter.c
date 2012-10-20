@@ -40,6 +40,7 @@ pdf_flated_new(pdf_filter **f)
       z->avail_in = 0;
 
       ret = inflateInit(z);
+      //ret = inflateInit2(z, 16+31);//MAX_WBITS);
       (*f)->state = (void*)z;
       (*f)->read = pdf_flated_read;
       (*f)->close = pdf_flated_close;
@@ -79,10 +80,13 @@ pdf_flated_read(pdf_filter *f, unsigned char *obuf, int request)
             switch (ret) {
                   case Z_NEED_DICT:
                         ret = Z_DATA_ERROR;     /* and fall through */
-                  case Z_DATA_ERROR:
                   case Z_MEM_ERROR:
                         (void)inflateEnd(z);
                         return 0;
+                  case Z_DATA_ERROR:
+			if (z->avail_in != 0)
+			      return 0; // EOF
+			break;
             }
       }
       else

@@ -7,6 +7,7 @@ struct dict_s
 {
       Tptr dict;
       int n;
+      void *stream;
 };
 
 typedef struct dict_list_s dict_list;

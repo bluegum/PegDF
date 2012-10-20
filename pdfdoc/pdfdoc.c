@@ -47,12 +47,12 @@ pdf_err pdf_page_load(pdf_doc *doc, pdf_obj *o, pdf_page **page)
       p->parent = dict_get(d, "Parent");
       mediabox = dict_get(d, "MediaBox");
       if (mediabox)
-	    p->mediabox = pdf_rect_resolve(mediabox);
+            p->mediabox = pdf_rect_resolve(mediabox);
       else
       {
-	    gs_rect *r = doc->get_mediabox(doc);
-	    if (r)
-		  p->mediabox = *r;
+            gs_rect *r = doc->get_mediabox(doc);
+            if (r)
+                  p->mediabox = *r;
       }
       p->resources = pdf_resources_load(dict_get(d, "Resources"));
       // optionals
@@ -158,7 +158,7 @@ pdf_err pdf_exec_page_content(pdf_page *p, pdfcrypto_priv* encrypt)
       {
             pdf_obj *oo;
             int i, n;
-
+	    oo = p->contents;
             pdf_obj_resolve(p->contents);
             if (!p->contents)
                   return pdf_ok;
@@ -170,7 +170,7 @@ pdf_err pdf_exec_page_content(pdf_page *p, pdfcrypto_priv* encrypt)
             else if (p->contents->t == eDict)
             {
                   n = 1;
-                  oo = p->contents;
+                  //oo = p->contents;
             }
             else
                   return pdf_ok;
@@ -227,7 +227,7 @@ pdf_doc_load(pdf_trailer *trailer)
       pdf_doc *doc;
       pdf_doc_private *pdoc;
       if (!trailer)
-	    return NULL;
+            return NULL;
       rdoc = trailer->root_obj;
       pdf_obj_resolve(rdoc);
 
@@ -255,13 +255,13 @@ pdf_doc_load(pdf_trailer *trailer)
       c = dict_get(a->value.d.dict, "MediaBox");
       if (c)
       {
-	    pdf_obj_resolve(c);
-	    pdoc->mediabox = pdf_rect_resolve(c);
-	    doc->get_mediabox = pdf_doc_get_mediabox;
+            pdf_obj_resolve(c);
+            pdoc->mediabox = pdf_rect_resolve(c);
+            doc->get_mediabox = pdf_doc_get_mediabox;
       }
       else
       {
-	    doc->get_mediabox = null_val;
+            doc->get_mediabox = null_val;
       }
       kids = dict_get(a->value.d.dict, "Kids");
       if (!kids || (kids->t != eArray && kids->t != eRef))
@@ -290,7 +290,7 @@ pdf_err pdf_doc_process(pdf_doc *d, pdfcrypto_priv* encrypt)
 pdf_err  pdf_doc_print_info(pdf_doc *d)
 {
       if (!d)
-	    return pdf_ok;
+            return pdf_ok;
       if (d->trailer->info)
             pdf_info_print(d->trailer->info);
       return pdf_ok;
@@ -300,7 +300,7 @@ void pdf_doc_done(pdf_doc *d)
 {
       int i;
       if (!d)
-	    return;
+            return;
       for (i = 0; i < d->count; i++)
       {
             pdf_page_free(d->pages[i]);
@@ -315,6 +315,7 @@ pdf_info_load(pdf_obj *o, pdf_info **info)
 {
       pdf_obj *a;
       pdf_info *i;
+
       *info = pdf_malloc(sizeof(pdf_info));
       if (!*info)
             return pdf_ok;
@@ -372,23 +373,71 @@ pdf_err pdf_info_print(pdf_info *info)
       return pdf_ok;
 }
 
-
+// Load crypt_filter
 pdf_err
-pdf_cf_load(pdf_obj *o, pdf_cryptfilter **cryptfilter)
+pdf_cf_load(pdf_obj *o, pdf_cryptfilter **cf)
 {
       pdf_obj *a;
-      pdf_cryptfilter *c;
-      *cryptfilter = pdf_malloc(sizeof(pdf_cryptfilter));
-      if (!*cryptfilter)
+
+      if (!o)
+	    return pdf_ok;
+      if (o->t != eKey && o->t != eDict)
+	    return pdf_ok;
+      if (o->t == eKey &&
+	  strcmp(o->value.k, "Identity") == 0)
+	    return pdf_ok;
+      if (o->t == eKey)
+	    return pdf_ok;
+      a = dict_get(o->value.d.dict, "StdCF"); // Dont support private CF
+      if (!a)
+	    return pdf_ok;
+      o = a;
+      pdf_obj_resolve(o);
+      if (o->t != eDict)
+	    return pdf_ok;
+      *cf = pdf_malloc(sizeof(pdf_cryptfilter));
+      if (!*cf)
             return pdf_mem_err;
       if (!o)
             return pdf_ok;
-      memset(*cryptfilter, 0, sizeof(pdf_encrypt));
-      c = *cryptfilter;
-      a = dict_get(o->value.d.dict, "Type");
+      memset(*cf, 0, sizeof(pdf_cryptfilter));
       a = dict_get(o->value.d.dict, "CFM");
+      if (a && a->t == eKey)
+      {
+            if (strcmp(a->value.k, "V2") == 0)
+            {
+                  (*cf)->cfm = eCryptRC4;
+            }
+            else if (strcmp(a->value.k, "None") == 0)
+            {
+                  (*cf)->cfm = eCryptNone;
+            }
+            else if (strcmp(a->value.k, "AESV2") == 0)
+            {
+                  (*cf)->cfm = eCryptAES;
+            }
+            else
+            {
+                  (*cf)->cfm = eCryptNone; // better return error ?
+            }
+      }
       a = dict_get(o->value.d.dict, "AuthEvent");
+      if (a && a->t == eKey)
+      {
+            if (strcmp(a->value.k, "EFOpen") == 0)
+            {
+                  (*cf)->authevent = eEFOpen;
+            }
+            else if (strcmp(a->value.k, "DocOpen") == 0)
+	    {
+                  (*cf)->authevent = eDocOpen;
+	    }
+      }
       a = dict_get(o->value.d.dict, "Length");
+      if (a && a->t == eInt)
+      {
+	    (*cf)->length = a->value.i;
+      }
       return pdf_ok;
 }
 
@@ -419,7 +468,7 @@ pdf_resources_load(pdf_obj *o)
 pdf_stream*
 pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
 {
-      pdf_filter *last = NULL, *raw, *crypt = NULL;
+      pdf_filter *last = NULL, *raw = NULL, *crypt = NULL;
       pdf_stream *s;
       sub_stream *ss;
       pdf_obj *x, *xx, *y;
@@ -441,22 +490,44 @@ pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
       pdf_obj_resolve(x);
       s = pdf_malloc(sizeof(pdf_stream));
       if (!s)
-            return NULL;
+            goto fail;
       memset(s, 0, sizeof(pdf_stream));
       s->length = x->value.i;
       // make raw filter
       /// internal struct. raw stream object
-      ss = dict_get(y->value.d.dict, "S_O");
+      //ss = dict_get(y->value.d.dict, "S_O");
+      ss = y->value.d.dict->stream;
       if (!ss)
-            return NULL;
+            goto fail;
       ss->len = s->length;
+      if ((ss->reset)(ss) != 0)
+      {
+            pdf_free(ss);
+            // a little haxie, because we SHOULD NOT call global "parser_inst"
+            ss = (parser_inst->create_stream)(NULL, y->value.d.stm_offset, s->length, 0, 0);
+            y->value.d.dict->stream = ss;
+            if (!ss)
+            {
+                  goto fail;
+            }
+      }
       raw = pdf_rawfilter_new(ss);
       // chain crypto filter
       if (crypto)
       {
-            crypt = pdf_cryptofilter_new(crypto, numobj, numgen);
+	    if (crypto->algo == e40plusbitsAES || crypto->algo == e40bitsAES)
+	    {
+		  // need initial_vector
+		  unsigned char iv[16];
+		  (raw->read)(raw, iv, 16);
+		  crypt = pdf_cryptofilter_new(crypto, numobj, numgen, iv);
+	    }
+	    else
+	    {
+		  crypt = pdf_cryptofilter_new(crypto, numobj, numgen, NULL);
+	    }
             if (!crypt)
-                  return NULL;
+                  goto fail;
             crypt->next = raw;
       }
       // chain rest
@@ -555,6 +626,12 @@ pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
   done:
       s->ffilter = last;
       return s;
+  fail:
+      if (s)
+            pdf_free(s);
+      if (raw)
+            raw->close(raw);
+      return NULL;
 }
 // public api
 pdf_err
@@ -756,23 +833,23 @@ pdf_authenticate_user_password(pdf_encrypt *encrypt, unsigned char id[16], unsig
       unsigned char u[32];
       int rev;
       crypto = pdf_crypto_init(encrypt, id,
-			       pw, // password
-			       pwlen // password len
-	    );
+                               pw, // password
+                               pwlen // password len
+            );
       rev = crypto->rev;
       // lazy authentication
       pdf_crypto_calc_userpassword(crypto, id,
-				   pw, // password
-				   pwlen,  // pwlen
-				   u);
+                                   pw, // password
+                                   pwlen,  // pwlen
+                                   u);
       pdf_crypto_destroy(crypto);
-      if (rev == 3)
+      if (rev == 3 || rev == 4)
       {
-	    return (memcmp(u, encrypt->u, 16));
+            return (memcmp(u, encrypt->u, 16));
       }
       else if (rev == 2)
       {
-	    return (memcmp(u, encrypt->u, 32));
+            return (memcmp(u, encrypt->u, 32));
       }
       return 1;
 }
@@ -781,8 +858,8 @@ int
 pdf_doc_authenticate_user_password(pdf_doc *doc, unsigned char *pw, int pwlen)
 {
       return pdf_authenticate_user_password(doc->trailer->encrypt,
-					    doc->trailer->id[0],
-					    pw, pwlen);
+                                            doc->trailer->id[0],
+                                            pw, pwlen);
 }
 
 pdf_err
@@ -792,15 +869,15 @@ pdf_doc_process_all(pdf_doc *doc, unsigned char *pw, int pwlen)
       //unsigned char u[32];
       if (doc->trailer->encrypt)
       {
-	    crypto = pdf_crypto_init(doc->trailer->encrypt,
-				     doc->trailer->id[0],
-				     pw, // password
-				     pwlen // password len
-		  );
+            crypto = pdf_crypto_init(doc->trailer->encrypt,
+                                     doc->trailer->id[0],
+                                     pw, // password
+                                     pwlen // password len
+                  );
       }
       pdf_doc_process(doc, crypto);
       if (crypto)
-	    pdf_crypto_destroy(crypto);
+            pdf_crypto_destroy(crypto);
       return pdf_ok;
 }
 

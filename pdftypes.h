@@ -76,17 +76,18 @@ struct pdf_obj_s
             int i;
             double f;
 	    char *id;
+            char *k;
             struct {
                   unsigned short len;
                   char *buf;
             } s;
-            char *k;
             struct {
                   int len;
                   pdf_obj *items;
             } a;
             struct {
                   dict *dict;
+		  int stm_offset;
             } d;
             pdf_xref r;
       } value;

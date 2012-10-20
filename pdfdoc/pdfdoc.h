@@ -266,13 +266,12 @@ enum pdf_encrypt_kind_e
 {
       eCryptNone,
       eCryptRC4,
-      eCryptAES
+      eCryptAES,
 };
 
 struct pdf_cryptfilter_s
 {
-      char *type;
-      char *cfm;
+      pdf_encrypt_kind cfm;
       enum {eDocOpen, eEFOpen} authevent;
       int length;
       // additional entries for public-key
