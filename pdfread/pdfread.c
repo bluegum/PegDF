@@ -757,8 +757,6 @@ int  lex_positive_int(pdf_stream *s, int *o)
 /// End of parser actions
 ///////////////////////////////////////////////////////////////////////////////
 
-extern pdf_stream* pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen);
-
 // return 0 when ok
 static pdf_err
 objstream_read(pdf_obj *o, int num, int gen, pdfcrypto_priv *crypto)

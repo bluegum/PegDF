@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "bplustree.h"
 #include "dict.h"
 #include "pdffilter.h"
@@ -17,6 +18,7 @@ struct pdf_xref_internal_s
 {
       int n;
       int gen;
+      int cur_idx;
       bpt_tree *entry; // storing scanned objects
       pdf_xref_table *xref;
       int page_obj_idx;
@@ -155,7 +157,7 @@ pdf_trailer_write(pdf_xref_internal *x, int startxref, FILE *o)
 }
 
 static void
-pdf_write_obj(pdf_obj* o, pdf_xref_internal *x, FILE *f)
+pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
 {
       int i;
       if (!o)
@@ -176,15 +178,30 @@ pdf_write_obj(pdf_obj* o, pdf_xref_internal *x, FILE *f)
                   break;
             case eString:
                   fprintf(f, "%s", "(");
-                  for (i = 0; i < o->value.s.len; i ++)
-                        fprintf(f, "%c", o->value.s.buf[i]);
-                  fprintf(f, "%s", ")");
+		  if (crypto)
+		  {
+			pdf_stream *s = pdf_stream_load(o, crypto, x->page_obj_buf[x->cur_idx], 0);
+			if (s)
+			{
+			      int c;
+			      while ((c = pdf_stream_getchar(s)) != EOF)
+				    fputc(c, f);
+			      pdf_stream_free(s);
+			}
+		  }
+		  else
+		  {
+			for (i = 0; i < o->value.s.len; i ++)
+			      fprintf(f, "%c", o->value.s.buf[i]);
+		  }
+		  fprintf(f, "%s", ")");
                   break;
             case eDict:
             {
                   dict_list *ll, *l = dict_to_list(o->value.d.dict);
 		  sub_stream *strm = o->value.d.dict->stream;
 		  int strmlen = 0;
+		  int last_off = 0;
                   ll = l;
                   fprintf(f, "%s", "<<");
                   while (l && l->key)
@@ -204,17 +221,67 @@ pdf_write_obj(pdf_obj* o, pdf_xref_internal *x, FILE *f)
 			      {
 				    strmlen = l->val.value.i;
 			      }
-			      fprintf(f, "/Length %d\n", strmlen);
+			      if (crypto)
+			      {
+				    fprintf(f, "/Length %s\n", "           ");
+				    last_off = ftell(f) - 11;
+			      }
+			      else
+			      {
+				    fprintf(f, "/Length %d\n", strmlen);
+			      }
 			      l = l->next;
 			      continue;
 			}
+			else if (strcmp(l->key, "Filter")==0)
+			{
+			      // For NOW, we write plain stream whenever crypto is present
+			      if (crypto)
+			      {
+				    l = l->next;
+				    continue;
+			      }
+			}
                         fprintf(f, "/%s ", l->key);
-                        pdf_write_obj(&l->val, x, f);
+                        pdf_obj_write(&l->val, x, f, crypto);
                         fprintf(f, "%s", "\n");
                         l = l->next;
                   }
                   fprintf(f, "%s", ">>");
-		  if (strm)
+		  if (strm && crypto)
+		  {
+			int obj, gen;
+			pdf_stream *s = NULL;
+			sub_stream *ss = (sub_stream*)o->value.d.dict->stream;
+			FILE *out = f;
+
+			if (ss)
+			{
+			      obj = ss->obj;
+			      gen = ss->gen;
+			}
+			s = pdf_stream_load(o, crypto, obj, gen);
+			if (s)
+			{
+			      int c;
+			      int curx;
+			      int strmoff;
+			      int ll;
+			      fprintf(f, "%s\n", "stream");
+			      strmoff = ftell(out);
+			      //
+			      while ((c = pdf_stream_getchar(s)) != EOF)
+				    fputc(c, out);
+			      pdf_stream_free(s);
+			      //
+			      curx = ftell(out);
+			      fseek(out, last_off, SEEK_SET);
+			      fprintf(out, "%10d", curx - strmoff);
+			      fseek(out, curx, SEEK_SET);
+			      fprintf(out, "endstream\n");
+			}
+		  }
+		  else if (strm)
 		  {
 			unsigned char c;
 			fprintf(f, "%s\n", "stream");
@@ -233,7 +300,7 @@ pdf_write_obj(pdf_obj* o, pdf_xref_internal *x, FILE *f)
                   fprintf(f, "%s", "[");
                   for (i = 0; i < o->value.a.len; i++)
                   {
-                        pdf_write_obj(&o->value.a.items[i], x, f);
+                        pdf_obj_write(&o->value.a.items[i], x, f, crypto);
                   }
                   fprintf(f, "%s", "]");
             }
@@ -303,12 +370,12 @@ pdf_page_contents_write(pdf_obj *content, unsigned long write_flag, pdf_xref_int
 	    }
 	    else
 	    {
-		  pdf_write_obj(cobj, xref, out);
+		  pdf_obj_write(cobj, xref, out, crypto);
 	    }
       }
       else
       {
-	    pdf_write_obj(cobj, xref, out);
+	    pdf_obj_write(cobj, xref, out, crypto);
       }
       fprintf(out, "%s\n", "endobj");
       xref->xref->offsets[xref->xref->cur] = off;
@@ -318,7 +385,7 @@ pdf_page_contents_write(pdf_obj *content, unsigned long write_flag, pdf_xref_int
 
 static
 void
-pdf_write_resources(pdf_resources *r, pdf_xref_internal *x, FILE *o)
+pdf_resources_write(pdf_resources *r, pdf_xref_internal *x, FILE *o, pdfcrypto_priv *crypto)
 {
       fprintf(o, "%s <<", "/Resources");
       if (r->extgstate)
@@ -343,7 +410,7 @@ pdf_write_resources(pdf_resources *r, pdf_xref_internal *x, FILE *o)
                               for (i = 0; i < a->cur; i++)
                               {
                                     fprintf(o, "/%s ",a->items[i].key);
-                                    pdf_write_obj(&a->items[i].val, x, o);
+                                    pdf_obj_write(&a->items[i].val, x, o, crypto);
                               }
                         }
                         // free array/dict_entry
@@ -368,35 +435,35 @@ pdf_write_resources(pdf_resources *r, pdf_xref_internal *x, FILE *o)
             pdf_obj *font = r->font;
             pdf_obj_resolve(font);
             fprintf(o, "%s", "/Font");
-            pdf_write_obj(font, x, o);
+            pdf_obj_write(font, x, o, crypto);
             fprintf(o, "%s", "\n");
       }
       if (r->xobject)
       {
             pdf_obj_resolve(r->xobject);
             fprintf(o, "%s", "/XObject");
-            pdf_write_obj(r->xobject, x, o);
+            pdf_obj_write(r->xobject, x, o, crypto);
             fprintf(o, "%s", "\n");
       }
       if (r->colorspace)
       {
             pdf_obj_resolve(r->colorspace);
             fprintf(o, "%s", "/ColorSpace");
-            pdf_write_obj(r->colorspace, x, o);
+            pdf_obj_write(r->colorspace, x, o, crypto);
             fprintf(o, "%s", "\n");
       }
       if (r->shading)
       {
             pdf_obj_resolve(r->shading);
             fprintf(o, "%s", "/Shading");
-            pdf_write_obj(r->shading, x, o);
+            pdf_obj_write(r->shading, x, o, crypto);
             fprintf(o, "%s", "\n");
       }
       if (r->pattern)
       {
             pdf_obj_resolve(r->pattern);
             fprintf(o, "%s", "/Shading");
-            pdf_write_obj(r->pattern, x, o);
+            pdf_obj_write(r->pattern, x, o, crypto);
             fprintf(o, "%s", "\n");
       }
       // end resources
@@ -474,7 +541,7 @@ pdf_scan_object(pdf_obj *o, pdf_xref_internal *x)
 
 static
 void
-pdf_scan_resources(pdf_resources *r, pdf_xref_internal* x)
+pdf_resources_scan(pdf_resources *r, pdf_xref_internal* x)
 {
       if (r->extgstate)
       {
@@ -528,7 +595,7 @@ pdf_scan_page(pdf_page* pg, pdf_xref_internal* x)
       x->page_obj_idx = 0;
       if (pg->resources)
       {
-            pdf_scan_resources(pg->resources, x);
+            pdf_resources_scan(pg->resources, x);
       }
       if (pg->group)
       {
@@ -543,9 +610,10 @@ pdf_scan_page(pdf_page* pg, pdf_xref_internal* x)
       }
 }
 
+// Writing out page content which is an array of references.
 static
 void
-pdf_write_indirect_objs(pdf_xref_internal *xref, FILE *out)
+pdf_write_indirect_objs(pdf_xref_internal *xref, FILE *out, pdfcrypto_priv *crypto)
 {
       if (xref->page_obj_idx)
       {
@@ -553,12 +621,13 @@ pdf_write_indirect_objs(pdf_xref_internal *xref, FILE *out)
             for (i = xref->page_obj_idx - 1; i >=0; i--)
             {
                   int a = (int)bpt_search(xref->entry, xref->page_obj_buf[i]);
-                  if (a == -1)
+                  if (a == -1) // -1 means new item in the output tree, means need to be flushed out.
                   {
                         pdf_obj *o = pdf_obj_find(xref->page_obj_buf[i], 0);
+			xref->cur_idx = i;
                         xref->xref->offsets[xref->xref->cur] = ftell(out);
                         fprintf(out, "%d 0 obj\n", xref->xref->cur);
-                        pdf_write_obj(o, xref, out);
+                        pdf_obj_write(o, xref, out, crypto);
                         fprintf(out, "\n%s\n", "endobj");
                         // update entry
                         bpt_insert(xref->entry, xref->page_obj_buf[i], (void*)xref->xref->cur);
@@ -606,7 +675,7 @@ pdf_page_obj_write(pdf_page *page, int pgidx, unsigned long write_flag, pdf_xref
       fprintf(out, "%s [%f %f %f %f]\n", "/MediaBox", page->mediabox.x0, page->mediabox.y0,  page->mediabox.x1, page->mediabox.y1);
       if (page->resources)
       {
-            pdf_write_resources(page->resources, xref, out);
+            pdf_resources_write(page->resources, xref, out, crypto);
       }
       if (content_ref != -1)
       {
@@ -643,9 +712,6 @@ pdf_write_pdf(pdf_doc *doc, char *ofile, unsigned long write_flag, int version, 
             pglast = pg1st;
       if (!ofile)
             return pdf_ok;
-      out = fopen(ofile, "wb");
-      if (!out)
-            return pdf_ok;
       if (pdf_doc_need_passwd(doc))
       {
 	    printf("%s", "Decrypting page content stream\n");
@@ -662,30 +728,86 @@ pdf_write_pdf(pdf_doc *doc, char *ofile, unsigned long write_flag, int version, 
 		  goto done;
 	    }
       }
-      sprintf(linebuf, "%%PDF-%d.%d\n", version/10, version%10);
-      fputs(linebuf, out);
-      fputs("%\333\332\331\330\n", out);
-      // scan pages
-      xref = pdf_xref_internal_create(pdf_obj_count(), doc->count);
-      if (!xref)
-            goto done;
-      pdf_catalog_write(xref, out);
-      for (i = pg1st; i <= pglast; i++)
+      if (write_flag&WRITE_PDF_PAGE_SEPARATION)
       {
-            pdf_scan_page(doc->pages[i], xref);
-            pdf_write_indirect_objs(xref, out);
-            pdf_page_obj_write(doc->pages[i], i, write_flag, xref, crypto, out);
+	    char base[128];
+	    char *b = strchr(ofile, '.');
+	    if (b)
+	    {
+		  memcpy(base, ofile, b-ofile);
+		  base[b-ofile] = 0;
+	    }
+	    else
+	    {
+		  memcpy(base, ofile, strlen(ofile));
+		  base[strlen(ofile)] = 0;
+	    }
+
+            pglast = doc->count-1;
+	    for (i = pg1st; i <= pglast; i++)
+	    {
+		  sprintf(linebuf, "%s-%d.%s", base, i+1, "pdf");
+		  printf("Writing %s..\n", linebuf);
+		  out = fopen(linebuf, "wb");
+		  if (!out)
+			return pdf_ok;
+		  sprintf(linebuf, "%%PDF-%d.%d\n", version/10, version%10);
+		  fputs(linebuf, out);
+		  fputs("%\333\332\331\330\n", out);
+		  // scan pages
+		  xref = pdf_xref_internal_create(pdf_obj_count(), doc->count);
+		  if (!xref)
+			goto done_0;
+		  pdf_catalog_write(xref, out);
+
+		  pdf_scan_page(doc->pages[i], xref);
+		  pdf_write_indirect_objs(xref, out, crypto);
+		  pdf_page_obj_write(doc->pages[i], i, write_flag, xref, crypto, out);
+
+		  pdf_pages_obj_write(xref, i, 1, out);
+		  // write xref table
+		  startxref = pdf_xref_write(xref, out);
+		  pdf_trailer_write(xref, startxref, out);
+		  // done
+	      done_0:
+		  if (xref)
+			pdf_xref_internal_free(xref);
+		  fclose(out);
+	    }
+	    if (crypto)
+		  pdf_crypto_destroy(crypto);
       }
-      pdf_pages_obj_write(xref, pg1st, pglast-pg1st+1, out);
-      // write xref table
-      startxref = pdf_xref_write(xref, out);
-      pdf_trailer_write(xref, startxref, out);
-      // done
-  done:
-      if (xref)
-            pdf_xref_internal_free(xref);
-      if (crypto)
-	    pdf_crypto_destroy(crypto);
-      fclose(out);
+      else
+      {
+	    printf("Writing %s..\n", ofile);
+	    out = fopen(ofile, "wb");
+	    if (!out)
+		  return pdf_ok;
+	    sprintf(linebuf, "%%PDF-%d.%d\n", version/10, version%10);
+	    fputs(linebuf, out);
+	    fputs("%\333\332\331\330\n", out);
+	    // scan pages
+	    xref = pdf_xref_internal_create(pdf_obj_count(), doc->count);
+	    if (!xref)
+		  goto done;
+	    pdf_catalog_write(xref, out);
+	    for (i = pg1st; i <= pglast; i++)
+	    {
+		  pdf_scan_page(doc->pages[i], xref);
+		  pdf_write_indirect_objs(xref, out, crypto);
+		  pdf_page_obj_write(doc->pages[i], i, write_flag, xref, crypto, out);
+	    }
+	    pdf_pages_obj_write(xref, pg1st, pglast-pg1st+1, out);
+	    // write xref table
+	    startxref = pdf_xref_write(xref, out);
+	    pdf_trailer_write(xref, startxref, out);
+	    // done
+	done:
+	    if (xref)
+		  pdf_xref_internal_free(xref);
+	    if (crypto)
+		  pdf_crypto_destroy(crypto);
+	    fclose(out);
+      }
       return pdf_ok;
 }

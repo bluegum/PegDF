@@ -45,9 +45,16 @@ Usage:\n\
     Options:\n\
            -p : user password\n\
            -x : extract a single at pagenum, start from 1\n\
+           -s : separate page\n\
            -i : inflate content streams\n\
            --help : print this\n\
-\n"
+\n\
+    Example#1: to extract each and every page and write into a sequence of pdf files with inflated content stream,\n\
+         and the output are with format as: out%d.pdf:\n\
+         ./readpdf -x0 -s -i in.pdf out.pdf\n\
+         To extract page#3 and onwards:\n\
+         ./readpdf -x3 -s -i in.pdf out.pdf\n\
+ \n"
 	    );
 }
 
@@ -62,6 +69,7 @@ int main(int argc, char **argv)
       int lastpage = -1;
       int inflate = 0;
       unsigned char write_flag = 0;
+      int separation = 0;
 
       if (argc > 1)
       {
@@ -80,6 +88,9 @@ int main(int argc, char **argv)
                         char opt = argv[i][1];
                         switch (opt)
                         {
+			      case 's':
+				    separation = 1;
+				    break;
                               case 'o':
                               {
                                     if (isspace(argv[i][2]))
@@ -125,28 +136,32 @@ int main(int argc, char **argv)
       }
       if (!out)
 	    printf("\n%s%s\n\n", "Dry run on ", in);
-      pdf_read(in, out, &doc);
+      pdf_read(in, separation?NULL:out, &doc);
       if (!doc)
 	    goto done;
       pdf_doc_print_info(doc);
-      if (!passwd && pdf_doc_need_passwd(doc) && pdf_doc_authenticate_user_password(doc, "", 0) != 0)
+      if (!passwd && pdf_doc_need_passwd(doc) && pdf_doc_authenticate_user_password(doc, (unsigned char*)"", 0) != 0)
       {
 	    printf("%s\n", "Need user password, use -p option");
 	    goto done;
       }
       if (!passwd || !pdf_doc_need_passwd(doc))
       {
-	    pdf_doc_process_all(doc, "", 0);
+	    pdf_doc_process_all(doc, (unsigned char*)"", 0);
       }
       else if (passwd && pdf_doc_need_passwd(doc))
       {
-	    pdf_doc_process_all(doc, passwd, strlen(passwd));
+	    pdf_doc_process_all(doc, (unsigned char*)passwd, strlen(passwd));
       }
       // writing out pdf using doc structure.
       if (out)
       {
 	    if (inflate)
 		  write_flag |= WRITE_PDF_CONTENT_INFLATE;
+	    if (doc->trailer && doc->trailer->encrypt)
+		  write_flag |= WRITE_PDF_CONTENT_INFLATE;
+	    if (separation)
+		  write_flag |= WRITE_PDF_PAGE_SEPARATION;
 	    pdf_write_pdf(doc, out, write_flag, 17, firstpage-1, lastpage-1, NULL, NULL);
       }
   done:

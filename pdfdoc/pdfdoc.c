@@ -154,27 +154,27 @@ pdf_err pdf_exec_page_content(pdf_page *p, pdfcrypto_priv* encrypt)
             return pdf_ok;
       if (p->contents->t != eDict && p->contents->t != eRef && p->contents->t != eArray)
             return pdf_ok;
-      //p->content_streams = pdf_streams_load(p->contents);
       {
             pdf_obj *oo;
             int i, n;
 	    oo = p->contents;
-            pdf_obj_resolve(p->contents);
-            if (!p->contents)
+            pdf_obj_resolve(oo);
+            if (!oo)
                   return pdf_ok;
-            if (p->contents->t == eArray)
+            if (oo->t == eArray)
             {
-                  n = p->contents->value.a.len;
-                  oo = &p->contents->value.a.items[0];
+                  n = oo->value.a.len;
+                  oo = &oo->value.a.items[0];
             }
-            else if (p->contents->t == eDict)
+            else if (oo->t == eDict)
             {
                   n = 1;
-                  //oo = p->contents;
+		  oo = p->contents;
             }
             else
+	    {
                   return pdf_ok;
-
+	    }
             for (i = 0; i < n && oo; i++, oo++)
             {
                   s = pdf_stream_load(oo, encrypt, oo->value.r.num, oo->value.r.gen);
@@ -474,32 +474,51 @@ pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
       pdf_obj *x, *xx, *y;
       int m, mm;
 
+      if (o && o->t == eRef)
+      {
+	    numobj = o->value.r.num;
+	    numgen = o->value.r.gen;
+      }
       // fill stream info
       pdf_obj_resolve(o);
       y = o;
-      if (!y || y->t != eDict)
+      if (!y)
       {
             return NULL;
       }
-      x = dict_get(y->value.d.dict, "Length");
-      if (!x || (x->t != eInt && x->t != eRef))
+      if (o->t == eDict)
       {
-            fprintf(stderr, "%s\n", "Invalid stream.");
-            return NULL;
+	    x = dict_get(y->value.d.dict, "Length");
+	    if (!x || (x->t != eInt && x->t != eRef))
+	    {
+		  fprintf(stderr, "%s\n", "Invalid stream.");
+		  return NULL;
+	    }
+	    pdf_obj_resolve(x);
+	    s = pdf_malloc(sizeof(pdf_stream));
+	    if (!s)
+		  goto fail;
+	    memset(s, 0, sizeof(pdf_stream));
+	    s->length = x->value.i;
+	    // make raw filter
+	    /// internal struct. raw stream object
+	    ss = y->value.d.dict->stream;
+	    if (!ss)
+		  goto fail;
+	    ss->len = s->length;
       }
-      pdf_obj_resolve(x);
-      s = pdf_malloc(sizeof(pdf_stream));
-      if (!s)
-            goto fail;
-      memset(s, 0, sizeof(pdf_stream));
-      s->length = x->value.i;
-      // make raw filter
-      /// internal struct. raw stream object
-      //ss = dict_get(y->value.d.dict, "S_O");
-      ss = y->value.d.dict->stream;
-      if (!ss)
-            goto fail;
-      ss->len = s->length;
+      else if (o->t == eString)
+      {
+	    s = pdf_malloc(sizeof(pdf_stream));
+	    if (!s)
+		  goto fail;
+	    memset(s, 0, sizeof(pdf_stream));
+	    s->length = o->value.s.len;
+	    // make string raw filter
+	    ss = string_stream_new(o->value.s.buf, 0, o->value.s.len, 0, 0);
+      }
+      else
+	    goto fail;
       if ((ss->reset)(ss) != 0)
       {
             pdf_free(ss);
@@ -530,7 +549,13 @@ pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
                   goto fail;
             crypt->next = raw;
       }
-      // chain rest
+      if (y->t == eString)
+      {
+	    last = (crypt)?crypt:raw;
+	    goto done;
+      }
+
+      // chain the rest
       x = dict_get(y->value.d.dict, "Filter");
       last = (crypt)?crypt:raw;
       if (!x)
@@ -742,62 +767,7 @@ pdf_annots_free(pdf_annots *a)
       }
       return pdf_ok;
 }
-#if 0
-pdf_stream*
-pdf_streams_load(pdf_obj* o)
-{
-      pdf_stream *s, *last;
-      pdf_obj *oo;
-      int i, n;
 
-      if (!o || (o->t != eDict && o->t != eRef && o->t != eArray))
-            return NULL;
-
-      pdf_obj_resolve(o);
-      if (!o)
-            return NULL;
-      if (o->t == eArray)
-      {
-            n = o->value.a.len;
-            oo = &o->value.a.items[0];
-      }
-      else if (o->t == eDict)
-      {
-            n = 1;
-            oo = o;
-      }
-      else
-            return NULL;
-      last = NULL;
-      for (i = 0; i < n && oo; i++, oo++)
-      {
-            pdf_stream *t = pdf_stream_load(oo);
-            if (last)
-            {
-                  last->next = t;
-            }
-            else
-            {
-                  s = t;
-            }
-            last = t;
-      }
-      return s;
-}
-
-pdf_err
-pdf_streams_free(pdf_stream *s)
-{
-      pdf_stream *t = s;
-      while (s)
-      {
-            t = s->next;
-            pdf_stream_free(s);
-            s = t;
-      }
-      return pdf_ok;
-}
-#endif
 pdf_err
 pdf_stream_free(pdf_stream *s)
 {

@@ -23,7 +23,13 @@
 #define PDFTYPES_H
 #include <string.h>
 #include "pdfmem.h"
-//#include "dict.h"
+
+#if _MSC_VER >= 1500 /* MSVC 9 or newer */
+#define inline __inline
+#elif __GNUC__ >= 3 /* GCC 3 or newer */
+#define inline __inline
+#endif
+
 
 typedef struct pdf_obj_s pdf_obj;
 typedef struct pdf_xref_s pdf_xref;

@@ -226,6 +226,8 @@ in_mem_stream_new(unsigned char *cache, int pos, int len, int obj, int gen)
       s->reset = im_reset;
       s->read = im_read;
       s->close = im_close;
+      s->obj = obj;
+      s->gen = gen;
       return (sub_stream*)s;
 }
 
@@ -235,4 +237,22 @@ init_in_mem_stream_parser_instance(pdf_parser *p)
       if (!p)
             return;
       p->create_stream = in_mem_stream_new;
+}
+
+static int
+string_stream_close(sub_stream* s)
+{
+      if (s)
+	    pdf_free(s);
+      return 0;
+}
+
+sub_stream*
+string_stream_new(unsigned char *cache, int pos, int len, int obj, int gen)
+{
+      sub_stream* s = in_mem_stream_new(cache, pos, len, obj, gen);
+      if (s)
+      {
+	    s->close = string_stream_close;
+      }
 }
