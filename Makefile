@@ -1,8 +1,10 @@
 ### Build flags for all targets
 #
-INCLUDE_ALL     = -I . -I pdfdoc -I pdfread -I openssl/include/openssl -I openssl
+INCLUDE_ALL     = -I . -I pdfdoc -I pdfread -I openssl/include/openssl -I openssl -I zlib
 CF_ALL          = -g -Wall -I . $(INCLUDE_ALL)
-LF_ALL          = -lz -lm -lcrypto -L openssl -ldl
+#LF_ALL          = -lz -lm -lcrypto -L openssl -ldl
+### -lz is omitted because zlib is static now
+LF_ALL          = -lm -lcrypto -L openssl -ldl
 LL_ALL          =
 OPENSSL_DEBUG   =
 ifeq	"$(YYDEBUG)" "y"
@@ -21,7 +23,7 @@ COMPLINK        = $(CC) $(CF_ALL) $(CF_TGT) $(LF_ALL) $(LF_TGT) -o $@ $< $(LL_TG
 ARCHIVE         = $(AR) $(ARFLAGS) $@ $^
 MAKE            = make
 #
-vpath %.h . pdfdoc
+vpath %.h . pdfdoc zlib
 # GLOBALS TARGETS
 LIB_CRYPTO  = openssl/libcrypto.a
 TGT_LIB	=

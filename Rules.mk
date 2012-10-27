@@ -11,7 +11,7 @@ all:            targets
 include         pdfread/module.mk
 include         pdfdoc/module.mk
 include         pdfdraw/module.mk
-
+include         zlib/module.mk
 
 # General directory independent rules
 
