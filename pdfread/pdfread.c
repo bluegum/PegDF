@@ -383,7 +383,7 @@ xref_start(int i)
       return;
 }
 
-void pop_comment(char *s, int len)
+void pop_comment(char *s)
 {
       parser_inst->comment_string = s;
 }

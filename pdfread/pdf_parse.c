@@ -43,10 +43,17 @@ extern pdf_parser *parser_inst;
 
 void parser_free()
 {
+#if 0
       if (yybuf) free(yybuf);
       if (yytext) free(yytext);
       if (yythunks) free(yythunks);
       if (yyvals) free(yyvals);
+#else
+      if (yyctx->buf)    free(yyctx->buf);
+      if (yyctx->text)   free(yyctx->text);
+      if (yyctx->thunks) free(yyctx->thunks);
+      if (yyctx->vals)   free(yyctx->vals);
+#endif
 }
 #undef malloc
 #undef free

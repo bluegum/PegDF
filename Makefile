@@ -27,7 +27,7 @@ LIB_CRYPTO  = openssl/libcrypto.a
 TGT_LIB	=
 
 APP = readpdf
-CLEAN = $(APP) readpdf.o
+CLEAN = $(APP) readpdf.o pegx
 
 COMMON_HEADERS := *.h
 #######
@@ -43,6 +43,10 @@ all :  $(APP)
 $(APP) : $(LIB_CRYPTO)
 
 readpdf : readpdf.o $(TGT_LIB) $(LIB_CRYPTO)
+
+pegx    :
+	$(MAKE) -C peg
+	-@cp peg/peg $@
 
 test	:	readpdf
 	@./readpdf examples/simpledict.pdf
@@ -60,3 +64,4 @@ $(LIB_CRYPTO) :
 
 realclean: clean
 	@cd openssl; if test -e Makefile ; then $(MAKE) clean; rm -f Makefile; rm crypto/opensslconf.h; rm include/openssl/evp.h; fi; cd ..;
+	$(MAKE) -C peg spotless
