@@ -348,5 +348,6 @@ extern int pdf_doc_need_passwd(pdf_doc *doc);
 #define WRITE_PDF_DECIPHER             0x20
 #define WRITE_PDF_PAGE_SEPARATION      0x40
 extern pdf_err pdf_write_pdf(pdf_doc *doc, char *ofile, unsigned long write_flag, int version, int pg1st, int pglast, char *upw, char *opw);
+extern void pdf_doc_trailer_free(pdf_trailer * tr);
 
 #endif

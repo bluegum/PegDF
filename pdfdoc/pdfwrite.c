@@ -600,7 +600,9 @@ pdf_scan_page(pdf_page* pg, pdf_xref_internal* x)
       if (pg->group)
       {
       }
-      if (pg->contents)
+      //if (pg->contents) // conflicting with content writer
+      // pdf_page_contents_write() resolves and write contents array
+      if (0)
       {
 	    pdf_obj_resolve(pg->contents);
 	    if (pg->contents->t == eArray)

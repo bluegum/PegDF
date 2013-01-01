@@ -78,6 +78,7 @@ struct buffer_stream_s
       unsigned char buf[BUFFER_STREAM_BUF_SIZE+2]; // plus 2 for unget buffer
       unsigned char *p, *e, *l; // e -> buffer end, x -> buffer limit
       pdf_filter *f;
+      pdf_stream *s;
 };
 
 static int
@@ -87,7 +88,6 @@ s_get_char(buffer_stream *s)
       if (s->p == s->e)
       {
             int i;
-            pdf_filter *f = s->f;
             //move last 2 byte to 1st in buffer, in case of unget
             if (s->p != s->buf)
             {
@@ -95,9 +95,23 @@ s_get_char(buffer_stream *s)
                   s->buf[1] = *(s->e-1);
                   s->p = s->buf + 2;
             }
-            i = (f->read)(f, s->p, BUFFER_STREAM_BUF_SIZE);
+	filt_read:
+            i = (s->f->read)(s->f, s->p, BUFFER_STREAM_BUF_SIZE);
             if (i == 0)
-                  return EOF;
+	    {
+		  if (s->s->next)
+		  {
+			PDF_FILTER_CLOSE(s->f);
+			s->s->ffilter = 0;
+			s->s = s->s->next;
+			s->f = s->s->ffilter;
+			goto filt_read;
+		  }
+		  else
+		  {
+			return EOF;
+		  }
+	    }
             s->e = s->p + i;
       }
       if (s->p != s->e)
@@ -117,12 +131,13 @@ s_unget_char(buffer_stream *s)
 }
 
 static buffer_stream*
-s_buffer_stream_open(pdf_filter *f)
+s_buffer_stream_open(pdf_stream *ss)
 {
       buffer_stream *s = pdf_malloc(sizeof(buffer_stream));
       if (s)
       {
-            s->f = f;
+	    s->s = ss;
+            s->f = ss->ffilter;
             s->p = &s->buf[0];
             s->e = s->p;
             s->l = s->p + BUFFER_STREAM_BUF_SIZE + 2;
@@ -364,6 +379,8 @@ pdf_lex_obj(buffer_stream *s, pdf_obj *o)
             else
                   break;
       }
+      if (c == EOF)
+	    return pdf_syntax_err;
       switch (c)
       {
             case ' ':
@@ -424,6 +441,9 @@ pdf_lex_obj(buffer_stream *s, pdf_obj *o)
                   memcpy(o->value.k, tokenbuf, (strlen((char*)tokenbuf)+1));
                   mUNGETCHAR(s);
                   break;
+	    case EOF:
+		  goto done;
+		  break;
             default:
 	    {
 		  unsigned char *p = tokenbuf;
@@ -588,7 +608,7 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
             return pdf_ok;
       if (!s->ffilter)
             return pdf_ok;
-      b = s_buffer_stream_open(s->ffilter);
+      b = s_buffer_stream_open(s);
       if (!b)
             return pdf_ok;
 

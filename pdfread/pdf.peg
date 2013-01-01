@@ -84,7 +84,7 @@ OBJ	<- DELIM NUM  NUM  'obj' DELIM   { push(eObjMarker, 0, NULL); }
 	/ STRING
 	/ HEXSTR
 	)* DELIM
-	'endobj'  {pop_obj();}  DELIM 
+	'endobj'  {pop_obj();} DELIM
 
 STREAM   <- DELIM NUM  NUM  'obj' DELIM   { push(eObjMarker, 0, NULL); }
 	COMMENT*

@@ -589,7 +589,7 @@ int read_linearized_dict(pdf_obj *o, linearized *l)
       return 0;
 }
 // return 0: ok
-int read_xrefstm(pdf_obj *o, pdf_parser *p)
+pdf_err read_xrefstm(pdf_obj *o, pdf_parser *p)
 {
       dict *d;
       pdf_obj *a = NULL;
@@ -605,16 +605,16 @@ int read_xrefstm(pdf_obj *o, pdf_parser *p)
       {
             if (strcmp(a->value.k, "XRef") != 0)
             {
-                  return -1;
+                  return pdf_unknown;
             }
       }
       else
       {
-            return -1;
+            return pdf_unknown;
       }
       t = pdf_malloc(sizeof(trailer));
       if (!t)
-            return -1;
+            return pdf_unknown;
       memset(t, 0, sizeof(trailer));
 #if 0
       a = dict_get(d, "Root");
@@ -640,7 +640,7 @@ int read_xrefstm(pdf_obj *o, pdf_parser *p)
       {
             p->trailer = t;
       }
-      return 0;
+      return pdf_ok;
 }
 // return 0: ok
 int read_hint(pdf_obj *o, hint *h)
@@ -803,14 +803,18 @@ objstream_read(pdf_obj *o, int num, int gen, pdfcrypto_priv *crypto)
       {
             int t;
             if (lex_positive_int(s, &t) != EOF)
+	    {
                   objs[i].obj = t;
+	    }
             else
             {
                   err = pdf_syntax_err;
                   goto fail;
             }
             if (lex_positive_int(s, &t) != EOF)
+	    {
                   objs[i].off = t;
+	    }
             else
             {
                   err = pdf_syntax_err;
@@ -831,7 +835,7 @@ objstream_read(pdf_obj *o, int num, int gen, pdfcrypto_priv *crypto)
             p += strlen(p);
             for (j = 0; j < len; j++)
                   *p++ = pdf_stream_getchar(s);
-            sprintf(p, "%s", "endobj\n");
+            sprintf(p, " %s", "endobj\n");
             ll2 = strlen(p);
             parser_inst->oneobj = buf;
             parser_inst->p_oneobj = buf;
@@ -895,22 +899,6 @@ objstream_read(pdf_obj *o, int num, int gen, pdfcrypto_priv *crypto)
       return err;
 }
 
-static void
-pdf_encrypt_free(pdf_encrypt *encrypt)
-{
-      if (!encrypt)
-            return;
-      if (encrypt->filter) pdf_free(encrypt->filter);
-      if (encrypt->subfilter) pdf_free(encrypt->subfilter);
-      if (encrypt->stmf) pdf_free(encrypt->stmf);
-      if (encrypt->strf) pdf_free(encrypt->strf);
-      if (encrypt->eff) pdf_free(encrypt->eff);
-      // to free CF
-      if (encrypt->cf) pdf_free(encrypt->cf);
-      // free this
-      pdf_free(encrypt);
-}
-
 /// make a new parser
 pdf_parser*
 parser_new(FILE *in, FILE *out, parser_getchar getchar)
@@ -938,12 +926,14 @@ pdf_encrypt_load(pdf_obj *o, pdf_encrypt **encrypt)
 {
       pdf_obj *a;
       pdf_encrypt *e;
-      *encrypt = pdf_malloc(sizeof(pdf_encrypt));
-      if (!*encrypt)
-            return pdf_mem_err;
       if (!o)
             return pdf_ok;
       pdf_obj_resolve(o);
+      if (!o)
+            return pdf_ok;
+      *encrypt = pdf_malloc(sizeof(pdf_encrypt));
+      if (!*encrypt)
+            return pdf_mem_err;
       memset(*encrypt, 0, sizeof(pdf_encrypt));
       e = *encrypt;
       a = dict_get(o->value.d.dict, "Filter");
@@ -1117,39 +1107,10 @@ pdf_trailer_open(trailer *tr, pdf_trailer ** out)
 }
 
 static void
-pdf_info_free(pdf_info *info)
+pdf_trailer_free()
 {
-      if (!info)
-            return;
-      if (info->title)  pdf_free(info->title);
-      if (info->author)  pdf_free(info->author);
-      if (info->subject)  pdf_free(info->subject);
-      if (info->keywords)  pdf_free(info->keywords);
-      if (info->creator)  pdf_free(info->creator);
-      if (info->producer)  pdf_free(info->producer);
-      if (info->creationdate) pdf_free(info->creationdate);
-      if (info->moddate)  pdf_free(info->moddate);
-}
-
-pdf_err
-pdf_trailer_free(pdf_trailer * tr)
-{
-      trailer *tt, *t = parser_inst->trailer;
-      // really done
-      while (tr)
-      {
-            pdf_trailer *last;
-            if (tr->info)
-            {
-                  pdf_info_free(tr->info);
-                  pdf_free(tr->info);
-                  pdf_encrypt_free(tr->encrypt);
-            }
-            last = tr->last;
-            pdf_free(tr);
-            tr = last;
-      }
       // free trailer train
+      trailer *tt, *t = parser_inst->trailer;
       while (t)
       {
             tt = t->next;
@@ -1158,8 +1119,7 @@ pdf_trailer_free(pdf_trailer * tr)
             pdf_free(t);
             t = tt;
       }
-
-      return pdf_ok;
+      parser_inst->trailer = NULL;
 }
 
 typedef struct objstream_ref objstream_ref;
@@ -1217,6 +1177,7 @@ pdf_read(char *in, char *out, pdf_doc **doc)
       pdf_err err = pdf_ok;
       objstream_ref *objstms = NULL;
       FILE *inf=stdin, *outf=stdout;
+      pdf_trailer *doctrailer = NULL;
       if (in)
       {
             printf("reading = %s\n", in);
@@ -1330,7 +1291,11 @@ pdf_read(char *in, char *out, pdf_doc **doc)
                   {
                         // xref must reside inside an XRefStm obj
                         pdf_obj *o = pdf_obj_find(parser_inst->cur_obj, parser_inst->cur_gen);
-                        read_xrefstm(o, parser_inst);
+                        pdf_err e = read_xrefstm(o, parser_inst);
+			if (e == pdf_ok && parser_inst->trailer)
+			{
+			      pdf_trailer_open(parser_inst->trailer, &doctrailer);
+			}
                   }
             }
             /// read hinting dict
@@ -1373,19 +1338,25 @@ pdf_read(char *in, char *out, pdf_doc **doc)
                               pdf_obj *t = dict_get(o->value.d.dict, "Type");
                               if (t && t->t == eKey)
                               {
-                                    if (strncmp(t->value.k, "ObjStm", 6) == 0)
-                                    {
-                                          DMSG("Procssing Object stream");
-                                          err = objstream_read(o, parser_inst->cur_obj, parser_inst->cur_gen, NULL);
-                                          if (err != pdf_ok)
-                                          {
-                                                objstms = objstream_mark(objstms, parser_inst->cur_obj, parser_inst->cur_gen);
-                                          }
-                                    }
-                                    else if (strncmp(t->value.k, "XRef", 4) == 0)
+				    if (strncmp(t->value.k, "XRef", 4) == 0)
                                     {
                                           DMSG("Procssing xref stream");
                                           read_xrefstm(o, parser_inst);
+                                    }
+				    // For Linearized stream, delay objstm until first page, because there are too many dependencies that don't meet.
+                                    else if (strncmp(t->value.k, "ObjStm", 6) == 0)
+                                    {
+					  if (!parser_inst->l.Linearized)
+					  {
+						DMSG("Procssing Object stream");
+						err = objstream_read(o, parser_inst->cur_obj, parser_inst->cur_gen, NULL);
+						if (err != pdf_ok)
+						      objstms = objstream_mark(objstms, parser_inst->cur_obj, parser_inst->cur_gen);
+					  }
+                                          else
+                                          {
+                                                objstms = objstream_mark(objstms, parser_inst->cur_obj, parser_inst->cur_gen);
+                                          }
                                     }
                               }
                         }
@@ -1407,16 +1378,21 @@ pdf_read(char *in, char *out, pdf_doc **doc)
 #endif
       if (parser_inst->trailer)
       {
-            pdf_trailer *trailer;
-            pdf_trailer_open(parser_inst->trailer, &trailer);
-            if (objstms && trailer->encrypt)
+	    // a wee hack, to remove the doc_trailer made in linearized header
+	    if (doctrailer && (parser_inst->l.Linearized))
+	    {
+		  pdf_doc_trailer_free(doctrailer);
+	    }
+	    // reopen trailer train
+            pdf_trailer_open(parser_inst->trailer, &doctrailer);
+            if (objstms && doctrailer->encrypt)
             {
                   pdfcrypto_priv *crypto = NULL;
                   objstream_ref *p = objstms;
-                  if (trailer->encrypt)
+                  if (doctrailer->encrypt)
                   {
-                        crypto = pdf_crypto_init(trailer->encrypt,
-                                                 trailer->id[0],
+                        crypto = pdf_crypto_init(doctrailer->encrypt,
+                                                 doctrailer->id[0],
                                                  "", // password
                                                  0 // password len
                               );
@@ -1440,15 +1416,16 @@ pdf_read(char *in, char *out, pdf_doc **doc)
                   if (crypto)
                         pdf_crypto_destroy(crypto);
             }
-            *doc = pdf_doc_load(trailer);
-            if (!*doc && trailer)
-                  pdf_trailer_free(trailer);
+            *doc = pdf_doc_load(doctrailer);
+            if (!*doc && doctrailer)
+                  pdf_trailer_free();
       }
       else
       {
             *doc = NULL;
       }
   done:
+      pdf_trailer_free();
       if (objstms)
 	    parser_free();
       if (objstms)

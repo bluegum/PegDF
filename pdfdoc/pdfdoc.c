@@ -147,7 +147,7 @@ pdf_err pdf_page_tree_load(pdf_doc *d, pdf_obj *o)
 
 pdf_err pdf_exec_page_content(pdf_page *p, pdfcrypto_priv* encrypt)
 {
-      pdf_stream *s;
+      pdf_stream *s = NULL, *first;
       if (!p)
             return pdf_ok;
       if (!p->contents)
@@ -177,10 +177,20 @@ pdf_err pdf_exec_page_content(pdf_page *p, pdfcrypto_priv* encrypt)
 	    }
             for (i = 0; i < n && oo; i++, oo++)
             {
+		  pdf_stream *last = s;
                   s = pdf_stream_load(oo, encrypt, oo->value.r.num, oo->value.r.gen);
-                  pdf_cs_parse(p, s);
-                  pdf_stream_free(s);
-            }
+		  if (!last)
+			first = s;
+		  if (last)
+			last->next = s;
+	    }
+	    pdf_cs_parse(p, first);
+	    while (first)
+	    {
+		  s = first->next;
+		  pdf_stream_free(first);
+		  first = s;
+	    }
       }
 
       return pdf_ok;
@@ -305,7 +315,7 @@ void pdf_doc_done(pdf_doc *d)
       {
             pdf_page_free(d->pages[i]);
       }
-      pdf_trailer_free(d->trailer);
+      pdf_doc_trailer_free(d->trailer);
       pdf_free(d->pages);
       pdf_free(d);
 }
@@ -519,7 +529,7 @@ pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
       }
       else
 	    goto fail;
-      if ((ss->reset)(ss) != 0)
+      if (0)//(ss->reset)(ss) != 0)
       {
             pdf_free(ss);
             // a little haxie, because we SHOULD NOT call global "parser_inst"
@@ -538,7 +548,8 @@ pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
 	    {
 		  // need initial_vector
 		  unsigned char iv[16];
-		  (raw->read)(raw, iv, 16);
+		  int n;
+		  n = (raw->read)(raw, iv, 16);
 		  crypt = pdf_cryptofilter_new(crypto, numobj, numgen, iv);
 	    }
 	    else
@@ -775,12 +786,7 @@ pdf_stream_free(pdf_stream *s)
       if (!s)
             return pdf_ok;
       f = s->ffilter;
-      while (f)
-      {
-            pdf_filter *t = f->next;
-            (*f->close)(f);
-            f = t;
-      }
+      PDF_FILTER_CLOSE(f);
       pdf_free(s);
       return pdf_ok;
 }
@@ -855,4 +861,57 @@ int
 pdf_doc_need_passwd(pdf_doc *doc)
 {
       return (doc->trailer->encrypt?1:0);
+}
+
+static void
+pdf_info_free(pdf_info *info)
+{
+      if (!info)
+            return;
+      if (info->title)  pdf_free(info->title);
+      if (info->author)  pdf_free(info->author);
+      if (info->subject)  pdf_free(info->subject);
+      if (info->keywords)  pdf_free(info->keywords);
+      if (info->creator)  pdf_free(info->creator);
+      if (info->producer)  pdf_free(info->producer);
+      if (info->creationdate) pdf_free(info->creationdate);
+      if (info->moddate)  pdf_free(info->moddate);
+}
+
+static void
+pdf_encrypt_free(pdf_encrypt *encrypt)
+{
+      if (!encrypt)
+            return;
+      if (encrypt->filter) pdf_free(encrypt->filter);
+      if (encrypt->subfilter) pdf_free(encrypt->subfilter);
+      if (encrypt->stmf) pdf_free(encrypt->stmf);
+      if (encrypt->strf) pdf_free(encrypt->strf);
+      if (encrypt->eff) pdf_free(encrypt->eff);
+      // to free CF
+      if (encrypt->cf) pdf_free(encrypt->cf);
+      // free this
+      pdf_free(encrypt);
+}
+
+void
+pdf_doc_trailer_free(pdf_trailer * tr)
+{
+      // really done
+      while (tr)
+      {
+            pdf_trailer *last;
+            if (tr->info)
+            {
+                  pdf_info_free(tr->info);
+                  pdf_free(tr->info);
+	    }
+	    if (tr->encrypt)
+	    {
+                  pdf_encrypt_free(tr->encrypt);
+            }
+            last = tr->last;
+            pdf_free(tr);
+            tr = last;
+      }
 }
