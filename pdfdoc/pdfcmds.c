@@ -5,6 +5,7 @@
 #include "pdfindex.h"
 #include "pdfcmds.h"
 #include "gsdraw.h"
+#include "pdffont.h"
 #include "pdfread.h" // for _DMSG
 pdf_err
 x_cs(pdf_page *p, pdf_obj o)
@@ -184,6 +185,8 @@ pdf_err x_Tstar(pdf_page *p)
 pdf_err x_Tf(pdf_page *p, pdf_obj res, float scale)
 {
       pdf_obj *r, *f;
+      pdf_font *font = NULL;
+
       _DMSG("Tf");
       if (p->resources && p->resources->font)
       {
@@ -192,6 +195,11 @@ pdf_err x_Tf(pdf_page *p, pdf_obj res, float scale)
             assert(r->t == eDict);
             f = dict_get(r->value.d.dict, res.value.k);
             pdf_obj_resolve(f);
+	    if (f)
+	    {
+		  font = pdf_font_load(f);
+		  pdf_interpreter_font_insert(p->i, font);
+	    }
       }
       pdf_obj_delete(&res);
       return pdf_ok;

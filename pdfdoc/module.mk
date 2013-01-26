@@ -3,7 +3,7 @@ d	:= pdfdoc
 LOCAL_LIB	:= $(d)/libpdfdoc.a
 
 SRCS__$(d)	:= pdfdoc.c pdfpage.c pdfcatalog.c pdffilter.c pdfcontentstream.c pdfcmds.c pdfcrypto.c \
-		pdfcolorspace.c pdfwrite.c
+		pdfcolorspace.c pdfwrite.c pdffont.c
 
 SRCS_$(d)       := $(addprefix $(d)/, $(SRCS__$(d)))
 

@@ -4,6 +4,7 @@
 #include "pdftypes.h"
 #include "gsdraw.h"
 #include "pdfresource.h"
+#include "pdffont.h"
 //#include "pdffilter.h"
 
 typedef struct pdf_page_s pdf_page;
@@ -23,6 +24,7 @@ typedef struct pdf_cryptfilter_s pdf_cryptfilter;
 typedef struct pdfcrypto_priv_s pdfcrypto_priv;
 typedef struct pdf_stream_s pdf_stream;
 typedef struct pdf_trailer_s pdf_trailer;
+typedef struct pdf_interp_state_s pdf_interp_state;
 
 struct pdf_mask_s
 {
@@ -129,6 +131,7 @@ struct pdf_page_s
       // private
       pdf_stream *content_streams;
       pdf_prs sstk[32], *s; // Ought to be enough for g/G?
+      pdf_interp_state* i;
 };
 
 typedef enum pdf_pagemode_e pdf_pagemode;
@@ -313,6 +316,12 @@ struct pdf_trailer_s
       pdf_trailer *last;
 };
 
+// interpreter state
+struct pdf_interp_state_s
+{
+      pdf_font *font;
+};
+
 // short hands
 static inline int pdf_brush_n(pdf_page *p) { return p->s->brush.n; }
 static inline int pdf_pen_n(pdf_page *p) { return p->s->pen.n; }
@@ -349,5 +358,8 @@ extern int pdf_doc_need_passwd(pdf_doc *doc);
 #define WRITE_PDF_PAGE_SEPARATION      0x40
 extern pdf_err pdf_write_pdf(pdf_doc *doc, char *ofile, unsigned long write_flag, int version, int pg1st, int pglast, char *upw, char *opw);
 extern void pdf_doc_trailer_free(pdf_trailer * tr);
+extern pdf_interp_state *pdf_interpreter_new();
+extern void pdf_interpreter_free(pdf_interp_state *i);
+extern void pdf_interpreter_font_insert(pdf_interp_state *i, pdf_font *f);
 
 #endif

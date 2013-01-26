@@ -226,4 +226,7 @@ pdf_obj pdf_key_to_obj(char *s)
 
 static inline
 void * null_val() { return 0; }
+
+typedef struct gs_rect_s pdf_rect;
+
 #endif

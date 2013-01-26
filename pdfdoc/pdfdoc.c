@@ -35,7 +35,8 @@ pdf_group_free(pdf_group *g)
 
 pdf_err pdf_page_load(pdf_doc *doc, pdf_obj *o, pdf_page **page)
 {
-      pdf_page *p, *mediabox;
+      pdf_page *p;
+      pdf_obj *mediabox;
       dict *d = o->value.d.dict;
       pdf_obj *v;
 
@@ -198,18 +199,23 @@ pdf_err pdf_exec_page_content(pdf_page *p, pdfcrypto_priv* encrypt)
 
 pdf_err pdf_page_tree_walk(pdf_doc *d, pdfcrypto_priv* encrypt)
 {
-      int i;
+      int i, c;
+      pdf_interp_state *interp;
 
-      for (i = 0; i < d->count; i++)
+      interp = pdf_interpreter_new();
+      c = (d->pageidx < d->count) ? d->pageidx : d->count;
+      for (i = 0; i < c; i++)
       {
 #ifdef DEBUG
             printf("processing page#%d\n", i);
 #endif
+	    d->pages[i]->i = interp;
             pdf_exec_page_content(d->pages[i], encrypt);
 #ifdef DEBUG
             printf("%s", "\n");
 #endif
       }
+      pdf_interpreter_free(interp);
       return pdf_ok;
 }
 
@@ -913,5 +919,34 @@ pdf_doc_trailer_free(pdf_trailer * tr)
             last = tr->last;
             pdf_free(tr);
             tr = last;
+      }
+}
+
+pdf_interp_state *
+pdf_interpreter_new()
+{
+      pdf_interp_state *i = pdf_malloc(sizeof(pdf_interp_state));
+      memset(i, 0, sizeof(pdf_interp_state));
+      return i;
+}
+
+void
+pdf_interpreter_free(pdf_interp_state *i)
+{
+      if (i)
+      {
+	    pdf_font_free(i->font);
+	    pdf_free(i);
+      }
+}
+
+void
+pdf_interpreter_font_insert(pdf_interp_state *i, pdf_font *f)
+{
+      if (i)
+      {
+	    if (i->font)
+		  pdf_font_free(i->font);
+	    i->font = f;
       }
 }
