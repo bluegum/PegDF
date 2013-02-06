@@ -1206,7 +1206,7 @@ pdf_read(char *in, char *out, pdf_doc **doc)
 
       // parse magic
       yyparse();
-      if (*parser_inst->comment_string == '%')
+      if (parser_inst->comment_string && *parser_inst->comment_string == '%')
       {
             char *p = parser_inst->comment_string+1;
             while(*p == '%') {p++;};

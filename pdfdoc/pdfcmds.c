@@ -194,11 +194,18 @@ pdf_err x_Tf(pdf_page *p, pdf_obj res, float scale)
             pdf_obj_resolve(r);
             assert(r->t == eDict);
             f = dict_get(r->value.d.dict, res.value.k);
-            pdf_obj_resolve(f);
 	    if (f)
 	    {
-		  font = pdf_font_load(f);
-		  pdf_interpreter_font_insert(p->i, font);
+		  if (p->i->font && f->t == eRef)
+		  {
+			font = pdf_font_find(p->i->font, f->value.r.num);
+		  }
+		  if (!font)
+		  {
+			font = pdf_font_load(f);
+			pdf_interpreter_font_insert(p->i, font);
+		  }
+		  p->i->cur_font = font;
 	    }
       }
       pdf_obj_delete(&res);
@@ -212,9 +219,20 @@ pdf_err x_Tj(pdf_page *p, pdf_obj o)
 }
 pdf_err x_TJ(pdf_page *p, pdf_obj o)
 {
+      int i;
       _DMSG("TJ");
       if (o.t == eArray)
       {
+	    for (i = 0; i < o.value.a.len; i++)
+	    {
+		  pdf_obj *a = &o.value.a.items[i];
+		  if (i%2==0)
+		  {
+		  }
+		  else
+		  {
+		  }
+	    }
             pdf_obj_delete(&o);
       }
       return pdf_ok;
@@ -326,6 +344,7 @@ pdf_err x_Do(pdf_page *p, pdf_obj o)
       if (p->resources && p->resources->xobject)
       {
             x = p->resources->xobject;
+	    pdf_obj_resolve(x);
             assert(x->t == eDict);
             x = dict_get(x->value.d.dict, o.value.k);
             pdf_obj_resolve(x);

@@ -945,8 +945,8 @@ pdf_interpreter_font_insert(pdf_interp_state *i, pdf_font *f)
 {
       if (i)
       {
-	    if (i->font)
-		  pdf_font_free(i->font);
+	    // insert into head
+	    f->next = i->font;
 	    i->font = f;
       }
 }

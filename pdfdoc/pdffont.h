@@ -4,6 +4,8 @@
 #include "pdfcmap.h"
 
 typedef enum pdf_font_type_e pdf_font_type;
+typedef enum pdf_font_encoding_type_e pdf_font_encoding_type;
+
 typedef struct pdf_font_descriptor_s pdf_font_descriptor;
 typedef struct pdf_font_encoding_s pdf_font_encoding;
 typedef struct pdf_font_type3_s pdf_font_type3;
@@ -14,17 +16,35 @@ enum pdf_font_type_e
 {
       Type0,
       Type1,
-      MMType1,
+      Type2,
       Type3,
+      MMType1,
       TrueType,
       CIDFontType0,
       CIDFontType2
 };
 
+enum pdf_font_encoding_type_e
+{
+      // simple font
+      StandardEncoding,
+      WinAnsiEncoding,
+      MacRomanEncoding,
+      MacExpertEncoding,
+      Symbol,
+      ZapfDingbat,
+      // Composite fonts
+      Identity_H,
+      Identity_V,
+};
+
 struct pdf_font_encoding_s
 {
+      pdf_font_encoding_type type;
       pdf_obj *baseencoding;
-      pdf_obj *differences;
+      const char **differences;
+      unsigned int (*get_cid)(unsigned int code);
+      const char * (*get_glyph_name)(pdf_font_encoding *e, unsigned int code);
 };
 
 struct pdf_font_descriptor_s
@@ -54,12 +74,10 @@ struct pdf_font_descriptor_s
 
 struct pdf_font_type1_tt_s
 {
-      char *basefont;
       int firstchar;
       int lastchar;
       int *widths;
       pdf_font_descriptor *fontdescriptor;
-      pdf_font_encoding *encoding;
       pdf_cmap *tounicode;
 };
 
@@ -68,8 +86,6 @@ struct pdf_font_type3_s
       pdf_rect fontbbox;
       float fontmatrix[6];
       pdf_obj *charprocs;
-      pdf_font_encoding *encoding;
-      char *basefont;
       int firstchar;
       int lastchar;
       int *widths;
@@ -80,12 +96,17 @@ struct pdf_font_type3_s
 
 struct pdf_font_s
 {
-      pdf_font_type *type;
+      pdf_font_type type;
+      char *basefont;
+      pdf_font_encoding *encoding;
       union {
 	    pdf_font_type1_tt type1;
 	    pdf_font_type1_tt tt;
 	    pdf_font_type3 type3;
       } font;
+      // private
+      int ref;
+      pdf_font* next;
 };
 
 

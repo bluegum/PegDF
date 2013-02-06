@@ -319,7 +319,7 @@ struct pdf_trailer_s
 // interpreter state
 struct pdf_interp_state_s
 {
-      pdf_font *font;
+      pdf_font *font, *cur_font;
 };
 
 // short hands
