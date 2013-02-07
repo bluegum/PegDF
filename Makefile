@@ -24,6 +24,9 @@ ARCHIVE         = $(AR) $(ARFLAGS) $@ $^
 MAKE            = make
 #
 vpath %.h . pdfdoc zlib
+#
+OBJ_DIR         = obj
+DEPS_DIR        = deps
 # GLOBALS TARGETS
 LIB_CRYPTO  = openssl/libcrypto.a
 TGT_LIB	=
@@ -42,6 +45,7 @@ include Rules.mk
 
 .PHONY: all realclean clean
 all :  $(APP)
+
 $(APP) : $(LIB_CRYPTO)
 
 readpdf : readpdf.o $(TGT_LIB) $(LIB_CRYPTO)

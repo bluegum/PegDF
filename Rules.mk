@@ -6,6 +6,17 @@
 
 all:            targets
 
+#
+
+$(OBJ_DIR)  :
+	mkdir -p $(OBJ_DIR)
+$(DEPS_DIR) :
+	mkdir -p $(DEPS_DIR)
+
+%.d:    %.c | $(OBJ_DIR) $(DEPS_DIR)
+	-rm -f $@
+	$(CC) -MM -MT $(subst .c,.o,$<) $(INCLUDE_ALL) $< >> $@
+
 # Subdirectories, in random order
 
 include         pdfread/module.mk
@@ -27,9 +38,6 @@ include         zlib/module.mk
 %.a:    %.o
 	$(AR) r $% $*.o
 
-%.d:    %.c
-	-rm -f $@
-	$(CC) -MM -MT $(subst .c,.o,$<) $(INCLUDE_ALL) $< >> $@
 # The variables TGT_*, CLEAN and CMD_INST* may be added to by the Makefile
 # fragments in the various subdirectories.
 
@@ -39,6 +47,7 @@ targets:        $(TGT_BIN) $(TGT_SBIN) $(TGT_ETC) $(TGT_LIB)
 .PHONY:         clean
 clean:
 	rm -f $(CLEAN) $(TGT_LIB)
+	rm -rf $(OBJ_DIR) $(DEPS_DIR)
 
 .PHONY:         install
 install:        targets 

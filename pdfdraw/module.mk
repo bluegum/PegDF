@@ -1,12 +1,18 @@
 d	:= pdfdraw
 
-LOCAL_LIB	:= $(d)/libpdfdraw.a
+$(OBJ_DIR)/%.o  : $(d)/%.c
+	$(CC) -c $(INCLUDE_ALL) -o $@ $< $(CF_ALL) 
+$(DEPS_DIR)/%.d : $(d)/%.c
+	-rm -f $@
+	$(CC) -MM -MT $(subst .c,.o,$<) $(INCLUDE_ALL) $< >> $@
 
-SRCS_$(d)	:= $(d)/pdfdraw.c
+LOCAL_LIB	:= $(OBJ_DIR)/libpdfdraw.a
 
-OBJS_$(d)	:= $(SRCS_$(d):%.c=%.o)
+SRCS_$(d)	:= pdfdraw.c
 
-DEPS_$(d)	:= $(SRCS_$(d):%.c=%.d)
+OBJS_$(d)	:= $(addprefix $(OBJ_DIR)/, $(SRCS_$(d):%.c=%.o))
+
+DEPS_$(d)	:= $(addprefix $(DEPS_DIR)/, $(SRCS_$(d):%.c=%.d))
 
 include 	$(DEPS_$(d))
 

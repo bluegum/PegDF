@@ -1,17 +1,21 @@
 d	:= pdfdoc
 
-LOCAL_LIB	:= $(d)/libpdfdoc.a
+$(OBJ_DIR)/%.o: $(d)/%.c
+	$(CC) -c $(INCLUDE_ALL) -o $@ $< $(CF_ALL) 
+$(DEPS_DIR)/%.d: $(d)/%.c
+	-rm -f $@
+	$(CC) -MM -MT $(subst .c,.o,$<) $(INCLUDE_ALL) $< >> $@
 
-SRCS__$(d)	:= pdfdoc.c pdfpage.c pdfcatalog.c pdffilter.c pdfcontentstream.c pdfcmds.c pdfcrypto.c \
+LOCAL_LIB	:= $(OBJ_DIR)/libpdfdoc.a
+
+SRCS_$(d)	:= pdfdoc.c pdfpage.c pdfcatalog.c pdffilter.c pdfcontentstream.c pdfcmds.c pdfcrypto.c \
 		pdfcolorspace.c pdfwrite.c pdffont.c pdfencodingtable.c
 
-SRCS_$(d)       := $(addprefix $(d)/, $(SRCS__$(d)))
+OBJS_$(d)	:= $(addprefix $(OBJ_DIR)/, $(SRCS_$(d):%.c=%.o))
 
-OBJS_$(d)	:= $(SRCS_$(d):%.c=%.o)
+DEPS_$(d)	:= $(addprefix $(DEPS_DIR)/, $(SRCS_$(d):%.c=%.d))
 
-DEPS_$(d)	:= $(SRCS_$(d):%.c=%.d)
-
-include 	$(DEPS_$(d))
+-include 	$(DEPS_$(d))
 
 HDRS_$(d)	:= $(wildcard $(d)/*.h)
 
