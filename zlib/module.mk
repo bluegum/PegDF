@@ -1,8 +1,14 @@
 d	:= zlib
+$(OBJ_DIR)/%.o  : $(d)/%.c
+	$(CC) -c $(INCLUDE_ALL) -o $@ $< $(CF_ALL)
 
-LOCAL_LIB	:= $(d)/libzlib.a
+$(DEPS_DIR)/%.d: $(d)/%.c  | $(DEPS_DIR)
+	-@rm -f $@
+	$(CC) -MM -MT $(subst .c,.o,$(subst zlib/, $(OBJ_DIR)/, $<)) $(INCLUDE_ALL) $< >> $@
 
-SRCS__$(d)	:=         adler32.c \
+LOCAL_LIB	:= $(OBJ_DIR)/libzlib.a
+
+SRCS_$(d)	:=         adler32.c \
         compress.c \
         crc32.c \
         deflate.c \
@@ -13,11 +19,9 @@ SRCS__$(d)	:=         adler32.c \
         uncompr.c \
         zutil.c
 
-SRCS_$(d)       := $(addprefix $(d)/, $(SRCS__$(d)))
+OBJS_$(d)	:= $(addprefix $(OBJ_DIR)/, $(SRCS_$(d):%.c=%.o))
 
-OBJS_$(d)	:= $(SRCS_$(d):%.c=%.o)
-
-DEPS_$(d)	:= $(SRCS_$(d):%.c=%.d)
+DEPS_$(d)	:= $(addprefix $(DEPS_DIR)/,$(SRCS_$(d):%.c=%.d))
 
 include 	$(DEPS_$(d))
 

@@ -1,10 +1,10 @@
 d	:= pdfdraw
 
 $(OBJ_DIR)/%.o  : $(d)/%.c
-	$(CC) -c $(INCLUDE_ALL) -o $@ $< $(CF_ALL) 
-$(DEPS_DIR)/%.d : $(d)/%.c
-	-rm -f $@
-	$(CC) -MM -MT $(subst .c,.o,$<) $(INCLUDE_ALL) $< >> $@
+	$(CC) -c $(INCLUDE_ALL) -o $@ $< $(CF_ALL)
+$(DEPS_DIR)/%.d : $(d)/%.c | $(DEPS_DIR)
+	-@rm -f $@
+	$(CC) -MM -MT $(subst .c,.o,$(subst pdfdraw/, $(OBJ_DIR)/, $<)) $(INCLUDE_ALL) $< >> $@
 
 LOCAL_LIB	:= $(OBJ_DIR)/libpdfdraw.a
 

@@ -4,18 +4,12 @@
 .SUFFIXES:
 .SUFFIXES:      .c .o
 
-all:            targets
-
 #
 
 $(OBJ_DIR)  :
 	mkdir -p $(OBJ_DIR)
 $(DEPS_DIR) :
 	mkdir -p $(DEPS_DIR)
-
-%.d:    %.c | $(OBJ_DIR) $(DEPS_DIR)
-	-rm -f $@
-	$(CC) -MM -MT $(subst .c,.o,$<) $(INCLUDE_ALL) $< >> $@
 
 # Subdirectories, in random order
 
@@ -26,7 +20,7 @@ include         zlib/module.mk
 
 # General directory independent rules
 
-%.o:            %.c
+%.o:            %.c  | $(OBJ_DIR)
 	$(COMP)
 
 %:              %.o

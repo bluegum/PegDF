@@ -1,6 +1,6 @@
 ### Build flags for all targets
 #
-INCLUDE_ALL     = -I . -I pdfdoc -I pdfread -I openssl/include/openssl -I openssl -I zlib
+INCLUDE_ALL     = -I . -I pdfdoc -I pdfread -I openssl/include -I openssl/include/openssl -I openssl -I zlib
 CF_ALL          = -g -Wall -I . $(INCLUDE_ALL)
 #LF_ALL          = -lz -lm -lcrypto -L openssl -ldl
 ### -lz is omitted because zlib is static now
@@ -37,18 +37,18 @@ CLEAN = $(APP) readpdf.o pegx
 COMMON_HEADERS := *.h
 #######
 
-all :
-
+all :  $(APP)
 # sub dirs
 # General dir rules
 include Rules.mk
 
+$(APP) : $(targets)
+
 .PHONY: all realclean clean
-all :  $(APP)
 
-$(APP) : $(LIB_CRYPTO)
+readpdf : readpdf.o $(TGT_LIB)
 
-readpdf : readpdf.o $(TGT_LIB) $(LIB_CRYPTO)
+readpdf.o : | $(LIB_CRYPTO)
 
 pegx    :
 	$(MAKE) -C peg
@@ -62,8 +62,6 @@ test	:	readpdf
 	else \
 		echo "failed test"; \
 	fi
-# a hack to force build libcrypto.a first
-pdfdoc/pdfcrypto.d : $(LIB_CRYPTO)
 ## openssl/libcrypto.a
 $(LIB_CRYPTO) :
 	@cd openssl; ./config $(OPENSSL_DEBUG); $(MAKE) build_crypto; cd ..;
