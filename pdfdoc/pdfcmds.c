@@ -202,7 +202,7 @@ pdf_err x_Tf(pdf_page *p, pdf_obj res, float scale)
 		  }
 		  if (!font)
 		  {
-			font = pdf_font_load(f);
+			font = pdf_font_load(f, 1);
 			pdf_interpreter_font_insert(p->i, font);
 		  }
 		  p->i->cur_font = font;
@@ -213,24 +213,49 @@ pdf_err x_Tf(pdf_page *p, pdf_obj res, float scale)
 }
 pdf_err x_Tj(pdf_page *p, pdf_obj o)
 {
+      int i;
+      gs_matrix ctm;
       _DMSG("Tj");
+      if (o.t == eString)
+      {
+	    pdf_font *f = p->i->cur_font;
+	    for (i = 0; i < o.value.s.len; i++)
+	    {
+		  if (f->type == Type1 || f->type == Type3 || f->type == TrueType)
+			pdf_character_show(0, f, &ctm, o.value.s.buf[i]);
+	    }
+      }
       pdf_obj_delete(&o);
       return pdf_ok;
 }
 pdf_err x_TJ(pdf_page *p, pdf_obj o)
 {
       int i;
+      gs_matrix ctm;
+      float advance;
       _DMSG("TJ");
       if (o.t == eArray)
       {
 	    for (i = 0; i < o.value.a.len; i++)
 	    {
 		  pdf_obj *a = &o.value.a.items[i];
-		  if (i%2==0)
+		  if (i%2)
 		  {
+			advance = a[i].value.f;
 		  }
 		  else
 		  {
+			if (o.value.a.items[i].t == eString)
+			{
+			      int j;
+			      pdf_obj *a = &o.value.a.items[i];
+			      pdf_font *f = p->i->cur_font;
+			      for (j = 0; j < a->value.s.len; j++)
+			      {
+				    if (f->type == Type1 || f->type == Type3 || f->type == TrueType)
+					  pdf_character_show(0, f, &ctm, a->value.s.buf[j]);
+			      }
+			}
 		  }
 	    }
             pdf_obj_delete(&o);

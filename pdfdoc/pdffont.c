@@ -1,17 +1,90 @@
+#include <stdio.h>
 #include "pdftypes.h"
 #include "pdfindex.h"
 #include "dict.h"
 #include "pdffont.h"
 
 #include "pdfencodingtable.c"
+#include "glyph_name_to_uni.c"
+
+static const char * get_glyph_name(pdf_font_encoding *e, unsigned int c);
 
 static unsigned int get_cid_identity(unsigned int c) { return c; }
+static int unicode_get_stub(pdf_font *f, unsigned int c, unsigned int *uni) { *uni = c; return 1; }
+
+static const int ascii_to_int[] = {
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,1,2,3,4,5,6,7,8,9,0,0,0,0,0,0,
+0,10,11,12,13,14,15,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,10,11,12,13,14,15,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+};
+
+// extract unicode from char code for simple fonts
+static int unicode_get_simple(pdf_font *f, unsigned int c, unsigned int *uni)
+{
+      pdf_font_encoding *e;
+      const char *gname = 0;
+      *uni = c;
+      if (!f)
+	    return 1;
+      e = f->encoding;
+      if (!e)
+	    return 1;
+      gname = get_glyph_name(e, c);
+      if (gname)
+      {
+	    const struct glyphlist *gl = glyph_name_to_uni(gname, strlen(gname));
+	    if (gl)
+	    {
+		  // parse hax string
+		  int i = 1;
+		  unsigned int n = 0;
+		  unsigned char *ptr = (unsigned char*)gl->unicode;
+		  while (*ptr)
+		  {
+			if (*ptr == ' ')
+			{
+			      uni[i++] = n;
+			      i++;
+			}
+			else
+			{
+			      n <<= 8;
+			      n += ascii_to_int[*ptr];
+			}
+			ptr++;
+		  }
+		  return i;
+	    }
+	    else
+	    {
+		  return 1;
+	    }
+      }
+}
 
 static const char * get_glyph_name(pdf_font_encoding *e, unsigned int c)
 {
       const char *p = 0;
       if (c > 255)
 	    return 0;
+      if (e->differences)
+      {
+	    return e->differences[c];
+      }
+
       switch (e->type)
       {
 	    case StandardEncoding:
@@ -52,6 +125,7 @@ pdf_encoding_free(pdf_font_encoding *p)
 void
 pdf_encoding_load(pdf_obj *a, pdf_font_encoding* e)
 {
+      const char **tbl = standard_encoding;
       if (!a)
       {
 	    e->type = StandardEncoding;
@@ -64,20 +138,25 @@ pdf_encoding_load(pdf_obj *a, pdf_font_encoding* e)
 	    if (strncmp(a->value.k, "WinAnsiEncoding", sizeof("WinAnsiEncoding")) == 0)
 	    {
 		  e->type = WinAnsiEncoding;
+		  tbl = win_ansi_encoding;
 	    }
 	    else if (strncmp(a->value.k, "MacRomanEncoding", sizeof("MacRomanEncoding")) == 0)
 	    {
 		  e->type = MacRomanEncoding;
+		  tbl = mac_roman_encoding;
 	    }
 	    else if (strncmp(a->value.k, "MacExpertEncoding", sizeof("MacExpertEncoding")) == 0)
 	    {
 		  e->type = MacExpertEncoding;
+		  tbl = mac_expert_encoding;
 	    }
 	    else
 	    {
 		  e->type = StandardEncoding;
 	    }
 	    e->get_glyph_name = get_glyph_name;
+	    if (a->t == eDict || a->t == eRef)
+		  goto restart_follow;
       }
       else if (a->t == eDict || a->t == eRef)
       {
@@ -85,19 +164,6 @@ pdf_encoding_load(pdf_obj *a, pdf_font_encoding* e)
 	    pdf_obj_resolve(a);
 	    if (!a)
 		  return;
-	    o = dict_get(a->value.d.dict, "Differences");
-	    if (o && o->t == eArray)
-	    {
-		  int i;
-		  e->differences = pdf_malloc(sizeof(char*)*256);
-		  if (e->differences)
-			memset(e->differences, 0, sizeof(char*)*256);
-		  // parse
-		  for (i == 0; i < o->value.a.len; i++)
-		  {
-			pdf_obj dd = o->value.a.items[i];
-		  }
-	    }
 	    o = dict_get(a->value.d.dict, "BaseEncoding");
 	    if (o && o->t == eKey)
 	    {
@@ -106,6 +172,36 @@ pdf_encoding_load(pdf_obj *a, pdf_font_encoding* e)
 	    else
 	    {
 		  e->type = StandardEncoding;
+	    }
+	restart_follow:
+	    o = dict_get(a->value.d.dict, "Differences");
+	    if (o && o->t == eArray)
+	    {
+		  int i;
+		  e->differences = pdf_malloc(sizeof(char*)*256);
+		  if (e->differences)
+			memcpy(e->differences, &tbl[0], sizeof(char*)*256);
+		  // parse
+		  for (i = 0; i < o->value.a.len;)
+		  {
+			pdf_obj dd = o->value.a.items[i];
+			int j = dd.value.i;
+			if (j < 256)
+			{
+			      i++;
+			      while (o->value.a.items[i].t == eKey)
+			      {
+				    struct glyphlist *gl = glyph_name_to_uni(o->value.a.items[i].value.k, strlen(o->value.a.items[i].value.k));
+				    if (gl)
+					  e->differences[j] = gl->name;
+				    if (i++ >= o->value.a.len)
+					  break;
+				    if (j++ > 255)
+					  break;
+			      }
+			}
+			
+		  }
 	    }
       }
 }
@@ -133,7 +229,7 @@ pdf_cid_encoding_load(pdf_obj *a, pdf_font_encoding* e)
 }
 
 pdf_font *
-pdf_font_load(pdf_obj *o)
+pdf_font_load(pdf_obj *o, int cid2uni)
 {
       pdf_font *f;
       pdf_obj *a;
@@ -215,12 +311,13 @@ pdf_font_load(pdf_obj *o)
 	    {
 		  pdf_encoding_load(a, f->encoding);
 	    }
-	    else if (a->t == eDict)
+	    else if (a->t == eDict || a->t == eRef)
 	    {
 		  pdf_encoding_load(a, f->encoding);
 	    }
 	    else
 	    {
+		  pdf_encoding_load(0, f->encoding);
 	    }
       }
       // composite font specific
@@ -248,7 +345,26 @@ pdf_font_load(pdf_obj *o)
       else if (f->type == Type3)
       {
       }
-
+      // CidToUnicode
+      f->unicode_get = unicode_get_stub;
+      if (cid2uni)
+      {
+	    a = dict_get(o->value.d.dict, "ToUniCode");
+	    if (a)
+	    {
+	    }
+	    else
+	    {
+		  if (f->type == TrueType || f->type == Type1 || f->type == Type3)
+		  {
+			f->unicode_get = unicode_get_simple;
+		  }
+		  else
+		  {
+			// composite font
+		  }
+	    }
+      }
       return f;
   fail:
       if (f)
@@ -284,4 +400,18 @@ pdf_font_find(pdf_font* f, int ref)
 	    f = f->next;
       }
       return 0;
+}
+
+void
+pdf_character_show(void* dev, pdf_font *f, gs_matrix *ctm, unsigned int c)
+{
+#ifdef DEBUG
+      unsigned int uni[8];
+      int n = (f->unicode_get)(f, c, uni);
+      int i;
+      for (i = 0; i < n; i++)
+      {
+	    printf("%c", uni[i]);
+      }
+#endif
 }
