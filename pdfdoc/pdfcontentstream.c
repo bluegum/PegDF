@@ -287,7 +287,7 @@ pdf_lex_name(buffer_stream *s, unsigned char* buf, int max)
             if (isdelim(c))
             {
                   *p = 0;
-#ifdef DEBUG
+#ifdef DEBUG_STM
                   printf("/%s ", buf);
 #endif
                   return pdf_ok;
@@ -650,6 +650,7 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
                               }
                               else
                               {
+				    mUNGETCHAR(b);
                                     ON_ERROR(pdf_lex_hexstring(b, buf, LEX_BUF_LEN));
                                     t.t = eHexString;
                                     t.value.s.len = strlen((char*)buf);

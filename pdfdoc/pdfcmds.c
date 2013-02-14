@@ -216,13 +216,16 @@ pdf_err x_Tj(pdf_page *p, pdf_obj o)
       int i;
       gs_matrix ctm;
       _DMSG("Tj");
-      if (o.t == eString)
+      if ((o.t == eString) || (o.t == eHexString))
       {
 	    pdf_font *f = p->i->cur_font;
-	    for (i = 0; i < o.value.s.len; i++)
+	    for (i = 0; i < o.value.s.len;)
 	    {
-		  if (f->type == Type1 || f->type == Type3 || f->type == TrueType)
-			pdf_character_show(0, f, &ctm, o.value.s.buf[i]);
+		  int step =
+			pdf_character_show(0, f, &ctm, o.value.s.buf+i);
+		  if (step == 0)
+			break;
+		  i += step;
 	    }
       }
       pdf_obj_delete(&o);
@@ -250,10 +253,13 @@ pdf_err x_TJ(pdf_page *p, pdf_obj o)
 			      int j;
 			      pdf_obj *a = &o.value.a.items[i];
 			      pdf_font *f = p->i->cur_font;
-			      for (j = 0; j < a->value.s.len; j++)
+			      for (j = 0; j < a->value.s.len;)
 			      {
-				    if (f->type == Type1 || f->type == Type3 || f->type == TrueType)
-					  pdf_character_show(0, f, &ctm, a->value.s.buf[j]);
+				    int step =
+				    pdf_character_show(0, f, &ctm, a->value.s.buf+j);
+				    if (!step)
+					  break;
+				    j += step;
 			      }
 			}
 		  }

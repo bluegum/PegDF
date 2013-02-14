@@ -9,7 +9,7 @@ $(DEPS_DIR)/%.d: $(d)/%.c | $(DEPS_DIR)
 LOCAL_LIB	:= $(OBJ_DIR)/libpdfdoc.a
 
 SRCS_$(d)	:= pdfdoc.c pdfpage.c pdfcatalog.c pdffilter.c pdfcontentstream.c pdfcmds.c pdfcrypto.c \
-		pdfcolorspace.c pdfwrite.c pdffont.c pdfencodingtable.c
+		pdfcolorspace.c pdfwrite.c pdffont.c pdfencodingtable.c pdfcmap.c
 
 OBJS_$(d)	:= $(addprefix $(OBJ_DIR)/, $(SRCS_$(d):%.c=%.o))
 

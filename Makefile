@@ -1,7 +1,7 @@
 ### Build flags for all targets
 #
 INCLUDE_ALL     = -I . -I pdfdoc -I pdfread -I openssl/include -I openssl/include/openssl -I openssl -I zlib
-CF_ALL          = -g -Wall -I . $(INCLUDE_ALL)
+CF_ALL          = -Wall -I . $(INCLUDE_ALL)
 #LF_ALL          = -lz -lm -lcrypto -L openssl -ldl
 ### -lz is omitted because zlib is static now
 LF_ALL          = -lm -lcrypto -L openssl -ldl
@@ -10,9 +10,14 @@ OPENSSL_DEBUG   =
 ifeq	"$(YYDEBUG)" "y"
 	CF_ALL += -DYY_DEBUG
 endif
+ifeq    "$(DEBUG_STM)" "y"
+	DEBUG := "y"
+endif
 ifeq	"$(DEBUG)" "y"
-	CF_ALL +=  -DDEBUG
+	CF_ALL += -g -DDEBUG
 	OPENSSL_DEBUG = -d
+else
+	CF_ALL += -O3
 endif
 ### Build tools
 #

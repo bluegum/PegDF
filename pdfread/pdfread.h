@@ -154,7 +154,7 @@ extern int stream_seek(int s);
 extern int stream_read(unsigned char*, int);
 extern void init_filestream_parser_instance(pdf_parser *p);
 ///////////////////// non-descriptives
-#ifdef DEBUG
+#ifdef DEBUG_STM
 #define DMSG(a)                                 \
       fprintf(stderr, "%s\n", a)
 #define _DMSG(a)                                \

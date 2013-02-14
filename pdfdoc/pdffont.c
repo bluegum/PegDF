@@ -9,7 +9,7 @@
 
 static const char * get_glyph_name(pdf_font_encoding *e, unsigned int c);
 
-static unsigned int get_cid_identity(unsigned int c) { return c; }
+static unsigned int get_cid_simple(unsigned char *c, int *cid) { *cid = c[0];return 1; }
 static int unicode_get_stub(pdf_font *f, unsigned int c, unsigned int *uni) { *uni = c; return 1; }
 
 static const int ascii_to_int[] = {
@@ -30,6 +30,15 @@ static const int ascii_to_int[] = {
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 };
+
+static unsigned int get_cid_identity(unsigned char *c, int *cid)
+{
+      *cid = (((ascii_to_int[c[0]]<<4) +
+	      (ascii_to_int[c[1]]))) +
+	    (ascii_to_int[c[2]]<<4) +
+	    (ascii_to_int[c[3]]);
+      return 4;
+}
 
 // extract unicode from char code for simple fonts
 static int unicode_get_simple(pdf_font *f, unsigned int c, unsigned int *uni)
@@ -130,6 +139,7 @@ pdf_encoding_load(pdf_obj *a, pdf_font_encoding* e)
       {
 	    e->type = StandardEncoding;
 	    e->get_glyph_name = get_glyph_name;
+	    e->get_cid = get_cid_simple;
 	    return;
       }
       if (a->t == eKey)
@@ -181,7 +191,7 @@ pdf_encoding_load(pdf_obj *a, pdf_font_encoding* e)
 		  e->differences = pdf_malloc(sizeof(char*)*256);
 		  if (e->differences)
 			memcpy(e->differences, &tbl[0], sizeof(char*)*256);
-		  // parse
+		  // parse differences array and merge with pre defined encodings
 		  for (i = 0; i < o->value.a.len;)
 		  {
 			pdf_obj dd = o->value.a.items[i];
@@ -204,6 +214,7 @@ pdf_encoding_load(pdf_obj *a, pdf_font_encoding* e)
 		  }
 	    }
       }
+      e->get_cid = get_cid_simple;
 }
 
 void
@@ -402,16 +413,38 @@ pdf_font_find(pdf_font* f, int ref)
       return 0;
 }
 
-void
-pdf_character_show(void* dev, pdf_font *f, gs_matrix *ctm, unsigned int c)
+int
+pdf_character_show(void* dev, pdf_font *f, gs_matrix *ctm, char *c)
 {
-#ifdef DEBUG
+      unsigned int cid;
+      pdf_font_encoding *enc;
+      int step;
       unsigned int uni[8];
-      int n = (f->unicode_get)(f, c, uni);
-      int i;
-      for (i = 0; i < n; i++)
+      if (!f)
+	    return 0;
+      enc = f->encoding;
+      if (!enc)
+	    return 0;
+      step = (enc->get_cid)(c, &cid);
+      if (step == 1)
       {
-	    printf("%c", uni[i]);
-      }
+#ifdef DEBUG
+	    int n = (f->unicode_get)(f, cid, uni);
+	    fputc(uni[0]>>8, stdout);
+	    fputc(uni[0]&0xff, stdout);
 #endif
+      }
+      else if (step == 4)
+      {
+	    int n = (f->unicode_get)(f, cid, uni);
+	    int i;
+	    for (i = 0; i < n; i++)
+	    {
+#ifdef DEBUG
+		  fputc(uni[i]>>8, stdout);
+		  fputc(uni[i]&0xff, stdout);
+#endif
+	    }
+      }
+      return step;
 }
