@@ -99,6 +99,7 @@ struct pdf_font_s
       pdf_font_type type;
       char *basefont;
       pdf_font_encoding *encoding;
+      pdf_tounicode *tounicode;
       union {
 	    pdf_font_type1_tt type1;
 	    pdf_font_type1_tt tt;
@@ -113,6 +114,8 @@ struct pdf_font_s
 extern pdf_font *pdf_font_load(pdf_obj *o, int);
 extern void pdf_font_free(pdf_font *f);
 extern int pdf_character_show(void* dev, pdf_font *f, gs_matrix *ctm, char *c);
-
+extern void pdf_cmap_tounicode_parse(pdf_obj *cmap, pdf_font *f);
+extern unsigned int asciihex2int(unsigned char *c);
+extern int unicode_get_cmap(pdf_font *f, unsigned int c, unsigned int *uni);
 
 #endif // PDFFONT_H

@@ -96,6 +96,7 @@ struct pdf_parser_s
       hint h;
       int startxref;
       // non-parsing related, for pdf stream object
+      int (*tell)();
       int (*seek)(int off);
       int (*read)(unsigned char *, int);
       int (*unget)(unsigned char);

@@ -31,12 +31,20 @@ static const int ascii_to_int[] = {
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 };
 
+unsigned int asciihex2int(unsigned char *c)
+{
+      unsigned int i;
+      i = ((ascii_to_int[c[0]]<<4) +
+	   (ascii_to_int[c[1]]));
+      if (c[2])
+      {
+	    i = (i << 8) + (ascii_to_int[c[2]]<<4) + (ascii_to_int[c[3]]);
+      }
+      return i;
+}
 static unsigned int get_cid_identity(unsigned char *c, int *cid)
 {
-      *cid = (((ascii_to_int[c[0]]<<4) +
-	      (ascii_to_int[c[1]]))) +
-	    (ascii_to_int[c[2]]<<4) +
-	    (ascii_to_int[c[3]]);
+      *cid = asciihex2int(c);
       return 4;
 }
 
@@ -341,11 +349,11 @@ pdf_font_load(pdf_obj *o, int cid2uni)
 		  if (!a)
 			goto fail;
 	    }
-/*
+#if 0
 	    a = dict_get(o->value.d.dict, "CIDSystemInfo");
 	    if (!a)
 		  goto fail;
-*/
+#endif
       }
       else if (f->type == TrueType)
       {
@@ -358,11 +366,13 @@ pdf_font_load(pdf_obj *o, int cid2uni)
       }
       // CidToUnicode
       f->unicode_get = unicode_get_stub;
+      f->tounicode = 0;
       if (cid2uni)
       {
-	    a = dict_get(o->value.d.dict, "ToUniCode");
+	    a = dict_get(o->value.d.dict, "ToUnicode");
 	    if (a)
 	    {
+		  pdf_cmap_tounicode_parse(a, f);
 	    }
 	    else
 	    {
@@ -393,6 +403,11 @@ pdf_font_free(pdf_font *f)
 		  pdf_font *next = f->next;
 		  if (f->encoding)
 			pdf_encoding_free(f->encoding);
+		  if (f->tounicode)
+		  {
+			pdf_tounicode_free(f->tounicode);
+			f->tounicode = 0;
+		  }
 		  pdf_free(f);
 		  f = next;
 	    }

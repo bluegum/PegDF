@@ -18,6 +18,7 @@ struct file_stream_s
       int offset;
       int r; // to seek
       int avail;
+      int orig_offset;
 };
 
 static int
@@ -34,6 +35,11 @@ static int
 file_unget(unsigned char c)
 {
       return ungetc(c, parser_inst->infile);
+}
+static int
+file_tell()
+{
+      return ftell(parser_inst->infile);
 }
 static int
 file_close()
@@ -57,6 +63,7 @@ fs_reset(sub_stream* s)
             return 1;
       if (fs->r)
       {
+	    fs->orig_offset = (fs->p->tell)();
             fs->r = 0;
             fs->avail = fs->len; // through API is better
             ret = (fs->p->seek)(fs->offset-1);
@@ -109,6 +116,7 @@ static int
 fs_close(sub_stream* s)
 {
       file_stream *fs = (file_stream*)s;
+      (fs->p->seek)(fs->orig_offset);
       fs->r = 1;
       return 0;
 }
@@ -140,6 +148,7 @@ init_filestream_parser_instance(pdf_parser *p)
       p->infile = stdin;
       p->outfile = stdout;
 #endif
+      p->tell = file_tell;
       p->seek = file_seek;
       p->read = file_read;
       p->unget = file_unget;

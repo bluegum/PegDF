@@ -4,6 +4,7 @@
 
 typedef struct pdf_cidsysteminfo_s pdf_cidsysteminfo;
 typedef struct pdf_cmap_s pdf_cmap;
+typedef struct pdf_tounicode_s pdf_tounicode;
 
 struct pdf_cidsysteminfo_s
 {
@@ -19,5 +20,14 @@ struct pdf_cmap_s
       int wmode;
       pdf_obj *usecmap;
 };
+
+struct pdf_tounicode_s
+{
+      int cid;
+      int n;
+      char *hex;
+};
+
+extern void pdf_tounicode_free(pdf_tounicode *u);
 
 #endif // PDFCMAP_H
