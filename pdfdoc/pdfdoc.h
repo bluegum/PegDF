@@ -4,8 +4,7 @@
 #include "pdftypes.h"
 #include "gsdraw.h"
 #include "pdfresource.h"
-#include "pdffont.h"
-//#include "pdffilter.h"
+#include "pdffilter.h"
 
 typedef struct pdf_page_s pdf_page;
 typedef struct pdf_doc_s pdf_doc;
@@ -25,6 +24,8 @@ typedef struct pdfcrypto_priv_s pdfcrypto_priv;
 typedef struct pdf_stream_s pdf_stream;
 typedef struct pdf_trailer_s pdf_trailer;
 typedef struct pdf_interp_state_s pdf_interp_state;
+typedef struct pdf_font_s pdf_font;
+typedef struct pdf_device_s pdf_device;
 
 struct pdf_mask_s
 {
@@ -319,6 +320,7 @@ struct pdf_trailer_s
 // interpreter state
 struct pdf_interp_state_s
 {
+      pdf_device *dev;
       pdf_font *font, *cur_font;
 };
 
@@ -344,11 +346,11 @@ extern pdf_err pdf_info_load(pdf_obj *o, pdf_info **info);
 extern pdf_doc* pdf_doc_load(pdf_trailer*);
 extern void pdf_doc_done(pdf_doc *d);
 extern pdf_err  pdf_doc_print_info(pdf_doc *d);
-extern pdf_err pdf_doc_process(pdf_doc *d, pdfcrypto_priv* encrypt);
+extern pdf_err pdf_doc_process(pdf_doc *d, pdf_device*, pdfcrypto_priv* encrypt);
 extern pdf_err pdf_read(char *in, char *out,  pdf_doc **doc);
 extern pdf_err pdf_finish(pdf_doc *doc);
 extern int pdf_doc_authenticate_user_password(pdf_doc *doc, unsigned char *pw, int pwlen);
-extern pdf_err pdf_doc_process_all(pdf_doc *doc, unsigned char *pw, int pwlen);
+extern pdf_err pdf_doc_process_all(pdf_doc *doc, char *devtype, char *outf, unsigned char *pw, int pwlen);
 extern int pdf_doc_need_passwd(pdf_doc *doc);
 
 #define WRITE_PDF_LINEARIZED           0x01
@@ -358,8 +360,9 @@ extern int pdf_doc_need_passwd(pdf_doc *doc);
 #define WRITE_PDF_PAGE_SEPARATION      0x40
 extern pdf_err pdf_write_pdf(pdf_doc *doc, char *ofile, unsigned long write_flag, int version, int pg1st, int pglast, char *upw, char *opw);
 extern void pdf_doc_trailer_free(pdf_trailer * tr);
-extern pdf_interp_state *pdf_interpreter_new();
+extern pdf_interp_state *pdf_interpreter_new(pdf_device*);
 extern void pdf_interpreter_free(pdf_interp_state *i);
 extern void pdf_interpreter_font_insert(pdf_interp_state *i, pdf_font *f);
+extern int pdf_character_show(pdf_device* dev, pdf_font *f, gs_matrix *ctm, char *c);
 
 #endif

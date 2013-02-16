@@ -222,7 +222,7 @@ pdf_err x_Tj(pdf_page *p, pdf_obj o)
 	    for (i = 0; i < o.value.s.len;)
 	    {
 		  int step =
-			pdf_character_show(0, f, &ctm, o.value.s.buf+i);
+			pdf_character_show(p->i->dev, f, &ctm, o.value.s.buf+i);
 		  if (step == 0)
 			break;
 		  i += step;
@@ -256,7 +256,7 @@ pdf_err x_TJ(pdf_page *p, pdf_obj o)
 			      for (j = 0; j < a->value.s.len;)
 			      {
 				    int step =
-				    pdf_character_show(0, f, &ctm, a->value.s.buf+j);
+				    pdf_character_show(p->i->dev, f, &ctm, a->value.s.buf+j);
 				    if (!step)
 					  break;
 				    j += step;

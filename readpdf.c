@@ -47,7 +47,10 @@ Usage:\n\
            -x : extract a single at pagenum, start from 1\n\
            -s : separate page\n\
            -i : inflate content streams\n\
+           -d : device\n\
            --help : print this\n\
+\n\
+    Devices: text html \
 \n\
     Example#1: to extract each and every page and write into a sequence of pdf files with inflated content stream,\n\
          and the output are with format as: out%d.pdf:\n\
@@ -63,6 +66,7 @@ int main(int argc, char **argv)
       int i = 1;
       char *in = NULL;
       char *out = NULL;
+      char *devtype = NULL;
       pdf_doc *doc;
       char *passwd = NULL;
       int firstpage = 1;
@@ -120,6 +124,14 @@ int main(int argc, char **argv)
 			      case 'i':
 				    inflate = 1;
 				    break;
+			      case 'd':
+                              {
+				    if (isspace(argv[i][2]) || argv[i][2] == 0)
+                                    {
+					  devtype = argv[2];
+                                    }
+			      }
+			      break;
                               default:
                                     break;
                         }
@@ -147,14 +159,14 @@ int main(int argc, char **argv)
       }
       if (!passwd || !pdf_doc_need_passwd(doc))
       {
-	    pdf_doc_process_all(doc, (unsigned char*)"", 0);
+	    pdf_doc_process_all(doc, devtype, out, (unsigned char*)"", 0);
       }
       else if (passwd && pdf_doc_need_passwd(doc))
       {
-	    pdf_doc_process_all(doc, (unsigned char*)passwd, strlen(passwd));
+	    pdf_doc_process_all(doc, devtype, out, (unsigned char*)passwd, strlen(passwd));
       }
       // writing out pdf using doc structure.
-      if (out)
+      if (out && (!devtype))
       {
 	    if (inflate)
 		  write_flag |= WRITE_PDF_CONTENT_INFLATE;

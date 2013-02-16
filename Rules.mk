@@ -40,8 +40,8 @@ targets:        $(TGT_BIN) $(TGT_SBIN) $(TGT_ETC) $(TGT_LIB)
 
 .PHONY:         clean
 clean:
-	rm -f $(CLEAN) $(TGT_LIB)
-	rm -rf $(OBJ_DIR) $(DEPS_DIR)
+	- rm -f $(CLEAN) $(TGT_LIB)
+	- rm -rf $(OBJ_DIR) $(DEPS_DIR)
 
 .PHONY:         install
 install:        targets 

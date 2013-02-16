@@ -649,7 +649,7 @@ pdf_page_obj_write(pdf_page *page, int pgidx, unsigned long write_flag, pdf_xref
       int content_ref_arr[1024];
       if (page->contents)
       {
-	    if (page->contents->t == eDict)
+	    if ((page->contents->t == eDict) || (page->contents->t == eRef))
 	    {
 		  content_ref = pdf_page_contents_write(page->contents, write_flag, xref, out, crypto);
 	    }
@@ -781,7 +781,9 @@ pdf_write_pdf(pdf_doc *doc, char *ofile, unsigned long write_flag, int version, 
       }
       else
       {
+#ifdef DEBUG
 	    printf("Writing %s..\n", ofile);
+#endif
 	    out = fopen(ofile, "wb");
 	    if (!out)
 		  return pdf_ok;

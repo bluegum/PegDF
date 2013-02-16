@@ -10,7 +10,6 @@ typedef struct pdf_font_descriptor_s pdf_font_descriptor;
 typedef struct pdf_font_encoding_s pdf_font_encoding;
 typedef struct pdf_font_type3_s pdf_font_type3;
 typedef struct pdf_font_type1_tt_s pdf_font_type1_tt;
-typedef struct pdf_font_s pdf_font;
 
 enum pdf_font_type_e
 {
@@ -113,9 +112,9 @@ struct pdf_font_s
 
 extern pdf_font *pdf_font_load(pdf_obj *o, int);
 extern void pdf_font_free(pdf_font *f);
-extern int pdf_character_show(void* dev, pdf_font *f, gs_matrix *ctm, char *c);
 extern void pdf_cmap_tounicode_parse(pdf_obj *cmap, pdf_font *f);
 extern unsigned int asciihex2int(unsigned char *c);
 extern int unicode_get_cmap(pdf_font *f, unsigned int c, unsigned int *uni);
+extern int pdf_font_tounicode(pdf_font *f, unsigned int cid, unsigned int *uni);
 
 #endif // PDFFONT_H

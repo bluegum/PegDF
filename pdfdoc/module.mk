@@ -1,6 +1,6 @@
 d	:= pdfdoc
 
-$(OBJ_DIR)/%.o: $(d)/%.c
+$(OBJ_DIR)/%.o: $(d)/%.c | $(LIB_CRYPTO)
 	$(CC) -c $(INCLUDE_ALL) -o $@ $< $(CF_ALL)
 $(DEPS_DIR)/%.d: $(d)/%.c | $(DEPS_DIR)
 	-@rm -f $@
@@ -9,7 +9,7 @@ $(DEPS_DIR)/%.d: $(d)/%.c | $(DEPS_DIR)
 LOCAL_LIB	:= $(OBJ_DIR)/libpdfdoc.a
 
 SRCS_$(d)	:= pdfdoc.c pdfpage.c pdfcatalog.c pdffilter.c pdfcontentstream.c pdfcmds.c pdfcrypto.c \
-		pdfcolorspace.c pdfwrite.c pdffont.c pdfencodingtable.c pdfcmap.c
+		pdfcolorspace.c pdfwrite.c pdffont.c pdfencodingtable.c pdfcmap.c pdfdevice.c pdfdevicetxt.c
 
 OBJS_$(d)	:= $(addprefix $(OBJ_DIR)/, $(SRCS_$(d):%.c=%.o))
 

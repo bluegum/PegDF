@@ -53,7 +53,7 @@ $(APP) : $(targets)
 
 readpdf : readpdf.o $(TGT_LIB)
 
-readpdf.o : | $(LIB_CRYPTO) $(GLYPH_NAME_TO_UNI)
+readpdf.o : | $(GLYPH_NAME_TO_UNI)
 
 pegx    :
 	$(MAKE) -C peg
@@ -71,9 +71,9 @@ test	:	readpdf
 $(LIB_CRYPTO) :
 	@cd openssl; ./config $(OPENSSL_DEBUG); $(MAKE) build_crypto; cd ..;
 
-realclean: clean
-	@cd openssl; if test -e Makefile ; then $(MAKE) clean; rm -f Makefile; rm crypto/opensslconf.h; rm include/openssl/evp.h; fi; cd ..;
-	-@rm $(GLYPH_NAME_TO_UNI)
+realclean : clean
+	- @cd openssl; if test -e Makefile ; then $(MAKE) clean; rm -f Makefile; rm crypto/opensslconf.h; rm include/openssl/evp.h; fi; cd ..;
+	- @rm $(GLYPH_NAME_TO_UNI) $(LIB_CRYTO)
 	$(MAKE) -C peg spotless
 
 $(GLYPH_NAME_TO_UNI) :

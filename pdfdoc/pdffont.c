@@ -2,8 +2,9 @@
 #include "pdftypes.h"
 #include "pdfindex.h"
 #include "dict.h"
+#include "pdfdevice.h"
 #include "pdffont.h"
-
+#include "pdffilter.h"
 #include "pdfencodingtable.c"
 #include "glyph_name_to_uni.c"
 
@@ -428,8 +429,16 @@ pdf_font_find(pdf_font* f, int ref)
       return 0;
 }
 
+void pdf_device_char_show(pdf_device *dev, pdf_font *f, gs_matrix *ctm, unsigned int cid)
+{
+      if (dev && dev->fill_char)
+      {
+	    (dev->fill_char)(dev, f, ctm, cid, 0);
+      }
+}
+
 int
-pdf_character_show(void* dev, pdf_font *f, gs_matrix *ctm, char *c)
+pdf_character_show(pdf_device* dev, pdf_font *f, gs_matrix *ctm, char *c)
 {
       unsigned int cid;
       pdf_font_encoding *enc;
@@ -441,25 +450,39 @@ pdf_character_show(void* dev, pdf_font *f, gs_matrix *ctm, char *c)
       if (!enc)
 	    return 0;
       step = (enc->get_cid)(c, &cid);
-      if (step == 1)
+      if (dev)
       {
-#ifdef DEBUG
-	    int n = (f->unicode_get)(f, cid, uni);
-	    fputc(uni[0]>>8, stdout);
-	    fputc(uni[0]&0xff, stdout);
-#endif
+	    pdf_device_char_show(dev, f, ctm, cid);
       }
-      else if (step == 4)
+      else
       {
-	    int n = (f->unicode_get)(f, cid, uni);
-	    int i;
-	    for (i = 0; i < n; i++)
+	    if (step == 1)
 	    {
 #ifdef DEBUG
-		  fputc(uni[i]>>8, stdout);
-		  fputc(uni[i]&0xff, stdout);
+		  int n = (f->unicode_get)(f, cid, uni);
+		  fputc(uni[0]>>8, stdout);
+		  fputc(uni[0]&0xff, stdout);
 #endif
+	    }
+	    else if (step == 4)
+	    {
+		  int n = (f->unicode_get)(f, cid, uni);
+		  int i;
+		  for (i = 0; i < n; i++)
+		  {
+#ifdef DEBUG
+			fputc(uni[i]>>8, stdout);
+			fputc(uni[i]&0xff, stdout);
+#endif
+		  }
 	    }
       }
       return step;
+}
+
+int
+pdf_font_tounicode(pdf_font *f, unsigned int cid, unsigned int *uni)
+{
+      if (f && f->unicode_get)
+	    return (f->unicode_get)(f, cid, uni);
 }

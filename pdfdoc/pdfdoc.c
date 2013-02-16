@@ -10,6 +10,7 @@
 #include "pdfdoc.h"
 #include "pdfcrypto.h"
 #include "pdfread.h"
+#include "pdffont.h"
 
 static inline pdf_group*
 pdf_group_load(pdf_obj *o)
@@ -197,12 +198,12 @@ pdf_err pdf_exec_page_content(pdf_page *p, pdfcrypto_priv* encrypt)
       return pdf_ok;
 }
 
-pdf_err pdf_page_tree_walk(pdf_doc *d, pdfcrypto_priv* encrypt)
+pdf_err pdf_page_tree_walk(pdf_doc *d, pdf_device *dev, pdfcrypto_priv* encrypt)
 {
       int i, c;
       pdf_interp_state *interp;
 
-      interp = pdf_interpreter_new();
+      interp = pdf_interpreter_new(dev);
       c = (d->pageidx < d->count) ? d->pageidx : d->count;
       for (i = 0; i < c; i++)
       {
@@ -298,9 +299,9 @@ pdf_doc_load(pdf_trailer *trailer)
       return doc;
 }
 
-pdf_err pdf_doc_process(pdf_doc *d, pdfcrypto_priv* encrypt)
+pdf_err pdf_doc_process(pdf_doc *d, pdf_device *dev, pdfcrypto_priv* encrypt)
 {
-      return pdf_page_tree_walk(d, encrypt);
+      return pdf_page_tree_walk(d, dev, encrypt);
 }
 
 pdf_err  pdf_doc_print_info(pdf_doc *d)
@@ -845,9 +846,12 @@ pdf_doc_authenticate_user_password(pdf_doc *doc, unsigned char *pw, int pwlen)
 }
 
 pdf_err
-pdf_doc_process_all(pdf_doc *doc, unsigned char *pw, int pwlen)
+pdf_doc_process_all(pdf_doc *doc, char *devtype, char *of, unsigned char *pw, int pwlen)
 {
+      pdf_device *dev = NULL;
       pdfcrypto_priv *crypto = NULL;
+      FILE *out = NULL;
+
       //unsigned char u[32];
       if (doc->trailer->encrypt)
       {
@@ -857,9 +861,27 @@ pdf_doc_process_all(pdf_doc *doc, unsigned char *pw, int pwlen)
                                      pwlen // password len
                   );
       }
-      pdf_doc_process(doc, crypto);
+      if (devtype)
+      {
+	    if (strcmp(devtype, "text") == 0)
+	    {
+		  if (of)
+		  {
+			out = fopen(of, "wb");
+			if (out)
+			{
+			      dev = pdf_dev_text_new(out);
+			}
+		  }
+	    }
+      }
+      pdf_doc_process(doc, dev, crypto);
       if (crypto)
             pdf_crypto_destroy(crypto);
+      if (dev)
+	    pdf_dev_destroy(dev);
+      if (out)
+	    fclose(out);
       return pdf_ok;
 }
 
@@ -923,10 +945,14 @@ pdf_doc_trailer_free(pdf_trailer * tr)
 }
 
 pdf_interp_state *
-pdf_interpreter_new()
+pdf_interpreter_new(pdf_device *dev)
 {
       pdf_interp_state *i = pdf_malloc(sizeof(pdf_interp_state));
-      memset(i, 0, sizeof(pdf_interp_state));
+      if (i)
+      {
+	    memset(i, 0, sizeof(pdf_interp_state));
+	    i->dev = dev;
+      }
       return i;
 }
 
