@@ -77,7 +77,6 @@ pdf_obj_walk()
       pdf_map * m = parser_inst->map;//&a_pdf_map;
       for (;m; m = m->next)
       {
-            //printf("walk generation %d...\n", m->generation);
             bpt_walk(m->head, NULL);
       }
 }
@@ -129,6 +128,8 @@ pdf_obj_delete(pdf_obj *o)
 void
 pdf_obj_free()
 {
+      if (!parser_inst && !parser_inst->map)
+	    return;
       pdf_map * m = parser_inst->map;//&a_pdf_map;
       pdf_map *i = m;
       for (; i!=0; i=i->next)

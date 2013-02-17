@@ -347,10 +347,10 @@ extern pdf_doc* pdf_doc_load(pdf_trailer*);
 extern void pdf_doc_done(pdf_doc *d);
 extern pdf_err  pdf_doc_print_info(pdf_doc *d);
 extern pdf_err pdf_doc_process(pdf_doc *d, pdf_device*, pdfcrypto_priv* encrypt);
-extern pdf_err pdf_read(char *in, char *out,  pdf_doc **doc);
+extern pdf_err pdf_open(char *in,  pdf_doc **doc);
 extern pdf_err pdf_finish(pdf_doc *doc);
 extern int pdf_doc_authenticate_user_password(pdf_doc *doc, unsigned char *pw, int pwlen);
-extern pdf_err pdf_doc_process_all(pdf_doc *doc, char *devtype, char *outf, unsigned char *pw, int pwlen);
+extern pdf_err pdf_doc_process_all(pdf_doc *doc, char *devtype, FILE *outf, unsigned char *pw, int pwlen);
 extern int pdf_doc_need_passwd(pdf_doc *doc);
 
 #define WRITE_PDF_LINEARIZED           0x01

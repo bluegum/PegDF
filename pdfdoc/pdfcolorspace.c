@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "pdftypes.h"
 #include "gsdraw.h"
 #include "pdffilter.h"

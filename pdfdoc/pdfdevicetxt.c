@@ -24,6 +24,7 @@ pdf_dev_text_new(FILE *out)
       d = pdf_malloc(sizeof(pdf_device));
       if (!d)
 	    return d;
+      memset(d, 0, sizeof(pdf_device));
       d->dest.f = out;
       d->fill_char = pdf_dev_text_char_show;
       d->stroke_char = pdf_dev_text_char_show;

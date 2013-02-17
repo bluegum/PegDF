@@ -390,45 +390,51 @@ pdf_resources_write(pdf_resources *r, pdf_xref_internal *x, FILE *o, pdfcrypto_p
       fprintf(o, "%s <<", "/Resources");
       if (r->extgstate)
       {
-            dict_list *ll, *l = dict_to_list(r->extgstate->value.d.dict);
-            ll = l;
-            fprintf(o, "%s <<", "/ExtGState");
-            while (l && l->key)
-            {
-                  pdf_obj *t = &l->val;
-                  dict_array *a;
-                  if (t->t == eRef)
-                        pdf_obj_resolve(t);
-                  a = dict_to_array(t->value.d.dict);
-                  fprintf(o, "/%s <<", l->key);
-                  if (a)
-                  {
-                        // print dict array "a"
-                        if (a->items)
-                        {
-                              int i;
-                              for (i = 0; i < a->cur; i++)
-                              {
-                                    fprintf(o, "/%s ",a->items[i].key);
-                                    pdf_obj_write(&a->items[i].val, x, o, crypto);
-                              }
-                        }
-                        // free array/dict_entry
-                        if (a->items)
-                        {
-                              int i;
-                              for (i = 0; i < a->cur; i++)
-                                    pdf_free(a->items[i].key);
-                              pdf_free(a->items);
-                        }
-                        pdf_free(a);
-                  }
-                  fprintf(o, "%s", ">> ");
-                  l = l->next;
-            }
-            // free dict_list
-            dict_list_free(ll);
-            fprintf(o, "%s",  ">> ");
+            dict_list *ll, *l;
+	    pdf_obj *extg = r->extgstate;
+	    pdf_obj_resolve(extg);
+	    if (extg && extg->t == eDict)
+	    {
+		  l = dict_to_list(extg->value.d.dict);
+		  ll = l;
+		  fprintf(o, "%s <<", "/ExtGState");
+		  while (l && l->key)
+		  {
+			pdf_obj *t = &l->val;
+			dict_array *a;
+			if (t->t == eRef)
+			      pdf_obj_resolve(t);
+			a = dict_to_array(t->value.d.dict);
+			fprintf(o, "/%s <<", l->key);
+			if (a)
+			{
+			      // print dict array "a"
+			      if (a->items)
+			      {
+				    int i;
+				    for (i = 0; i < a->cur; i++)
+				    {
+					  fprintf(o, "/%s ",a->items[i].key);
+					  pdf_obj_write(&a->items[i].val, x, o, crypto);
+				    }
+			      }
+			      // free array/dict_entry
+			      if (a->items)
+			      {
+				    int i;
+				    for (i = 0; i < a->cur; i++)
+					  pdf_free(a->items[i].key);
+				    pdf_free(a->items);
+			      }
+			      pdf_free(a);
+			}
+			fprintf(o, "%s", ">> ");
+			l = l->next;
+		  }
+		  // free dict_list
+		  dict_list_free(ll);
+		  fprintf(o, "%s",  ">> ");
+	    }
       } // extgstate
       if (r->font)
       {
@@ -716,7 +722,9 @@ pdf_write_pdf(pdf_doc *doc, char *ofile, unsigned long write_flag, int version, 
             return pdf_ok;
       if (pdf_doc_need_passwd(doc))
       {
+#ifdef DEBUG
 	    printf("%s", "Decrypting page content stream\n");
+#endif
 	    if (doc->trailer->encrypt)
 	    {
 		  crypto = pdf_crypto_init(doc->trailer->encrypt,

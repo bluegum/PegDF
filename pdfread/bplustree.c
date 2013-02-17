@@ -537,8 +537,8 @@ bpt_node_free(bpt_node *n)
 	    {
 		  if (n->v[c].n->leaf)
 		  {
-			pdf_free(n->v[c].n);
 			pdf_free(n->v[c].n->v);
+			pdf_free(n->v[c].n);
 		  }
 		  else
 			bpt_node_free(n->v[c].n);

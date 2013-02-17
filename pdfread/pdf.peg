@@ -95,7 +95,7 @@ STREAM   <- DELIM NUM  NUM  'obj' DELIM   { push(eObjMarker, 0, NULL); }
 	)
 
 REF	 <- NUM NUM 'R' DELIM { push_ref(eRef, pop().value.i, pop().value.i);}
-XREF	 <- 'xref' DELIM {printf("xref...%s", yytext); }
+XREF	 <- 'xref' DELIM
 	 (
 	 POSITIVE {push(eInt,atoi(yytext), NULL);}
 	 POSITIVE {xref_new(pop().value.i, atoi(yytext));}
@@ -109,7 +109,7 @@ XREFTAB	 <- < [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9] > {push(eInt,at
 	    XREF_ENTRY_FLAG 
 	    (SP CR/SP LF/CR LF) {xref_append(pop().value.i, pop().value.i, pop());}
 	 
-TRAILER	        <- 'trailer' DELIM DICT DELIM {printf(" trailer...\n"); read_trailer();}
+TRAILER	        <- 'trailer' DELIM DICT DELIM {read_trailer();}
 STARTXREF      	<- DELIM 'startxref' DELIM NUM DELIM {xref_start(pop().value.i);}
 
 GARBAGE		<- . !('startxref' / 'xref'/ 

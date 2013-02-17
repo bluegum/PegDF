@@ -846,11 +846,10 @@ pdf_doc_authenticate_user_password(pdf_doc *doc, unsigned char *pw, int pwlen)
 }
 
 pdf_err
-pdf_doc_process_all(pdf_doc *doc, char *devtype, char *of, unsigned char *pw, int pwlen)
+pdf_doc_process_all(pdf_doc *doc, char *devtype, FILE *out, unsigned char *pw, int pwlen)
 {
       pdf_device *dev = NULL;
       pdfcrypto_priv *crypto = NULL;
-      FILE *out = NULL;
 
       //unsigned char u[32];
       if (doc->trailer->encrypt)
@@ -861,27 +860,16 @@ pdf_doc_process_all(pdf_doc *doc, char *devtype, char *of, unsigned char *pw, in
                                      pwlen // password len
                   );
       }
-      if (devtype)
+      if (devtype && out)
       {
-	    if (strcmp(devtype, "text") == 0)
-	    {
-		  if (of)
-		  {
-			out = fopen(of, "wb");
-			if (out)
-			{
-			      dev = pdf_dev_text_new(out);
-			}
-		  }
-	    }
+	    dev = pdf_dev_text_new(out);
       }
+
       pdf_doc_process(doc, dev, crypto);
       if (crypto)
             pdf_crypto_destroy(crypto);
       if (dev)
 	    pdf_dev_destroy(dev);
-      if (out)
-	    fclose(out);
       return pdf_ok;
 }
 

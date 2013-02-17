@@ -44,7 +44,7 @@ clean:
 	- rm -rf $(OBJ_DIR) $(DEPS_DIR)
 
 .PHONY:         install
-install:        targets 
+install:        targets
 	$(INST) $(TGT_BIN) -m 755 -d $(DIR_BIN)
 	$(CMD_INSTBIN)
 	$(INST) $(TGT_SBIN) -m 750 -d $(DIR_SBIN)

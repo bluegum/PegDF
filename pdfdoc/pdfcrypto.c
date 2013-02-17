@@ -264,8 +264,9 @@ pdf_filter_arc4_read(pdf_filter *f, unsigned char *obuf, int request)
 // pdf AES cipher
 struct aes_priv_s
 {
-      unsigned char buf[16];
       unsigned char *p, *e;
+      // TODO: buffer overflow over buffer sise 16.
+      unsigned char buf[32];
 };
 
 pdf_err
@@ -434,6 +435,7 @@ pdf_cryptofilter_new(pdfcrypto_priv *crypto, int num, int gen, unsigned char *iv
             const EVP_CIPHER *aes256 = EVP_aes_256_cbc();
             unsigned char t[16];
             int request;
+	    // TODO: remove the "+8" HACK
 	    struct aes_priv_s* buf = pdf_malloc(sizeof(struct aes_priv_s));
 
             ctx = pdf_malloc(sizeof(EVP_CIPHER_CTX));

@@ -105,7 +105,6 @@ struct pdf_parser_s
       sub_stream* (*create_stream)(void *, int, int, int, int);
       /// private
       FILE* infile;
-      FILE* outfile;
       int file_position;
       int cur_obj, cur_gen;
       int lock;

@@ -113,8 +113,6 @@ pdf_obj pop_dict(void)
       pdf_obj o, *a = NULL;
       dict* d = dict_new();
 
-      //printf("pop-dict:-- <<");
-
       o.t = eDict;
       o.value.d.dict = d;
       o.value.d.stm_offset = -1; // not a stream (yet)
@@ -133,7 +131,6 @@ pdf_obj pop_dict(void)
             }
             i += 1;
       }
-      //printf(">>\n");
       parser_inst->stackp += 1;
       parser_inst->stack[parser_inst->stackp] = o;
       return o;
@@ -298,13 +295,17 @@ int read_trailer(void)
             parser_inst->trailer = t;
       }
       t->root = pop();
+#ifdef DEBUG
       dict_dump(t->root.value.d.dict);
+#endif
       return 0;
 }
 
 void print_stack()
 {
+#ifdef DEBUG
       printf("current stack: depth=%d\n", parser_inst->stackp);
+#endif
       while (parser_inst->stackp>=0)
       {
             printf("%d\n", parser_inst->stack[parser_inst->stackp--].t);
@@ -361,8 +362,9 @@ int xref_append(int off, int gen, pdf_obj o)
 
 int xref_delete()
 {
+      if (!parser_inst || !parser_inst->xref)
+	    return;
       xreftab *x = parser_inst->xref;
-      //printf("xref=%d\n", g_xreftab.idx);
       while (x)
       {
             xreftab *t = x->next;
@@ -534,7 +536,7 @@ void pop_stream(int pos)
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-extern pdf_parser* parser_new(FILE *in, FILE *out, parser_getchar getchar);
+extern pdf_parser* parser_new(FILE *in, parser_getchar getchar);
 
 // return 0: ok
 int read_linearized_dict(pdf_obj *o, linearized *l)
@@ -792,7 +794,7 @@ objstream_read(pdf_obj *o, int num, int gen, pdfcrypto_priv *crypto)
             goto fail1;
       // construct parser
       oldparser = parser_inst;
-      parser_inst = parser_new(NULL, NULL, s_getchar);
+      parser_inst = parser_new(NULL, s_getchar);
       parser_inst->infile = oldparser->infile;
       // switch in the global obj map
       if (parser_inst->map)
@@ -901,7 +903,7 @@ objstream_read(pdf_obj *o, int num, int gen, pdfcrypto_priv *crypto)
 
 /// make a new parser
 pdf_parser*
-parser_new(FILE *in, FILE *out, parser_getchar getchar)
+parser_new(FILE *in, parser_getchar getchar)
 {
       pdf_parser *parser_inst;
       parser_inst = (pdf_parser*)pdf_malloc(sizeof(pdf_parser));
@@ -909,7 +911,6 @@ parser_new(FILE *in, FILE *out, parser_getchar getchar)
             return NULL;
       parser_inst->parse_finished = 0;
       parser_inst->infile = in;
-      parser_inst->outfile = out;
       parser_inst->getchar = getchar;
       parser_inst->file_position = 0;
       parser_inst->xref = 0;
@@ -1172,15 +1173,20 @@ objstream_mark_free(objstream_ref *obj)
 // pdf_read reads the file sequentially and parse objects in fly most of time,
 // except when object stream is encrypted.
 pdf_err
-pdf_read(char *in, char *out, pdf_doc **doc)
+pdf_open(char *in, pdf_doc **doc)
 {
       pdf_err err = pdf_ok;
       objstream_ref *objstms = NULL;
-      FILE *inf=stdin, *outf=stdout;
+      FILE *inf=stdin;
       pdf_trailer *doctrailer = NULL;
+      int pdf_ver = 0;
+
+      * doc = 0;
       if (in)
       {
+#ifdef DEBUG
             printf("reading = %s\n", in);
+#endif
             inf = fopen(in, "rb");
             if (!inf)
             {
@@ -1188,17 +1194,8 @@ pdf_read(char *in, char *out, pdf_doc **doc)
                   return pdf_io_err;
             }
       }
-      if (out)
-      {
-            printf("writing = %s\n", out);
-            outf = fopen(out, "wb");
-            if (!outf)
-            {
-                  fprintf(stderr, "Can not open %s.\n", out);
-                  return pdf_io_err;
-            }
-      }
-      parser_inst = parser_new(inf, outf, f_getchar);
+
+      parser_inst = parser_new(inf, f_getchar);
       if (!parser_inst)
             return -1;
       // configure parser
@@ -1214,7 +1211,17 @@ pdf_read(char *in, char *out, pdf_doc **doc)
                 (p[1] == 'd' || p[1] == 'D') &&
                 (p[2] == 'f' || p[2] == 'F'))
             {
+		  char *p;
+#ifdef DEBUG
                   fprintf(stdout, "%s\n", parser_inst->comment_string);
+#endif
+		  pdf_ver = 10;
+		  p = strchr(parser_inst->comment_string, '-');
+		  if (p)
+		  {
+			p += 3;
+			pdf_ver += atoi(p);
+		  }
                   *parser_inst->comment_string = 0;
             }
             else
@@ -1286,7 +1293,9 @@ pdf_read(char *in, char *out, pdf_doc **doc)
             }
             else
             {
+#ifdef DEBUG
                   printf("%s\n", "Processing first xref");
+#endif
                   if (parser_inst->xref == 0) // On the other hand, a legacy xref tab has been read
                   {
                         // xref must reside inside an XRefStm obj
@@ -1436,15 +1445,13 @@ pdf_read(char *in, char *out, pdf_doc **doc)
 pdf_err
 pdf_finish(pdf_doc *doc)
 {
+      if (!parser_inst)
+	    return pdf_file_err;
       xref_delete();
       pdf_obj_free();
       if (parser_inst->infile != stdin)
       {
             fclose(parser_inst->infile);
-      }
-      if (parser_inst->outfile != stdout)
-      {
-            fclose(parser_inst->outfile);
       }
       if (parser_inst->map)
       {

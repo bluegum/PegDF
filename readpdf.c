@@ -48,6 +48,7 @@ Usage:\n\
            -s : separate page\n\
            -i : inflate content streams\n\
            -d : device\n\
+           -I : print catalog\n\
            --help : print this\n\
 \n\
     Devices: text html \
@@ -74,6 +75,9 @@ int main(int argc, char **argv)
       int inflate = 0;
       unsigned char write_flag = 0;
       int separation = 0;
+      int info = 0;
+      FILE *outf = 0;
+      pdf_err e;
 
       if (argc > 1)
       {
@@ -132,6 +136,9 @@ int main(int argc, char **argv)
                                     }
 			      }
 			      break;
+			      case 'I':
+				    info = 1;
+				    break;
                               default:
                                     break;
                         }
@@ -148,22 +155,38 @@ int main(int argc, char **argv)
       }
       if (!out)
 	    printf("\n%s%s\n\n", "Dry run on ", in);
-      pdf_read(in, separation?NULL:out, &doc);
-      if (!doc)
+      //pdf_open(in, separation?NULL:out, &doc);
+      e = pdf_open(in, &doc);
+      if (!doc || e != pdf_ok)
 	    goto done;
-      pdf_doc_print_info(doc);
+      if (info)
+	    pdf_doc_print_info(doc);
       if (!passwd && pdf_doc_need_passwd(doc) && pdf_doc_authenticate_user_password(doc, (unsigned char*)"", 0) != 0)
       {
 	    printf("%s\n", "Need user password, use -p option");
 	    goto done;
       }
+
+      if (out && (inflate || devtype))
+      {
+#ifdef DEBUG
+            printf("writing = %s\n", out);
+#endif
+            outf = fopen(out, "wb");
+            if (!outf)
+            {
+                  fprintf(stderr, "Can not open %s.\n", out);
+                  return pdf_io_err;
+            }
+      }
+
       if (!passwd || !pdf_doc_need_passwd(doc))
       {
-	    pdf_doc_process_all(doc, devtype, out, (unsigned char*)"", 0);
+	    pdf_doc_process_all(doc, devtype, outf, (unsigned char*)"", 0);
       }
       else if (passwd && pdf_doc_need_passwd(doc))
       {
-	    pdf_doc_process_all(doc, devtype, out, (unsigned char*)passwd, strlen(passwd));
+	    pdf_doc_process_all(doc, devtype, outf, (unsigned char*)passwd, strlen(passwd));
       }
       // writing out pdf using doc structure.
       if (out && (!devtype))
@@ -174,10 +197,17 @@ int main(int argc, char **argv)
 		  write_flag |= WRITE_PDF_CONTENT_INFLATE;
 	    if (separation)
 		  write_flag |= WRITE_PDF_PAGE_SEPARATION;
+	    if (outf)
+	    {
+		  fclose(outf);
+		  outf = 0;
+	    }
 	    pdf_write_pdf(doc, out, write_flag, 17, firstpage-1, lastpage-1, NULL, NULL);
       }
   done:
       pdf_doc_done(doc);
       pdf_finish(doc);
+      if (outf)
+	    fclose(outf);
       return 0;
 }

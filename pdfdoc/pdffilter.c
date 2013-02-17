@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <assert.h>
 #include "zlib.h"
 #include "pdftypes.h"

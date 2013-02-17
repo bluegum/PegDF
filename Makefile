@@ -53,7 +53,7 @@ $(APP) : $(targets)
 
 readpdf : readpdf.o $(TGT_LIB)
 
-readpdf.o : | $(GLYPH_NAME_TO_UNI)
+readpdf.o : pdfread/pdfread.h | $(GLYPH_NAME_TO_UNI)
 
 pegx    :
 	$(MAKE) -C peg
