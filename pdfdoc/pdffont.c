@@ -249,7 +249,7 @@ pdf_cid_encoding_load(pdf_obj *a, pdf_font_encoding* e)
 }
 
 pdf_font *
-pdf_font_load(pdf_obj *o, int cid2uni)
+pdf_font_load(pdf_obj *o, int cid2uni, pdfcrypto_priv* encrypt)
 {
       pdf_font *f;
       pdf_obj *a;
@@ -373,7 +373,7 @@ pdf_font_load(pdf_obj *o, int cid2uni)
 	    a = dict_get(o->value.d.dict, "ToUnicode");
 	    if (a)
 	    {
-		  pdf_cmap_tounicode_parse(a, f);
+		  pdf_cmap_tounicode_parse(a, f, encrypt);
 	    }
 	    else
 	    {
@@ -481,7 +481,7 @@ pdf_character_show(pdf_device* dev, pdf_font *f, gs_matrix *ctm, char *c)
 }
 
 int
-pdf_font_tounicode(pdf_font *f, unsigned int cid, unsigned int *uni)
+pdf_font_tounicode(pdf_font *f, unsigned int cid, unsigned char *uni)
 {
       if (f && f->unicode_get)
 	    return (f->unicode_get)(f, cid, uni);

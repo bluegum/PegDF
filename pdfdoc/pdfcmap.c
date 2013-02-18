@@ -9,6 +9,8 @@
 #include "pdffont.h"
 #include "pdfcmap.h"
 
+extern int EncodeCharToUTF8Bytes( unsigned int c, unsigned char * encodebuf, int* count );
+
 typedef enum pdf_cmap_token_type_e pdf_cmap_token_type;
 enum pdf_cmap_token_type_e
 {
@@ -182,7 +184,7 @@ pdf_cmap_bfrange_parse(pdf_stream *s, int n, pdf_font *f)
 			      if (touni)
 			      {
 				    touni->cid = from_cid;
-				    touni->n = to_cid - from_cid;
+				    touni->n = to_cid - from_cid + 1;
 				    touni->hex = pdf_malloc(strlen(tokenbuf));
 				    strcpy(touni->hex, tokenbuf);
 				    v = tsearch(touni, &f->tounicode, cmap_touni_cmp);
@@ -227,7 +229,7 @@ cmap_skip_dict(pdf_stream *s)
 }
 
 void
-pdf_cmap_tounicode_parse(pdf_obj *cmap, pdf_font *f)
+pdf_cmap_tounicode_parse(pdf_obj *cmap, pdf_font *f, pdfcrypto_priv* encrypt)
 {
       pdf_stream *s;
       char tokenbuf[1024];
@@ -238,7 +240,7 @@ pdf_cmap_tounicode_parse(pdf_obj *cmap, pdf_font *f)
 	    return;
       if (cmap->t != eRef)
 	    return;
-      s = pdf_stream_load(cmap, 0, 0, 0);
+      s = pdf_stream_load(cmap, encrypt, cmap->value.r.num, cmap->value.r.gen);
       if (!s)
 	    return;
       f->tounicode = 0;
@@ -274,7 +276,7 @@ pdf_cmap_tounicode_parse(pdf_obj *cmap, pdf_font *f)
 }
 
 int
-unicode_get_cmap(pdf_font *f, unsigned int c, unsigned int *uni)
+unicode_get_cmap(pdf_font *f, unsigned int c, unsigned char *uni)
 {
       pdf_tounicode u;
       void *val;
@@ -297,22 +299,23 @@ unicode_get_cmap(pdf_font *f, unsigned int c, unsigned int *uni)
 	    }
 	    if (i == v->n)
 	    {
-		  *uni = c;
-		  return 1;
+		  return 0;
 	    }
 	    else
 	    {
-		  // TODO: UTF16-BE decoding
+		  int cnt;
 		  char *p = v->hex;
-		  *uni = asciihex2int(p);
-		  *uni += i;
-		  return 1;
+		  unsigned int u = asciihex2int(p);
+		  u += i;
+		  if (EncodeCharToUTF8Bytes(u, uni, &cnt) == 0)
+			return cnt;
+		  else
+			return 0;
 	    }
       }
       else
       {
-	    *uni = c;
-	    return 1;
+	    return 0;
       }
 }
 
@@ -332,4 +335,114 @@ pdf_tounicode_free(pdf_tounicode *u)
       {
 	    tdestroy(u, tounicode_free);
       }
+}
+
+typedef unsigned char byte;
+typedef enum
+{
+      no,
+      yes
+} Bool;
+#define kNumUTF8Sequences        7
+#define kMaxUTF8Bytes            4
+
+#define kUTF8ByteSwapNotAChar    0xFFFE
+#define kUTF8NotAChar            0xFFFF
+
+#define kMaxUTF8FromUCS4         0x10FFFF
+
+#define kUTF16SurrogatesBegin    0x10000
+#define kMaxUTF16FromUCS4        0x10FFFF
+
+/* UTF-16 surrogate pair areas */
+#define kUTF16LowSurrogateBegin  0xD800
+#define kUTF16LowSurrogateEnd    0xDBFF
+#define kUTF16HighSurrogateBegin 0xDC00
+#define kUTF16HighSurrogateEnd   0xDFFF
+
+int EncodeCharToUTF8Bytes( unsigned int c, unsigned char * encodebuf, int* count )
+{
+    byte tempbuf[10] = {0};
+    byte* buf = &tempbuf[0];
+    int bytes = 0;
+    Bool hasError = no;
+
+    if ( encodebuf )
+        buf = (byte*) encodebuf;
+
+    if (c <= 0x7F)  /* 0XXX XXXX one byte */
+    {
+        buf[0] = (byte) c;
+        bytes = 1;
+    }
+    else if (c <= 0x7FF)  /* 110X XXXX  two bytes */
+    {
+        buf[0] = (byte) ( 0xC0 | (c >> 6) );
+        buf[1] = (byte) ( 0x80 | (c & 0x3F) );
+        bytes = 2;
+    }
+    else if (c <= 0xFFFF)  /* 1110 XXXX  three bytes */
+    {
+        buf[0] = (byte) (0xE0 | (c >> 12));
+        buf[1] = (byte) (0x80 | ((c >> 6) & 0x3F));
+        buf[2] = (byte) (0x80 | (c & 0x3F));
+        bytes = 3;
+        if ( c == kUTF8ByteSwapNotAChar || c == kUTF8NotAChar )
+            hasError = yes;
+#if 0 /* Breaks Big5 D8 - DF */
+        else if ( c >= kUTF16LowSurrogateBegin && c <= kUTF16HighSurrogateEnd )
+            /* unpaired surrogates not allowed */
+            hasError = yes;
+#endif
+    }
+    else if (c <= 0x1FFFFF)  /* 1111 0XXX  four bytes */
+    {
+        buf[0] = (byte) (0xF0 | (c >> 18));
+        buf[1] = (byte) (0x80 | ((c >> 12) & 0x3F));
+        buf[2] = (byte) (0x80 | ((c >> 6) & 0x3F));
+        buf[3] = (byte) (0x80 | (c & 0x3F));
+        bytes = 4;
+        if (c > kMaxUTF8FromUCS4)
+            hasError = yes;
+    }
+    else if (c <= 0x3FFFFFF)  /* 1111 10XX  five bytes */
+    {
+        buf[0] = (byte) (0xF8 | (c >> 24));
+        buf[1] = (byte) (0x80 | (c >> 18));
+        buf[2] = (byte) (0x80 | ((c >> 12) & 0x3F));
+        buf[3] = (byte) (0x80 | ((c >> 6) & 0x3F));
+        buf[4] = (byte) (0x80 | (c & 0x3F));
+        bytes = 5;
+        hasError = yes;
+    }
+    else if (c <= 0x7FFFFFFF)  /* 1111 110X  six bytes */
+    {
+        buf[0] = (byte) (0xFC | (c >> 30));
+        buf[1] = (byte) (0x80 | ((c >> 24) & 0x3F));
+        buf[2] = (byte) (0x80 | ((c >> 18) & 0x3F));
+        buf[3] = (byte) (0x80 | ((c >> 12) & 0x3F));
+        buf[4] = (byte) (0x80 | ((c >> 6) & 0x3F));
+        buf[5] = (byte) (0x80 | (c & 0x3F));
+        bytes = 6;
+        hasError = yes;
+    }
+    else
+        hasError = yes;
+
+
+#if 1 && defined(_DEBUG)
+    if ( hasError )
+    {
+        int i;
+        fprintf( stderr, "UTF-8 encoding error for U+%x : ", c );
+        for (i = 0; i < bytes; i++)
+            fprintf( stderr, "0x%02x ", buf[i] );
+        fprintf( stderr, "\n" );
+    }
+#endif
+
+    *count = bytes;
+    if (hasError)
+        return -1;
+    return 0;
 }

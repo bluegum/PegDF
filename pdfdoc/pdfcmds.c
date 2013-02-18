@@ -203,7 +203,7 @@ pdf_err x_Tf(pdf_page *p, pdf_obj res, float scale)
 		  }
 		  if (!font)
 		  {
-			font = pdf_font_load(f, 1);
+			font = pdf_font_load(f, 1, p->i->crypto);
 			pdf_interpreter_font_insert(p->i, font);
 		  }
 		  p->i->cur_font = font;

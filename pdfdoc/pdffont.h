@@ -107,14 +107,14 @@ struct pdf_font_s
       // private
       int ref;
       pdf_font* next;
-      int (*unicode_get)(pdf_font *, unsigned int char_code, unsigned int *unicode); // return the number of unicodes, normally 1.
+      int (*unicode_get)(pdf_font *, unsigned int char_code, unsigned char *unicode); // return the number of unicodes, normally 1.
 };
 
-extern pdf_font *pdf_font_load(pdf_obj *o, int);
+extern pdf_font *pdf_font_load(pdf_obj *o, int, pdfcrypto_priv* encrypt);
 extern void pdf_font_free(pdf_font *f);
-extern void pdf_cmap_tounicode_parse(pdf_obj *cmap, pdf_font *f);
+extern void pdf_cmap_tounicode_parse(pdf_obj *cmap, pdf_font *f, pdfcrypto_priv* encrypt);
 extern unsigned int asciihex2int(unsigned char *c);
-extern int unicode_get_cmap(pdf_font *f, unsigned int c, unsigned int *uni);
-extern int pdf_font_tounicode(pdf_font *f, unsigned int cid, unsigned int *uni);
+extern int unicode_get_cmap(pdf_font *f, unsigned int c, unsigned char *uni);
+extern int pdf_font_tounicode(pdf_font *f, unsigned int cid, unsigned char *uni);
 
 #endif // PDFFONT_H

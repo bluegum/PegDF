@@ -203,7 +203,7 @@ pdf_err pdf_page_tree_walk(pdf_doc *d, pdf_device *dev, pdfcrypto_priv* encrypt)
       int i, c;
       pdf_interp_state *interp;
 
-      interp = pdf_interpreter_new(dev);
+      interp = pdf_interpreter_new(dev, encrypt);
       c = (d->pageidx < d->count) ? d->pageidx : d->count;
       for (i = 0; i < c; i++)
       {
@@ -933,13 +933,14 @@ pdf_doc_trailer_free(pdf_trailer * tr)
 }
 
 pdf_interp_state *
-pdf_interpreter_new(pdf_device *dev)
+pdf_interpreter_new(pdf_device *dev, pdfcrypto_priv* encrypt)
 {
       pdf_interp_state *i = pdf_malloc(sizeof(pdf_interp_state));
       if (i)
       {
 	    memset(i, 0, sizeof(pdf_interp_state));
 	    i->dev = dev;
+	    i->crypto = encrypt;
       }
       return i;
 }

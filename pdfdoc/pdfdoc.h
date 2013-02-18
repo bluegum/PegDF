@@ -322,6 +322,7 @@ struct pdf_interp_state_s
 {
       pdf_device *dev;
       pdf_font *font, *cur_font;
+      pdfcrypto_priv *crypto;
 };
 
 // short hands
@@ -360,7 +361,7 @@ extern int pdf_doc_need_passwd(pdf_doc *doc);
 #define WRITE_PDF_PAGE_SEPARATION      0x40
 extern pdf_err pdf_write_pdf(pdf_doc *doc, char *ofile, unsigned long write_flag, int version, int pg1st, int pglast, char *upw, char *opw);
 extern void pdf_doc_trailer_free(pdf_trailer * tr);
-extern pdf_interp_state *pdf_interpreter_new(pdf_device*);
+extern pdf_interp_state *pdf_interpreter_new(pdf_device*, pdfcrypto_priv* encrypt);
 extern void pdf_interpreter_free(pdf_interp_state *i);
 extern void pdf_interpreter_font_insert(pdf_interp_state *i, pdf_font *f);
 extern int pdf_character_show(pdf_device* dev, pdf_font *f, gs_matrix *ctm, char *c);
