@@ -28,7 +28,7 @@ struct pdf_filter_s
       void *state;
       pdf_filter *next;
       ///
-      pdf_err (*close)(pdf_filter*);
+      pdf_err (*close)(pdf_filter*, int flag);
       int (*read)(pdf_filter*, unsigned char *, int);
       ///
       unsigned char buf[PDF_FILTER_BUF_SIZE]; // holds input buffer for upstream output
@@ -37,8 +37,8 @@ struct pdf_filter_s
       void *data;
 };
 
-#define PDF_FILTER_CLOSE(f) \
-      while (f) { pdf_filter *t = (f)->next; (*(f)->close)(f); (f) = t; }
+#define PDF_FILTER_CLOSE(f, flag)						\
+      while (f) { pdf_filter *t = (f)->next; (*(f)->close)(f, (flag)); (f) = t; }
 
 extern pdf_err pdf_flated_new(pdf_filter **f);
 extern pdf_filter* pdf_filter_new(pdf_filterkind t);

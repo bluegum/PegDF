@@ -440,10 +440,10 @@ void pdf_device_char_show(pdf_device *dev, pdf_font *f, gs_matrix *ctm, unsigned
 int
 pdf_character_show(pdf_device* dev, pdf_font *f, gs_matrix *ctm, char *c)
 {
-      unsigned int cid;
+      u32 cid;
       pdf_font_encoding *enc;
       int step;
-      unsigned int uni[8];
+      byte uni[8];
       if (!f)
 	    return 0;
       enc = f->encoding;
@@ -471,7 +471,6 @@ pdf_character_show(pdf_device* dev, pdf_font *f, gs_matrix *ctm, char *c)
 		  for (i = 0; i < n; i++)
 		  {
 #ifdef DEBUG
-			fputc(uni[i]>>8, stdout);
 			fputc(uni[i]&0xff, stdout);
 #endif
 		  }

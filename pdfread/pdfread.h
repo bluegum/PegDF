@@ -120,7 +120,7 @@ struct sub_stream_s
 {
       int (*reset)(sub_stream*);
       int (*read)(sub_stream*, unsigned char *, int);
-      int (*close)(sub_stream*);
+      int (*close)(sub_stream*, int flag);
       int len;
       int obj, gen;
 };

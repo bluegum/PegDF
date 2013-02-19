@@ -190,7 +190,7 @@ pdf_err pdf_exec_page_content(pdf_page *p, pdfcrypto_priv* encrypt)
 	    while (first)
 	    {
 		  s = first->next;
-		  pdf_stream_free(first);
+		  pdf_stream_free(first, 1);
 		  first = s;
 	    }
       }
@@ -673,7 +673,7 @@ pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
       if (s)
             pdf_free(s);
       if (raw)
-            raw->close(raw);
+            raw->close(raw, 1);
       return NULL;
 }
 // public api
@@ -787,13 +787,13 @@ pdf_annots_free(pdf_annots *a)
 }
 
 pdf_err
-pdf_stream_free(pdf_stream *s)
+pdf_stream_free(pdf_stream *s, int flag)
 {
       pdf_filter *f;
       if (!s)
             return pdf_ok;
       f = s->ffilter;
-      PDF_FILTER_CLOSE(f);
+      PDF_FILTER_CLOSE(f, flag);
       pdf_free(s);
       return pdf_ok;
 }

@@ -186,7 +186,7 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
 			      int c;
 			      while ((c = pdf_stream_getchar(s)) != EOF)
 				    fputc(c, f);
-			      pdf_stream_free(s);
+			      pdf_stream_free(s, 1);
 			}
 		  }
 		  else
@@ -272,7 +272,7 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
 			      //
 			      while ((c = pdf_stream_getchar(s)) != EOF)
 				    fputc(c, out);
-			      pdf_stream_free(s);
+			      pdf_stream_free(s, 1);
 			      //
 			      curx = ftell(out);
 			      fseek(out, last_off, SEEK_SET);
@@ -288,7 +288,7 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
 			strm->len = strmlen;
 			while (strm->read(strm, &c, 1))
 			      fputc(c, f);
-			strm->close(strm);
+			strm->close(strm, 1);
 			fprintf(f, "\n%s\n", "endstream");
 		  }
                   dict_list_free(ll);
@@ -360,7 +360,7 @@ pdf_page_contents_write(pdf_obj *content, unsigned long write_flag, pdf_xref_int
 		  //
 		  while ((c = pdf_stream_getchar(s)) != EOF)
 			fputc(c, out);
-		  pdf_stream_free(s);
+		  pdf_stream_free(s, 1);
 		  //
 		  curx = ftell(out);
 		  fseek(out, ll, SEEK_SET);

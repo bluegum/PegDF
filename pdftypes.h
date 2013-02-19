@@ -30,7 +30,11 @@
 #define inline __inline
 #endif
 
-
+// Generics
+typedef unsigned char  byte;
+typedef unsigned int   uint;
+typedef unsigned long  u32;
+// PDF types
 typedef struct pdf_obj_s pdf_obj;
 typedef struct pdf_xref_s pdf_xref;
 typedef struct dict_s dict;

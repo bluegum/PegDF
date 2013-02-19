@@ -63,28 +63,28 @@ fs_reset(sub_stream* s)
             return 1;
       if (fs->r)
       {
-	    fs->orig_offset = (fs->p->tell)();
-            fs->r = 0;
-            fs->avail = fs->len; // through API is better
-            ret = (fs->p->seek)(fs->offset-1);
+          fs->orig_offset = (fs->p->tell)();
+          fs->r = 0;
+          fs->avail = fs->len; // through API is better
+          ret = (fs->p->seek)(fs->offset-1);
 #if 0
-            {
-                  unsigned char buf[6];
-                  // escape "stream"
-                  (fs->p->read)(buf, 6);
-                  // escape line terminator
-                  (fs->p->read)(buf, 1);
-                  (fs->p->read)(buf, 1);
-                  if (buf[0] == '\n' || buf[0] == '\r')
-                  {
-                        // do nothing
-                  }
-                  else
-                  {
-                        // unget c
-                        (fs->p->unget)(buf[0]);
-                  }
-            }
+          {
+              unsigned char buf[6];
+              // escape "stream"
+              (fs->p->read)(buf, 6);
+              // escape line terminator
+              (fs->p->read)(buf, 1);
+              (fs->p->read)(buf, 1);
+              if (buf[0] == '\n' || buf[0] == '\r')
+              {
+                  // do nothing
+              }
+              else
+              {
+                  // unget c
+                  (fs->p->unget)(buf[0]);
+              }
+          }
 #endif
       }
       return ret;
@@ -136,6 +136,7 @@ file_stream_new(void *priv, int pos, int len, int obj, int gen)
       f->len = len;
       f->p = parser_inst;
       f->r = 1;
+      f->orig_offset = (f->p->tell)();
       return (sub_stream*)f;
 }
 
@@ -181,9 +182,14 @@ im_reset(sub_stream* s)
       if (!ms)
             return 1;
       if (ms->s)
+      {
+	    ms->p = ms->s;
 	    return 0;
+      }
       else
+      {
 	    return 1;
+      }
 }
 static int
 im_read(sub_stream* s, unsigned char *buf, int len)
@@ -209,14 +215,20 @@ im_read(sub_stream* s, unsigned char *buf, int len)
 }
 
 static int
-im_close(sub_stream* s)
+im_close(sub_stream* s, int flag)
 {
       in_mem_stream *ms = (in_mem_stream*)s;
       if (!ms || !ms->s)
             return 0;
-      // we need to find a way to replenish ms->s
-      pdf_free(ms->s);
-      ms->s = NULL;
+      if (flag)
+      {
+	    pdf_free(ms->s);
+	    ms->s = NULL;
+      }
+      else
+      {
+	    ms->p = ms->s;
+      }
       return 0;
 }
 

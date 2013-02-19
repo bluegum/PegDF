@@ -8,7 +8,7 @@
 #include "pdfread.h"
 
 static int pdf_flated_read(pdf_filter *f, unsigned char *obuf, int request);
-static pdf_err pdf_flated_close(pdf_filter *f);
+static pdf_err pdf_flated_close(pdf_filter *f, int flag);
 
 static void *zalloc(void *opaque, unsigned int items, unsigned int size)
 {
@@ -50,7 +50,7 @@ pdf_flated_new(pdf_filter **f)
 }
 
 static pdf_err
-pdf_flated_close(pdf_filter *f)
+pdf_flated_close(pdf_filter *f, int flag)
 {
       int ret;
       if (!f)
@@ -67,7 +67,7 @@ pdf_flated_close(pdf_filter *f)
 static int
 pdf_flated_read(pdf_filter *f, unsigned char *obuf, int request)
 {
-      int ret, in;
+      int ret, in = 0;
       pdf_filter *up = f->next; // upstream
       z_stream *z = (z_stream*)f->state;
 
@@ -113,13 +113,13 @@ pdf_flated_read(pdf_filter *f, unsigned char *obuf, int request)
 }
 ///////////////////////////////////////////
 pdf_err
-pdf_rawfilter_close(pdf_filter *f)
+pdf_rawfilter_close(pdf_filter *f, int flag)
 {
       sub_stream *ss;
       if (!f)
             return 0;
       ss = (sub_stream*) f->state;
-      (ss->close)(ss);
+      (ss->close)(ss, flag);
       pdf_free(f);
       return pdf_ok;
 }

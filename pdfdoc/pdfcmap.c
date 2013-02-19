@@ -149,7 +149,7 @@ pdf_cmap_bfchar_parse(pdf_stream *s, int n, pdf_font *f)
 			{
 			      touni->cid = cid;
 			      touni->n = 1;
-			      touni->hex = pdf_malloc(strlen(tokenbuf));
+			      touni->hex = pdf_malloc(strlen(tokenbuf)+1); // plus one to terminate string
 			      strcpy(touni->hex, tokenbuf);
 			      v = tsearch(touni, &f->tounicode, cmap_touni_cmp);
 			}
@@ -186,7 +186,7 @@ pdf_cmap_bfrange_parse(pdf_stream *s, int n, pdf_font *f)
 				    touni->cid = from_cid;
 				    touni->n = to_cid - from_cid + 1;
 				    touni->hex = pdf_malloc(strlen(tokenbuf));
-				    strcpy(touni->hex, tokenbuf);
+				    strncpy(touni->hex, tokenbuf, strlen(tokenbuf));
 				    v = tsearch(touni, &f->tounicode, cmap_touni_cmp);
 			      }
 			}
@@ -272,7 +272,7 @@ pdf_cmap_tounicode_parse(pdf_obj *cmap, pdf_font *f, pdfcrypto_priv* encrypt)
 	    pre_tok = tok;
       }
       f->unicode_get = unicode_get_cmap;
-      pdf_stream_free(s);
+      pdf_stream_free(s, 1);
 }
 
 int
@@ -337,7 +337,6 @@ pdf_tounicode_free(pdf_tounicode *u)
       }
 }
 
-typedef unsigned char byte;
 typedef enum
 {
       no,

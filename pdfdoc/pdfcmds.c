@@ -245,7 +245,7 @@ pdf_err x_TJ(pdf_page *p, pdf_obj o)
 		  pdf_obj *a = &o.value.a.items[i];
 		  if (i%2)
 		  {
-			advance = a[i].value.f;
+			advance = a->value.f;
 		  }
 		  else
 		  {

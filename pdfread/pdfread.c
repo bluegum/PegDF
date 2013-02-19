@@ -630,7 +630,7 @@ pdf_err read_xrefstm(pdf_obj *o, pdf_parser *p)
       if (o->value.d.dict->stream)
       {
 	    sub_stream *ss = (sub_stream*)o->value.d.dict->stream;
-            ss->close(ss);
+            ss->close(ss, 1);
       }
 #endif
       if (p->trailer)
@@ -694,7 +694,7 @@ int read_hint(pdf_obj *o, hint *h)
 	    sub_stream* ss = d->stream;
             if (!ss)
                   return 0;
-            ss->close(ss);
+            ss->close(ss, 1);
       }
       return 0;
 }
@@ -895,8 +895,11 @@ objstream_read(pdf_obj *o, int num, int gen, pdfcrypto_priv *crypto)
   fail:
       pdf_free(parser_inst);
       parser_inst = oldparser;
-      pdf_stream_free(s);
-  fail1:
+      if (err == pdf_syntax_err)
+	    pdf_stream_free(s, 0);
+      else
+  	    pdf_stream_free(s, 1);
+fail1:
       pdf_free(objs);
       return err;
 }

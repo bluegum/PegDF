@@ -101,7 +101,7 @@ s_get_char(buffer_stream *s)
 	    {
 		  if (s->s->next)
 		  {
-			PDF_FILTER_CLOSE(s->f);
+			PDF_FILTER_CLOSE(s->f, 1);
 			s->s->ffilter = 0;
 			s->s = s->s->next;
 			s->f = s->s->ffilter;
@@ -636,8 +636,8 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
                         ON_ERROR(pdf_lex_string(b, buf, LEX_BUF_LEN));
                         t.t = eString;
                         t.value.s.len = strlen((char*)buf);
-                        t.value.s.buf = pdf_malloc(o->value.s.len);
-                        strncpy(t.value.s.buf, (char*)buf, o->value.s.len);
+                        t.value.s.buf = pdf_malloc(t.value.s.len);
+                        strncpy(t.value.s.buf, (char*)buf, t.value.s.len);
                         PUSH_O(t);
                         break;
                   case '<':
