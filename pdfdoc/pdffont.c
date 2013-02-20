@@ -2,11 +2,12 @@
 #include "pdftypes.h"
 #include "pdfindex.h"
 #include "dict.h"
-#include "pdfdevice.h"
-#include "pdffont.h"
 #include "pdffilter.h"
+#include "pdffont.h"
 #include "pdfencodingtable.c"
 #include "glyph_name_to_uni.c"
+#include "pdfcrypto.h"
+#include "pdfdoc.h"
 
 static const char * get_glyph_name(pdf_font_encoding *e, unsigned int c);
 
@@ -427,14 +428,6 @@ pdf_font_find(pdf_font* f, int ref)
 	    f = f->next;
       }
       return 0;
-}
-
-void pdf_device_char_show(pdf_device *dev, pdf_font *f, gs_matrix *ctm, unsigned int cid)
-{
-      if (dev && dev->fill_char)
-      {
-	    (dev->fill_char)(dev, f, ctm, cid, 0);
-      }
 }
 
 int

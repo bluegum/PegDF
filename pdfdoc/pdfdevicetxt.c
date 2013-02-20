@@ -5,6 +5,33 @@
 #include "pdfdevice.h"
 
 static void
+pdf_dev_text_doc_begin(pdf_device *dev)
+{
+}
+static void
+pdf_dev_text_doc_end(pdf_device *dev)
+{
+}
+static void
+pdf_dev_text_page_begin(pdf_device *dev)
+{
+}
+
+static void
+pdf_dev_text_page_end(pdf_device *dev)
+{
+      if (dev && dev->dest.f)
+      {
+	    fputc('\n', dev->dest.f);
+      }
+}
+
+static void
+pdf_dev_text_path_paint(pdf_device *d, pdf_path* p, gs_matrix *ctm, int mode)
+{
+}
+
+static void
 pdf_dev_text_char_show(pdf_device *dev, pdf_font *f, gs_matrix *ctm, unsigned int cid, unsigned int mode)
 {
       unsigned char uni[8];
@@ -25,7 +52,12 @@ pdf_dev_text_new(FILE *out)
 	    return d;
       memset(d, 0, sizeof(pdf_device));
       d->dest.f = out;
+      d->doc_begin = pdf_dev_text_doc_begin;
+      d->doc_end = pdf_dev_text_doc_end;
+      d->page_begin = pdf_dev_text_page_begin;
+      d->page_end = pdf_dev_text_page_end;
       d->fill_char = pdf_dev_text_char_show;
       d->stroke_char = pdf_dev_text_char_show;
+      d->path_paint = pdf_dev_text_path_paint;
       return d;
 }

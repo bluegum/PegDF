@@ -28,6 +28,8 @@
 #include "pdfindex.h"
 #include "dict.h"
 #include "pdffilter.h"
+#include "pdfcrypto.h"
+#include "pdfdevice.h"
 #include "pdfdoc.h"
 #include "pdfmem.h"
 #include "pdfcrypto.h"

@@ -2,6 +2,7 @@
 #define PDFFONT_H
 #include "pdftypes.h"
 #include "pdfcmap.h"
+#include "pdfcrypto.h"
 
 typedef enum pdf_font_type_e pdf_font_type;
 typedef enum pdf_font_encoding_type_e pdf_font_encoding_type;
@@ -10,6 +11,7 @@ typedef struct pdf_font_descriptor_s pdf_font_descriptor;
 typedef struct pdf_font_encoding_s pdf_font_encoding;
 typedef struct pdf_font_type3_s pdf_font_type3;
 typedef struct pdf_font_type1_tt_s pdf_font_type1_tt;
+typedef struct pdf_font_s pdf_font;
 
 enum pdf_font_type_e
 {

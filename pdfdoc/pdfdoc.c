@@ -11,6 +11,7 @@
 #include "pdfcrypto.h"
 #include "pdfread.h"
 #include "pdffont.h"
+#include "pdfdevice.h"
 
 static inline pdf_group*
 pdf_group_load(pdf_obj *o)
@@ -211,7 +212,11 @@ pdf_err pdf_page_tree_walk(pdf_doc *d, pdf_device *dev, pdfcrypto_priv* encrypt)
             printf("processing page#%d\n", i);
 #endif
 	    d->pages[i]->i = interp;
+	    if (dev)
+		  (dev->page_begin)(dev);
             pdf_exec_page_content(d->pages[i], encrypt);
+	    if (dev)
+		  (dev->page_end)(dev);
 #ifdef DEBUG
             printf("%s", "\n");
 #endif
@@ -301,7 +306,13 @@ pdf_doc_load(pdf_trailer *trailer)
 
 pdf_err pdf_doc_process(pdf_doc *d, pdf_device *dev, pdfcrypto_priv* encrypt)
 {
-      return pdf_page_tree_walk(d, dev, encrypt);
+      pdf_err e;
+      if (dev)
+	    dev->doc_begin(dev);
+      e = pdf_page_tree_walk(d, dev, encrypt);
+      if (dev)
+	    (dev->doc_end)(dev);
+      return e;
 }
 
 pdf_err  pdf_doc_print_info(pdf_doc *d)
@@ -862,7 +873,10 @@ pdf_doc_process_all(pdf_doc *doc, char *devtype, FILE *out, unsigned char *pw, i
       }
       if (devtype && out)
       {
-	    dev = pdf_dev_text_new(out);
+	    if (strcmp(devtype, "text") == 0)
+		  dev = pdf_dev_text_new(out);
+	    else if (strcmp(devtype, "html") == 0)
+		  dev = pdf_dev_html_new(out);
       }
 
       pdf_doc_process(doc, dev, crypto);

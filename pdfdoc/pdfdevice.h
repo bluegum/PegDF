@@ -1,7 +1,10 @@
 #ifndef PDFDEVICE_H
 #define PDFDEVICE_H
 #include <stdio.h>
-#include "pdfdoc.h"
+#include "pdffont.h"
+#include "pdfpaint.h"
+
+typedef struct pdf_device_s pdf_device;
 
 struct pdf_device_s
 {
@@ -10,14 +13,17 @@ struct pdf_device_s
       //
       pdf_device* (*create)(int w, int h, int res);
       void (*destroy)(pdf_device *);
+      void (*doc_begin)(pdf_device *d);
+      void (*doc_end)(pdf_device *d);
+      void (*page_begin)(pdf_device *d);
+      void (*page_end)(pdf_device *d);
       void (*fill_char)(pdf_device *d, pdf_font *f, gs_matrix *ctm, unsigned int cid, unsigned int mode);
       void (*stroke_char)(pdf_device *d, pdf_font *f, gs_matrix *ctm, unsigned int cid, unsigned int mode);
-      void (*fill_path)(pdf_device *d);
-      void (*stroke_path)(pdf_device *d);
-      void (*fill_img)(pdf_device *d);
-      void (*set_color)(pdf_device *d, float *);
-      void (*bgn_grp)(pdf_device *d);
-      void (*end_grp)(pdf_device *d);
+      void (*path_paint)(pdf_device *d, pdf_path*, gs_matrix *ctm, int mode);
+      void (*image_paint)(pdf_device *d);
+      void (*color_set)(pdf_device *d, float *);
+      void (*grp_bgn)(pdf_device *d);
+      void (*grp_end)(pdf_device *d);
       union
       {
 	    FILE *f;
