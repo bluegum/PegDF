@@ -213,7 +213,7 @@ pdf_err pdf_page_tree_walk(pdf_doc *d, pdf_device *dev, pdfcrypto_priv* encrypt)
 #endif
 	    d->pages[i]->i = interp;
 	    if (dev)
-		  (dev->page_begin)(dev);
+		  (dev->page_begin)(dev, i, d->pages[i]->mediabox.x1, d->pages[i]->mediabox.y1);
             pdf_exec_page_content(d->pages[i], encrypt);
 	    if (dev)
 		  (dev->page_end)(dev);

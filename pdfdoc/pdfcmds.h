@@ -30,7 +30,7 @@ extern pdf_err x_TJ(pdf_page *p, pdf_obj);
 extern pdf_err x_Tm(pdf_page *p, float a, float b, float c, float d, float e, float f);
 extern pdf_err x_Td(pdf_page *p, float, float);
 extern pdf_err x_TD(pdf_page *p, float a, float b);
-extern pdf_err x_TL(pdf_page *p);
+extern pdf_err x_TL(pdf_page *p, float);
 extern pdf_err x_Tr(pdf_page *p);
 extern pdf_err x_Ts(pdf_page *p);
 extern pdf_err x_Tw(pdf_page *p);

@@ -130,6 +130,26 @@ struct gs_bbox_s
       int x1, y1;
 };
 
+static inline void
+mat_set(gs_matrix *ctm, float a[6])
+{
+      ctm->a = a[0];
+      ctm->b = a[1];
+      ctm->c = a[2];
+      ctm->d = a[3];
+      ctm->e = a[4];
+      ctm->f = a[5];
+}
+static inline void
+mat_mul(gs_matrix *d, gs_matrix *a, gs_matrix *b)
+{
+      d->a = a->a * b->a + a->b * b->c;
+      d->b = a->a * b->b + a->b * b->d;
+      d->c = a->c * b->a + a->d * b->c;
+      d->d = a->c * b->b + a->d * b->d;
+      d->e = a->e * b->a + a->f * b->c + b->e;
+      d->f = a->e * b->b + a->f * b->d + b->f;
+}
 static inline int
 pdf_to_int(pdf_obj *o)
 {

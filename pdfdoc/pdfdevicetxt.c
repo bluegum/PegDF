@@ -13,7 +13,7 @@ pdf_dev_text_doc_end(pdf_device *dev)
 {
 }
 static void
-pdf_dev_text_page_begin(pdf_device *dev)
+pdf_dev_text_page_begin(pdf_device *dev, int idx, float width, float height)
 {
 }
 

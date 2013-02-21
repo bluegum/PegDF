@@ -15,7 +15,7 @@ struct pdf_device_s
       void (*destroy)(pdf_device *);
       void (*doc_begin)(pdf_device *d);
       void (*doc_end)(pdf_device *d);
-      void (*page_begin)(pdf_device *d);
+      void (*page_begin)(pdf_device *d, int idx, float w, float h);
       void (*page_end)(pdf_device *d);
       void (*fill_char)(pdf_device *d, pdf_font *f, gs_matrix *ctm, unsigned int cid, unsigned int mode);
       void (*stroke_char)(pdf_device *d, pdf_font *f, gs_matrix *ctm, unsigned int cid, unsigned int mode);

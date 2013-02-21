@@ -310,6 +310,7 @@ pdf_lex_number(buffer_stream *s, int c, float *out)
       float b = 0;
       float man = 0.1;
       int i = 0;
+      int sign = 0;
 
       if (c == '.')
       {
@@ -320,12 +321,13 @@ pdf_lex_number(buffer_stream *s, int c, float *out)
       }
       else if (c == '+')
       {
-            a = 1;
+            a = 0;
       }
       else if (c == '-')
       {
-            a = -1;
-            man = -0.1;
+            a = 0;
+            man = 0.1;
+	    sign = 1;
       }
       else
       {
@@ -361,6 +363,8 @@ pdf_lex_number(buffer_stream *s, int c, float *out)
             }
       }
       *out = a+b;
+      if (sign)
+	    *out = -(*out);
       return pdf_ok;
 }
 
@@ -931,10 +935,11 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
                                                       x_TJ(p, POP_O);
                                                       break;
                                                 case TWO_HASH('T', 'L'): // TL
-                                                      x_TL(p);
+                                                      x_TL(p, np[-1]);
+						      POP_N(1);
                                                       break;
                                                 case TWO_HASH('T', 'm'): // Tm
-                                                      x_Tm(p, np[-1], np[-2], np[-3], np[-4], np[-5], np[-6]);
+                                                      x_Tm(p, np[-6], np[-5], np[-4], np[-3], np[-2], np[-1]);
                                                       POP_N(6);
                                                       break;
                                                 case TWO_HASH('T', 'r'): // Tr

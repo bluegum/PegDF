@@ -189,6 +189,7 @@ pdf_err x_Tf(pdf_page *p, pdf_obj res, float scale)
       pdf_font *font = NULL;
 
       _DMSG("Tf");
+      p->i->fs = scale;
       if (p->resources && p->resources->font)
       {
             r = p->resources->font;
@@ -217,6 +218,7 @@ pdf_err x_Tj(pdf_page *p, pdf_obj o)
       int i;
       gs_matrix ctm;
       _DMSG("Tj");
+      mat_set(&ctm, p->i->txt_ctm);
       if ((o.t == eString) || (o.t == eHexString))
       {
 	    pdf_font *f = p->i->cur_font;
@@ -227,6 +229,8 @@ pdf_err x_Tj(pdf_page *p, pdf_obj o)
 		  if (step == 0)
 			break;
 		  i += step;
+		  // TODO: use per glyph width
+		  ctm.e += p->i->fs;
 	    }
       }
       pdf_obj_delete(&o);
@@ -240,6 +244,7 @@ pdf_err x_TJ(pdf_page *p, pdf_obj o)
       _DMSG("TJ");
       if (o.t == eArray)
       {
+	    mat_set(&ctm, p->i->txt_ctm);
 	    for (i = 0; i < o.value.a.len; i++)
 	    {
 		  pdf_obj *a = &o.value.a.items[i];
@@ -261,6 +266,7 @@ pdf_err x_TJ(pdf_page *p, pdf_obj o)
 				    if (!step)
 					  break;
 				    j += step;
+				    ctm.e += p->i->fs;
 			      }
 			}
 		  }
@@ -271,21 +277,46 @@ pdf_err x_TJ(pdf_page *p, pdf_obj o)
 }
 pdf_err x_Td(pdf_page *p, float a, float b)
 {
+      gs_matrix ctm, fin;
       _DMSG("Td");
+      ctm.a = 1;
+      ctm.b = 0;
+      ctm.c = 0;
+      ctm.d = 1;
+      ctm.e = a;
+      ctm.f = b;
+      mat_mul(&fin, &ctm, p->i->txt_ctm);
+      memcpy(p->i->txt_ctm, &ctm, sizeof(ctm));
       return pdf_ok;
 }
 pdf_err x_TD(pdf_page *p, float a, float b)
 {
+      gs_matrix ctm, fin;
       _DMSG("TD");
+      ctm.a = 1;
+      ctm.b = 0;
+      ctm.c = 0;
+      ctm.d = 1;
+      ctm.e = a;
+      ctm.f = b;
+      mat_mul(&fin, &ctm, p->i->txt_ctm);
+      memcpy(p->i->txt_ctm, &ctm, sizeof(ctm));
       return pdf_ok;
 }
-pdf_err x_TL(pdf_page *p)
+pdf_err x_TL(pdf_page *p, float tl)
 {
-      _DMSG("Td");
+      _DMSG("TL");
+      p->i->tl = tl;
       return pdf_ok;
 }
 pdf_err x_Tm(pdf_page *p, float a, float b, float c, float d, float e, float f)
 {
+      p->i->txt_ctm[0] = a;
+      p->i->txt_ctm[1] = b;
+      p->i->txt_ctm[2] = c;
+      p->i->txt_ctm[3] = d;
+      p->i->txt_ctm[4] = e;
+      p->i->txt_ctm[5] = f;
       return pdf_ok;
 }
 pdf_err x_Tc(pdf_page *p)

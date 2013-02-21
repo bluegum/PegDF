@@ -323,6 +323,9 @@ struct pdf_interp_state_s
       pdf_device *dev;
       pdf_font *font, *cur_font;
       pdfcrypto_priv *crypto;
+      // text state
+      float fs, tl;
+      float txt_ctm[6];
 };
 
 // short hands

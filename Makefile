@@ -1,6 +1,6 @@
 ### Build flags for all targets
 #
-INCLUDE_ALL     = -I . -I pdfdoc -I pdfread -I openssl/include -I openssl/include/openssl -I openssl -I zlib
+INCLUDE_ALL     = -I . -I pdfdraw -I pdfdoc -I pdfread -I openssl/include -I openssl/include/openssl -I openssl -I zlib
 CF_ALL          = -Wall -I . $(INCLUDE_ALL)
 #LF_ALL          = -lz -lm -lcrypto -L openssl -ldl
 ### -lz is omitted because zlib is static now
