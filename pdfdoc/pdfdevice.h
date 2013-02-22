@@ -17,14 +17,14 @@ struct pdf_device_s
       void (*doc_end)(pdf_device *d);
       void (*page_begin)(pdf_device *d, int idx, float w, float h);
       void (*page_end)(pdf_device *d);
-      void (*fill_char)(pdf_device *d, pdf_font *f, gs_matrix *ctm, unsigned int cid, unsigned int mode);
+      void (*fill_char)(pdf_device *d, pdf_font *f, float scale, gs_matrix *ctm, unsigned int cid, unsigned int mode);
       void (*stroke_char)(pdf_device *d, pdf_font *f, gs_matrix *ctm, unsigned int cid, unsigned int mode);
       void (*path_paint)(pdf_device *d, pdf_path*, gs_matrix *ctm, int mode);
       void (*image_paint)(pdf_device *d);
       void (*color_set)(pdf_device *d, float *);
       void (*grp_bgn)(pdf_device *d);
       void (*grp_end)(pdf_device *d);
-      union
+      struct
       {
 	    FILE *f;
 	    void *other;

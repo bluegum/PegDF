@@ -32,7 +32,7 @@ pdf_dev_text_path_paint(pdf_device *d, pdf_path* p, gs_matrix *ctm, int mode)
 }
 
 static void
-pdf_dev_text_char_show(pdf_device *dev, pdf_font *f, gs_matrix *ctm, unsigned int cid, unsigned int mode)
+pdf_dev_text_char_show(pdf_device *dev, pdf_font *f, float scale, gs_matrix *ctm, unsigned int cid, unsigned int mode)
 {
       unsigned char uni[8];
       int i, n;

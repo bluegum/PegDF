@@ -45,7 +45,6 @@ pdf_err pdf_page_load(pdf_doc *doc, pdf_obj *o, pdf_page **page)
       *page = pdf_malloc(sizeof(pdf_page));
       p = *page;
       memset(p, 0, sizeof(pdf_page));
-      p->s = p->sstk;
       // parse tree dict
       p->parent = dict_get(d, "Parent");
       mediabox = dict_get(d, "MediaBox");
@@ -157,44 +156,10 @@ pdf_err pdf_exec_page_content(pdf_page *p, pdfcrypto_priv* encrypt)
             return pdf_ok;
       if (p->contents->t != eDict && p->contents->t != eRef && p->contents->t != eArray)
             return pdf_ok;
-      {
-            pdf_obj *oo;
-            int i, n;
-	    oo = p->contents;
-            pdf_obj_resolve(oo);
-            if (!oo)
-                  return pdf_ok;
-            if (oo->t == eArray)
-            {
-                  n = oo->value.a.len;
-                  oo = &oo->value.a.items[0];
-            }
-            else if (oo->t == eDict)
-            {
-                  n = 1;
-		  oo = p->contents;
-            }
-            else
-	    {
-                  return pdf_ok;
-	    }
-            for (i = 0; i < n && oo; i++, oo++)
-            {
-		  pdf_stream *last = s;
-                  s = pdf_stream_load(oo, encrypt, oo->value.r.num, oo->value.r.gen);
-		  if (!last)
-			first = s;
-		  if (last)
-			last->next = s;
-	    }
-	    pdf_cs_parse(p, first);
-	    while (first)
-	    {
-		  s = first->next;
-		  pdf_stream_free(first, 1);
-		  first = s;
-	    }
-      }
+      // reset graphics state
+      p->s = p->sstk;
+      // run page contents
+      pdf_cs_parse(p, encrypt, 0);
 
       return pdf_ok;
 }

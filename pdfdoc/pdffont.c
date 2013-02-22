@@ -431,7 +431,7 @@ pdf_font_find(pdf_font* f, int ref)
 }
 
 int
-pdf_character_show(pdf_device* dev, pdf_font *f, gs_matrix *ctm, char *c)
+pdf_character_show(pdf_device* dev, pdf_prs *s, pdf_font *f, gs_matrix *ctm, char *c)
 {
       u32 cid;
       pdf_font_encoding *enc;
@@ -445,7 +445,7 @@ pdf_character_show(pdf_device* dev, pdf_font *f, gs_matrix *ctm, char *c)
       step = (enc->get_cid)(c, &cid);
       if (dev)
       {
-	    pdf_device_char_show(dev, f, ctm, cid);
+	    pdf_device_char_show(dev, f, s->gs.fs, ctm, cid);
       }
       else
       {

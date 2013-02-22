@@ -189,7 +189,7 @@ pdf_err x_Tf(pdf_page *p, pdf_obj res, float scale)
       pdf_font *font = NULL;
 
       _DMSG("Tf");
-      p->i->fs = scale;
+      p->s->gs.fs = scale;
       if (p->resources && p->resources->font)
       {
             r = p->resources->font;
@@ -218,19 +218,19 @@ pdf_err x_Tj(pdf_page *p, pdf_obj o)
       int i;
       gs_matrix ctm;
       _DMSG("Tj");
-      mat_set(&ctm, p->i->txt_ctm);
+      mat_set(&ctm, p->s->gs.txt_ctm);
       if ((o.t == eString) || (o.t == eHexString))
       {
 	    pdf_font *f = p->i->cur_font;
 	    for (i = 0; i < o.value.s.len;)
 	    {
 		  int step =
-			pdf_character_show(p->i->dev, f, &ctm, o.value.s.buf+i);
+			pdf_character_show(p->i->dev, p->s, f, &ctm, o.value.s.buf+i);
 		  if (step == 0)
 			break;
 		  i += step;
 		  // TODO: use per glyph width
-		  ctm.e += p->i->fs;
+		  ctm.e += p->s->gs.fs;
 	    }
       }
       pdf_obj_delete(&o);
@@ -244,7 +244,7 @@ pdf_err x_TJ(pdf_page *p, pdf_obj o)
       _DMSG("TJ");
       if (o.t == eArray)
       {
-	    mat_set(&ctm, p->i->txt_ctm);
+	    mat_set(&ctm, p->s->gs.txt_ctm);
 	    for (i = 0; i < o.value.a.len; i++)
 	    {
 		  pdf_obj *a = &o.value.a.items[i];
@@ -262,11 +262,11 @@ pdf_err x_TJ(pdf_page *p, pdf_obj o)
 			      for (j = 0; j < a->value.s.len;)
 			      {
 				    int step =
-				    pdf_character_show(p->i->dev, f, &ctm, a->value.s.buf+j);
+				    pdf_character_show(p->i->dev, p->s, f, &ctm, a->value.s.buf+j);
 				    if (!step)
 					  break;
 				    j += step;
-				    ctm.e += p->i->fs;
+				    ctm.e += p->s->gs.fs;
 			      }
 			}
 		  }
@@ -285,8 +285,8 @@ pdf_err x_Td(pdf_page *p, float a, float b)
       ctm.d = 1;
       ctm.e = a;
       ctm.f = b;
-      mat_mul(&fin, &ctm, p->i->txt_ctm);
-      memcpy(p->i->txt_ctm, &ctm, sizeof(ctm));
+      mat_mul(&fin, &ctm, p->s->gs.txt_ctm);
+      memcpy(p->s->gs.txt_ctm, &fin, sizeof(fin));
       return pdf_ok;
 }
 pdf_err x_TD(pdf_page *p, float a, float b)
@@ -299,24 +299,24 @@ pdf_err x_TD(pdf_page *p, float a, float b)
       ctm.d = 1;
       ctm.e = a;
       ctm.f = b;
-      mat_mul(&fin, &ctm, p->i->txt_ctm);
-      memcpy(p->i->txt_ctm, &ctm, sizeof(ctm));
+      mat_mul(&fin, &ctm, p->s->gs.txt_ctm);
+      memcpy(p->s->gs.txt_ctm, &ctm, sizeof(ctm));
       return pdf_ok;
 }
 pdf_err x_TL(pdf_page *p, float tl)
 {
       _DMSG("TL");
-      p->i->tl = tl;
+      p->s->gs.tl = tl;
       return pdf_ok;
 }
 pdf_err x_Tm(pdf_page *p, float a, float b, float c, float d, float e, float f)
 {
-      p->i->txt_ctm[0] = a;
-      p->i->txt_ctm[1] = b;
-      p->i->txt_ctm[2] = c;
-      p->i->txt_ctm[3] = d;
-      p->i->txt_ctm[4] = e;
-      p->i->txt_ctm[5] = f;
+      p->s->gs.txt_ctm[0] = a;
+      p->s->gs.txt_ctm[1] = b;
+      p->s->gs.txt_ctm[2] = c;
+      p->s->gs.txt_ctm[3] = d;
+      p->s->gs.txt_ctm[4] = e;
+      p->s->gs.txt_ctm[5] = f;
       return pdf_ok;
 }
 pdf_err x_Tc(pdf_page *p)

@@ -79,6 +79,9 @@ struct buffer_stream_s
       unsigned char *p, *e, *l; // e -> buffer end, x -> buffer limit
       pdf_filter *f;
       pdf_stream *s;
+      pdf_obj *content;
+      int i, n;
+      pdfcrypto_priv * encrypt;
 };
 
 static int
@@ -99,17 +102,35 @@ s_get_char(buffer_stream *s)
             i = (s->f->read)(s->f, s->p, BUFFER_STREAM_BUF_SIZE);
             if (i == 0)
 	    {
-		  if (s->s->next)
+		  s->i ++;
+		  if (s->i == s->n)
 		  {
-			PDF_FILTER_CLOSE(s->f, 1);
-			s->s->ffilter = 0;
-			s->s = s->s->next;
-			s->f = s->s->ffilter;
-			goto filt_read;
+			pdf_stream_free(s->s, 1);
+			return EOF;
 		  }
 		  else
 		  {
-			return EOF;
+			pdf_stream_free(s->s, 1);
+			if (s->n > 1)
+			{
+			      if (s->content->value.a.items[s->i].t == eRef)
+			      {
+				    int num = s->content->value.a.items[s->i].value.r.num;
+				    int gen = s->content->value.a.items[s->i].value.r.gen;
+				    pdf_stream *ss;
+				    ss = pdf_stream_load(&s->content->value.a.items[s->i], s->encrypt, num, gen);
+				    s->f = ss->ffilter;
+				    s->p = &s->buf[0];
+				    s->e = s->p;
+				    s->l = s->p + BUFFER_STREAM_BUF_SIZE + 2;
+				    s->s = ss;
+				    goto filt_read;
+			      }
+			      else
+				    return EOF;
+			}
+			else
+			      return EOF;
 		  }
 	    }
             s->e = s->p + i;
@@ -131,23 +152,56 @@ s_unget_char(buffer_stream *s)
 }
 
 static buffer_stream*
-s_buffer_stream_open(pdf_stream *ss)
+s_buffer_stream_open(pdf_obj *contents, pdfcrypto_priv * encrypt, pdf_stream *ss)
 {
-      buffer_stream *s = pdf_malloc(sizeof(buffer_stream));
-      if (s)
+      buffer_stream *s;
+      pdf_obj *cs = contents;
+      int i, n;
+      int num, gen;
+
+      if (cs->t == eArray)
       {
-	    s->s = ss;
-            s->f = ss->ffilter;
-            s->p = &s->buf[0];
-            s->e = s->p;
-            s->l = s->p + BUFFER_STREAM_BUF_SIZE + 2;
+	    n = cs->value.a.len;
+	    cs = &cs->value.a.items[0];
       }
+      else if (cs->t == eRef)
+      {
+	    n = 1;
+	    cs = contents;
+      }
+      else
+      {
+	    return 0;
+      }
+      if (cs->t != eRef)
+	    return 0;
+      num = cs->value.r.num;
+      gen = cs->value.r.gen;
+      pdf_obj_resolve(cs);
+      if (!cs)
+	    return 0;
+      s = pdf_malloc(sizeof(buffer_stream));
+      if (!s)
+	    return 0;
+      ss = pdf_stream_load(cs, encrypt, num, gen);
+      s->i = 0;
+      s->n = n;
+      s->content = contents;
+      s->encrypt = encrypt;
+      s->s = ss;
+      s->f = ss->ffilter;
+      s->p = &s->buf[0];
+      s->e = s->p;
+      s->l = s->p + BUFFER_STREAM_BUF_SIZE + 2;
       return s;
 }
 
 static pdf_err
 s_buffer_stream_close(buffer_stream *s)
 {
+      if (s->s)
+      {
+      }
       if (s)
             pdf_free(s);
       return pdf_ok;
@@ -596,7 +650,7 @@ pdf_parse_dict(buffer_stream *s, pdf_obj *o, int inlineimg)
 //
 /////////////////////////////////////////////////////////////////////////////////
 pdf_err
-pdf_cs_parse(pdf_page *p, pdf_stream *s)
+pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
 {
       pdf_obj t, o[OP_STK_SIZE], *op = o, *op_max=op+OP_STK_SIZE;
       unsigned char buf[LEX_BUF_LEN];
@@ -608,11 +662,7 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
       /// lexical value storage
       float num_stack[32], *np = num_stack, *nx = np+32;
       ///
-      if (!s)
-            return pdf_ok;
-      if (!s->ffilter)
-            return pdf_ok;
-      b = s_buffer_stream_open(s);
+      b = s_buffer_stream_open(p->contents, encrypt, s);
       if (!b)
             return pdf_ok;
 
@@ -802,7 +852,7 @@ pdf_cs_parse(pdf_page *p, pdf_stream *s)
                                                       //x_bstar(p);
                                                       break;
                                                 case (TWO_HASH('c','m')):
-                                                      x_cm(p, np[-1], np[-2], np[-3], np[-4], np[-5], np[-6]);
+                                                      x_cm(p, np[-6], np[-5], np[-4], np[-3], np[-2], np[-1]);
                                                       POP_N(6);
                                                       break;
                                                 case (TWO_HASH('c','s')):

@@ -26,6 +26,8 @@ typedef struct pdf_cryptfilter_s pdf_cryptfilter;
 typedef struct pdf_stream_s pdf_stream;
 typedef struct pdf_trailer_s pdf_trailer;
 typedef struct pdf_interp_state_s pdf_interp_state;
+typedef struct pdf_extgstate_s pdf_extgstate;
+typedef struct pdf_prs_s pdf_prs;
 
 struct pdf_mask_s
 {
@@ -101,6 +103,45 @@ struct pdf_resources_s
       pdf_obj *font;
       char **procset;
       pdf_obj *properties;
+};
+
+struct pdf_extgstate_s
+{
+      float LW;
+      int LC;
+      int LJ;
+      float ML;
+      int *D;
+      char *RI;
+      int OP;
+      int op;
+      int OPM;
+      struct {pdf_obj * font; float size;} *Font;
+      void *BG;
+      void *BG2;
+      void *UCR;
+      void *UCR2;
+      void *TR;
+      void *TR2;
+      float FL;
+      float SM;
+      int SA;
+      void *BM;
+      void *SMask;
+      float CA;
+      float ca;
+      int AIS;
+      int TK;
+      // text/font state
+      float fs, tl;
+      float txt_ctm[6];
+};
+
+struct pdf_prs_s
+{
+      pdf_cspace brush;
+      pdf_cspace pen;
+      pdf_extgstate gs;
 };
 
 struct pdf_page_s
@@ -321,11 +362,9 @@ struct pdf_trailer_s
 struct pdf_interp_state_s
 {
       pdf_device *dev;
-      pdf_font *font, *cur_font;
       pdfcrypto_priv *crypto;
-      // text state
-      float fs, tl;
-      float txt_ctm[6];
+      // font cache in linked list
+      pdf_font *font, *cur_font;
 };
 
 // short hands
@@ -344,7 +383,7 @@ extern int pdf_stream_getchar(pdf_stream *s);
 extern pdf_err pdf_annots_free(pdf_annots *a);
 extern pdf_err pdf_resources_free(pdf_resources*);
 extern pdf_err pdf_extgstate_free(pdf_extgstate*);
-extern pdf_err pdf_cs_parse(pdf_page *, pdf_stream *s);
+extern pdf_err pdf_cs_parse(pdf_page *, pdfcrypto_priv*, pdf_stream *s);
 extern pdf_err pdf_cf_load(pdf_obj *o, pdf_cryptfilter **cryptfilter);
 extern pdf_err pdf_info_load(pdf_obj *o, pdf_info **info);
 extern pdf_doc* pdf_doc_load(pdf_trailer*);
@@ -366,8 +405,9 @@ extern pdf_err pdf_write_pdf(pdf_doc *doc, char *ofile, unsigned long write_flag
 extern void pdf_doc_trailer_free(pdf_trailer * tr);
 extern pdf_interp_state *pdf_interpreter_new(pdf_device*, pdfcrypto_priv* encrypt);
 extern void pdf_interpreter_free(pdf_interp_state *i);
-extern void pdf_interpreter_font_insert(pdf_interp_state *i, pdf_font *f);
-extern int pdf_character_show(pdf_device* dev, pdf_font *f, gs_matrix *ctm, char *c);
+extern void pdf_interpreter_font_insert(pdf_interp_state *, pdf_font *f);
+extern int pdf_character_show(pdf_device* dev, pdf_prs *s, pdf_font *f, gs_matrix *ctm, char *c);
 extern pdfcrypto_priv *pdf_crypto_init(pdf_encrypt* encrypt, unsigned char id1[16], char *pw, int pwlen);
+extern void pdf_device_char_show(pdf_device *dev, pdf_font *f, float scale, gs_matrix *ctm, unsigned int cid);
 
 #endif

@@ -4,7 +4,14 @@
 #include "pdfdoc.h"
 #include "pdfdevice.h"
 
+typedef struct h5_state_s h5_state;
+struct h5_state_s
+{
+      float fs;
+};
+
 static void h5_canvas_create(FILE *f, char *id);
+static void hs_canvas_fontscale_update(pdf_device *d, float scale);
 
 static void
 pdf_dev_html_doc_begin(pdf_device *dev)
@@ -14,6 +21,8 @@ pdf_dev_html_doc_begin(pdf_device *dev)
       fprintf(dev->dest.f, "%s", "<head>");
       fprintf(dev->dest.f, "%s", "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"/>");
       fprintf(dev->dest.f, "%s", "</head>\n");
+      dev->dest.other = pdf_malloc(sizeof(h5_state));
+      ((h5_state*) dev->dest.other)->fs = 12;
 }
 static void
 pdf_dev_html_doc_end(pdf_device *dev)
@@ -21,6 +30,8 @@ pdf_dev_html_doc_end(pdf_device *dev)
       fprintf(dev->dest.f, "%s", "\n<body>");
       fprintf(dev->dest.f, "%s", "</body>");
       fprintf(dev->dest.f, "%s", "</html>\n");
+      if (dev->dest.other)
+	    pdf_free(dev->dest.other);
 }
 static void
 pdf_dev_html_page_begin(pdf_device *dev, int i, float width, float height)
@@ -62,12 +73,13 @@ pdf_dev_html_path_paint(pdf_device *d, pdf_path* p, gs_matrix *ctm, int mode)
 }
 
 static void
-pdf_dev_html_char_show(pdf_device *dev, pdf_font *f, gs_matrix *ctm, unsigned int cid, unsigned int mode)
+pdf_dev_html_char_show(pdf_device *dev, pdf_font *f, float scale, gs_matrix *ctm, unsigned int cid, unsigned int mode)
 {
       unsigned char uni[8];
       int i, n;
       gs_matrix fin;
 
+      hs_canvas_fontscale_update(dev, scale);
       mat_mul(&fin, ctm, &dev->dev_ctm);
       n = pdf_font_tounicode(f, cid, uni);
       fprintf(dev->dest.f, "ctx.fillText(\"");
@@ -117,4 +129,18 @@ static void
 h5_canvas_create(FILE *f, char *id)
 {
       fprintf(f, template_canvas, id);
+}
+
+static void
+hs_canvas_fontscale_update(pdf_device *dev, float scale)
+{
+      h5_state *s;
+      if (!dev->dest.other)
+	    return;
+      s = (h5_state*) dev->dest.other;
+      if (s->fs != scale)
+      {
+	    s->fs = scale;
+	    fprintf(dev->dest.f, "ctx.font=\"%f Arial\";", scale);
+      }
 }

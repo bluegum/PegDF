@@ -13,11 +13,11 @@ pdf_dev_destroy(pdf_device *dev)
       }
 }
 
-void pdf_device_char_show(pdf_device *dev, pdf_font *f, gs_matrix *ctm, unsigned int cid)
+void pdf_device_char_show(pdf_device *dev, pdf_font *f, float scale, gs_matrix *ctm, unsigned int cid)
 {
       if (dev && dev->fill_char)
       {
-	    (dev->fill_char)(dev, f, ctm, cid, 0);
+	    (dev->fill_char)(dev, f, scale, ctm, cid, 0);
       }
 }
 
