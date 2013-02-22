@@ -216,8 +216,9 @@ pdf_err x_Tf(pdf_page *p, pdf_obj res, float scale)
 pdf_err x_Tj(pdf_page *p, pdf_obj o)
 {
       int i;
-      gs_matrix ctm;
+      gs_matrix ctm, m, orig;
       _DMSG("Tj");
+      mat_set(&orig, p->s->gs.txt_ctm);
       mat_set(&ctm, p->s->gs.txt_ctm);
       if ((o.t == eString) || (o.t == eHexString))
       {
@@ -230,9 +231,13 @@ pdf_err x_Tj(pdf_page *p, pdf_obj o)
 			break;
 		  i += step;
 		  // TODO: use per glyph width
-		  ctm.e += p->s->gs.fs;
+		  mat_translate(&ctm, p->s->gs.fs, 0);
+		  mat_mul(&m, &ctm, p->s->gs.txt_ctm);
+		  mat_cp(p->s->gs.txt_ctm, &m);
+		  ctm.e += m.f;
 	    }
       }
+      //mat_cp(p->s->gs.txt_ctm, &orig);
       pdf_obj_delete(&o);
       return pdf_ok;
 }
@@ -285,8 +290,9 @@ pdf_err x_Td(pdf_page *p, float a, float b)
       ctm.d = 1;
       ctm.e = a;
       ctm.f = b;
-      mat_mul(&fin, &ctm, p->s->gs.txt_ctm);
+      mat_mul(&fin, &ctm, p->s->gs.txt_lm);
       memcpy(p->s->gs.txt_ctm, &fin, sizeof(fin));
+      memcpy(p->s->gs.txt_lm, &fin, sizeof(fin));
       return pdf_ok;
 }
 pdf_err x_TD(pdf_page *p, float a, float b)
@@ -317,6 +323,13 @@ pdf_err x_Tm(pdf_page *p, float a, float b, float c, float d, float e, float f)
       p->s->gs.txt_ctm[3] = d;
       p->s->gs.txt_ctm[4] = e;
       p->s->gs.txt_ctm[5] = f;
+      p->s->gs.txt_lm[0] = a;
+      p->s->gs.txt_lm[1] = b;
+      p->s->gs.txt_lm[2] = c;
+      p->s->gs.txt_lm[3] = d;
+      p->s->gs.txt_lm[4] = e;
+      p->s->gs.txt_lm[5] = f;
+
       return pdf_ok;
 }
 pdf_err x_Tc(pdf_page *p)

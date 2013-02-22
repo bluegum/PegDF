@@ -141,6 +141,21 @@ mat_set(gs_matrix *ctm, float a[6])
       ctm->f = a[5];
 }
 static inline void
+mat_translate(gs_matrix *ctm, float e, float f)
+{
+      ctm->a = 1;
+      ctm->b = 0;
+      ctm->c = 0;
+      ctm->d = 1;
+      ctm->e = e;
+      ctm->f = f;
+}
+static inline void
+mat_cp(gs_matrix *a, gs_matrix *b)
+{
+      memcpy(a, b, sizeof(gs_matrix));
+}
+static inline void
 mat_mul(gs_matrix *d, gs_matrix *a, gs_matrix *b)
 {
       d->a = a->a * b->a + a->b * b->c;

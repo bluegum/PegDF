@@ -135,6 +135,7 @@ struct pdf_extgstate_s
       // text/font state
       float fs, tl;
       float txt_ctm[6];
+      float txt_lm[6];
 };
 
 struct pdf_prs_s
