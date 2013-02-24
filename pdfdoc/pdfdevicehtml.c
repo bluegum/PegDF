@@ -52,7 +52,7 @@ pdf_dev_html_page_begin(pdf_device *dev, int i, float width, float height)
       fprintf(dev->dest.f, "%s", "style=\"border:1px solid #000000;\">");
       fprintf(dev->dest.f, "%s", "</canvas>");
       h5_canvas_create(dev->dest.f, i+1);
-      fprintf(dev->dest.f, "%s", "<script>\n");
+      //fprintf(dev->dest.f, "%s", "<script>\n");
 }
 
 static void
@@ -88,12 +88,14 @@ pdf_dev_html_char_show(pdf_device *dev, pdf_font *f, float scale, gs_matrix *ctm
 	    if (uni[i] == '\"')
 	    {
 		  fputc('\\', dev->dest.f);
-		  fputc(uni[i], dev->dest.f);
 	    }
-	    else
-		  fputc(uni[i], dev->dest.f);
+	    else if (uni[i] == '\\')
+	    {
+		  fputc('\\', dev->dest.f);
+	    }
+	    fputc(uni[i], dev->dest.f);
       }
-      fprintf(dev->dest.f, "\",%d,%d);", (int)fin.e, (int)fin.f);
+      fprintf(dev->dest.f, "\",%d,%d);\n", (int)fin.e, (int)fin.f);
 }
 
 pdf_device*
@@ -122,8 +124,7 @@ static char *template_canvas =
 var c=document.getElementById(\"Canvas%d\"); \
 var ctx=c.getContext(\"2d\"); \
 ctx.fillStyle=\"#FF0000\"; \
-ctx.font=\"12 Arial\"; \
-</script>\n";
+ctx.font=\"12 Arial\";";
 
 static void
 h5_canvas_create(FILE *f, char *id)

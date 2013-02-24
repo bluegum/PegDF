@@ -776,7 +776,7 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                                       POP_N(1);
                                                       break;
                                                 case 'k':
-                                                      x_k(p, np[-1], np[-2], np[-3], np[-4]);
+                                                      x_k(p, np[-4], np[-3], np[-2], np[-1]);
                                                       POP_N(4);
                                                       break;
                                                 case 'l':
@@ -795,6 +795,7 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                                       x_n(p);
                                                       break;
                                                 case 'q':
+						      x_pushgs(p);
                                                       break;
                                                 case 's':
                                                       break;
@@ -832,6 +833,7 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                                       POP_N(1);
                                                       break;
                                                 case 'Q':
+						      x_popgs(p);
                                                       break;
                                                 case 'S':
                                                       break;
@@ -964,7 +966,8 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                                       x_Tstar(p);
                                                       break;
                                                 case TWO_HASH('T', 'c'): // Tc
-                                                      x_Tc(p);
+                                                      x_Tc(p, np[-1]);
+                                                      POP_N(1);
                                                       break;
                                                 case TWO_HASH('T', 'd'): // Td
                                                       x_Td(p, np[-2], np[-1]);
@@ -999,7 +1002,8 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                                       x_Ts(p);
                                                       break;
                                                 case TWO_HASH('T', 'w'): // Tw
-                                                      x_Tw(p);
+                                                      x_Tw(p, np[-1]);
+                                                      POP_N(1);
                                                       break;
                                                 case TWO_HASH('T', 'z'): // Tz
                                                       x_Tz(p);

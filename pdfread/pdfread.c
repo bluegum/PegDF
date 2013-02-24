@@ -1399,7 +1399,7 @@ pdf_open(char *in, pdf_doc **doc)
 	    }
 	    // reopen trailer train
             pdf_trailer_open(parser_inst->trailer, &doctrailer);
-            if (objstms && doctrailer->encrypt)
+            if (objstms)// && doctrailer->encrypt)
             {
                   pdfcrypto_priv *crypto = NULL;
                   objstream_ref *p = objstms;
@@ -1411,10 +1411,12 @@ pdf_open(char *in, pdf_doc **doc)
                                                  0 // password len
                               );
                   }
+#if 0
                   if (!crypto)
                   {
                         goto done;
                   }
+#endif
                   while (p)
                   {
                         pdf_obj o, *oo;

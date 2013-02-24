@@ -57,8 +57,10 @@ x_g(pdf_page *p, float g)
       return pdf_ok;
 }
 pdf_err
-x_k(pdf_page *p, float a, float b, float c, float d)
+x_k(pdf_page *p, float c, float m, float y, float k)
 {
+      p->s->brush.t = DeviceCMYK;
+      p->s->brush.n = 4;
       return pdf_ok;
 }
 
@@ -150,7 +152,10 @@ pdf_err x_BI(pdf_page *p, pdf_obj o)
 }
 pdf_err x_BT(pdf_page *p)
 {
+      pdf_extgstate *gs = &p->s->gs;
       _DMSG("BT");
+      mat_init(&gs->txt_ctm, 1, 0, 0, 1, 0, 0);
+      mat_init(&gs->txt_lm, 1, 0, 0, 1, 0, 0);
       return pdf_ok;
 }
 pdf_err x_BX(pdf_page *p)
@@ -220,13 +225,16 @@ pdf_err x_Tj(pdf_page *p, pdf_obj o)
       _DMSG("Tj");
       mat_set(&orig, p->s->gs.txt_ctm);
       mat_set(&ctm, p->s->gs.txt_ctm);
+      mat_set(&m, p->s->gs.txt_ctm);
       if ((o.t == eString) || (o.t == eHexString))
       {
 	    pdf_font *f = p->i->cur_font;
 	    for (i = 0; i < o.value.s.len;)
 	    {
+		  mat_mul(&m, &ctm, &p->s->gs.ctm);
+		  //mat_cp(&m, &ctm);
 		  int step =
-			pdf_character_show(p->i->dev, p->s, f, &ctm, o.value.s.buf+i);
+			pdf_character_show(p->i->dev, p->s, f, &m, o.value.s.buf+i);
 		  if (step == 0)
 			break;
 		  i += step;
@@ -234,7 +242,7 @@ pdf_err x_Tj(pdf_page *p, pdf_obj o)
 		  mat_translate(&ctm, p->s->gs.fs, 0);
 		  mat_mul(&m, &ctm, p->s->gs.txt_ctm);
 		  mat_cp(p->s->gs.txt_ctm, &m);
-		  ctm.e += m.f;
+		  mat_cp(&ctm, &m);
 	    }
       }
       //mat_cp(p->s->gs.txt_ctm, &orig);
@@ -244,12 +252,13 @@ pdf_err x_Tj(pdf_page *p, pdf_obj o)
 pdf_err x_TJ(pdf_page *p, pdf_obj o)
 {
       int i;
-      gs_matrix ctm;
+      gs_matrix ctm, m;
       float advance;
+      pdf_extgstate *gs = &p->s->gs;
       _DMSG("TJ");
       if (o.t == eArray)
       {
-	    mat_set(&ctm, p->s->gs.txt_ctm);
+	    mat_set(&ctm, gs->txt_ctm);
 	    for (i = 0; i < o.value.a.len; i++)
 	    {
 		  pdf_obj *a = &o.value.a.items[i];
@@ -266,12 +275,13 @@ pdf_err x_TJ(pdf_page *p, pdf_obj o)
 			      pdf_font *f = p->i->cur_font;
 			      for (j = 0; j < a->value.s.len;)
 			      {
-				    int step =
-				    pdf_character_show(p->i->dev, p->s, f, &ctm, a->value.s.buf+j);
+				    int step;
+				    m = mat_con(&ctm, &gs->ctm);
+				    step = pdf_character_show(p->i->dev, p->s, f, &m, a->value.s.buf+j);
 				    if (!step)
 					  break;
 				    j += step;
-				    ctm.e += p->s->gs.fs;
+				    ctm.e += gs->fs;
 			      }
 			}
 		  }
@@ -317,23 +327,16 @@ pdf_err x_TL(pdf_page *p, float tl)
 }
 pdf_err x_Tm(pdf_page *p, float a, float b, float c, float d, float e, float f)
 {
-      p->s->gs.txt_ctm[0] = a;
-      p->s->gs.txt_ctm[1] = b;
-      p->s->gs.txt_ctm[2] = c;
-      p->s->gs.txt_ctm[3] = d;
-      p->s->gs.txt_ctm[4] = e;
-      p->s->gs.txt_ctm[5] = f;
-      p->s->gs.txt_lm[0] = a;
-      p->s->gs.txt_lm[1] = b;
-      p->s->gs.txt_lm[2] = c;
-      p->s->gs.txt_lm[3] = d;
-      p->s->gs.txt_lm[4] = e;
-      p->s->gs.txt_lm[5] = f;
+      pdf_extgstate *gs = &p->s->gs;
+      mat_init(&gs->txt_ctm, a, b, c, d, e, f);
+      mat_init(&gs->txt_lm, a, b, c, d, e, f);
 
       return pdf_ok;
 }
-pdf_err x_Tc(pdf_page *p)
+pdf_err x_Tc(pdf_page *p, float tc)
 {
+      pdf_extgstate *gs = &p->s->gs;
+      gs->tc = tc;
       return pdf_ok;
 }
 pdf_err x_Tr(pdf_page *p)
@@ -344,8 +347,10 @@ pdf_err x_Ts(pdf_page *p)
 {
       return pdf_ok;
 }
-pdf_err x_Tw(pdf_page *p)
+pdf_err x_Tw(pdf_page *p, float tw)
 {
+      pdf_extgstate *gs = &p->s->gs;
+      gs->tw = tw;
       return pdf_ok;
 }
 pdf_err x_Tz(pdf_page *p)
@@ -373,6 +378,8 @@ pdf_err x_re(pdf_page *p, float a, float b, float c, float d)
 }
 pdf_err x_rg(pdf_page *p, float a, float b, float c)
 {
+      p->s->brush.t = DeviceRGB;
+      p->s->brush.n = 3;
       return pdf_ok;
 }
 pdf_err x_RG(pdf_page *p, float a, float b, float c)
@@ -381,6 +388,9 @@ pdf_err x_RG(pdf_page *p, float a, float b, float c)
 }
 pdf_err x_cm(pdf_page *p, float a, float b, float c, float d, float e, float f)
 {
+      gs_matrix ctm;
+      mat_init(&ctm, a, b, c, d, e, f);
+      p->s->gs.ctm = mat_con(&ctm, &p->s->gs.ctm);
       return pdf_ok;
 }
 pdf_err x_gs(pdf_page *p, pdf_obj o)
@@ -426,5 +436,24 @@ pdf_err x_Do(pdf_page *p, pdf_obj o)
             pdf_obj_resolve(x);
       }
       pdf_obj_delete(&o);
+      return pdf_ok;
+}
+
+pdf_err
+x_popgs(pdf_page *p)
+{
+      if (p->s == &p->sstk[0])
+	    return pdf_ok;
+      p->s--;
+      return pdf_ok;
+}
+
+pdf_err
+x_pushgs(pdf_page *p)
+{
+      if (p->s == &p->sstk[31])
+	    return pdf_ok;
+      memcpy(&p->s[1], p->s, sizeof(pdf_prs));
+      p->s++;
       return pdf_ok;
 }

@@ -23,7 +23,7 @@ extern pdf_err x_G(pdf_page *p, float g);
 extern pdf_err x_K(pdf_page *p, float a, float b, float c, float d);
 /// T group
 extern pdf_err x_Tstar(pdf_page *p);
-extern pdf_err x_Tc(pdf_page *p);
+extern pdf_err x_Tc(pdf_page *p, float);
 extern pdf_err x_Tf(pdf_page *p, pdf_obj, float scale);
 extern pdf_err x_Tj(pdf_page *p, pdf_obj);
 extern pdf_err x_TJ(pdf_page *p, pdf_obj);
@@ -33,7 +33,7 @@ extern pdf_err x_TD(pdf_page *p, float a, float b);
 extern pdf_err x_TL(pdf_page *p, float);
 extern pdf_err x_Tr(pdf_page *p);
 extern pdf_err x_Ts(pdf_page *p);
-extern pdf_err x_Tw(pdf_page *p);
+extern pdf_err x_Tw(pdf_page *p, float);
 extern pdf_err x_Tz(pdf_page *p);
 /// E group
 extern pdf_err x_ET(pdf_page *p);
@@ -53,4 +53,6 @@ extern pdf_err x_J(pdf_page *p, int linecap);
 extern pdf_err x_M(pdf_page *p, float miterlimit);
 ///
 extern pdf_err x_Do(pdf_page *p, pdf_obj);
+extern pdf_err x_popgs(pdf_page *p);
+extern pdf_err x_pushgs(pdf_page *p);
 #endif

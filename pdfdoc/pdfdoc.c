@@ -13,6 +13,8 @@
 #include "pdffont.h"
 #include "pdfdevice.h"
 
+static void pdf_gstate_init(pdf_prs *s);
+
 static inline pdf_group*
 pdf_group_load(pdf_obj *o)
 {
@@ -158,6 +160,7 @@ pdf_err pdf_exec_page_content(pdf_page *p, pdfcrypto_priv* encrypt)
             return pdf_ok;
       // reset graphics state
       p->s = p->sstk;
+      pdf_gstate_init(p->s);
       // run page contents
       pdf_cs_parse(p, encrypt, 0);
 
@@ -943,4 +946,14 @@ pdf_interpreter_font_insert(pdf_interp_state *i, pdf_font *f)
 	    f->next = i->font;
 	    i->font = f;
       }
+}
+
+static void
+pdf_gstate_init(pdf_prs *s)
+{
+      pdf_extgstate *gs;
+      gs = &s->gs;
+      mat_init(&gs->ctm, 1, 0, 0, 1, 0, 0);
+      mat_init(&gs->txt_ctm, 1, 0, 0, 1, 0, 0);
+      mat_init(&gs->txt_lm, 1, 0, 0, 1, 0, 0);
 }

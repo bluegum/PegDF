@@ -131,6 +131,16 @@ struct gs_bbox_s
 };
 
 static inline void
+mat_init(gs_matrix *ctm, float a, float b, float c, float d, float e, float f)
+{
+      ctm->a = a;
+      ctm->b = b;
+      ctm->c = c;
+      ctm->d = d;
+      ctm->e = e;
+      ctm->f = f;
+}
+static inline void
 mat_set(gs_matrix *ctm, float a[6])
 {
       ctm->a = a[0];
@@ -155,15 +165,22 @@ mat_cp(gs_matrix *a, gs_matrix *b)
 {
       memcpy(a, b, sizeof(gs_matrix));
 }
+static inline gs_matrix
+mat_con(gs_matrix *a, gs_matrix *b)
+{
+      gs_matrix d;
+      d.a = a->a * b->a + a->b * b->c;
+      d.b = a->a * b->b + a->b * b->d;
+      d.c = a->c * b->a + a->d * b->c;
+      d.d = a->c * b->b + a->d * b->d;
+      d.e = a->e * b->a + a->f * b->c + b->e;
+      d.f = a->e * b->b + a->f * b->d + b->f;
+      return d;
+}
 static inline void
 mat_mul(gs_matrix *d, gs_matrix *a, gs_matrix *b)
 {
-      d->a = a->a * b->a + a->b * b->c;
-      d->b = a->a * b->b + a->b * b->d;
-      d->c = a->c * b->a + a->d * b->c;
-      d->d = a->c * b->b + a->d * b->d;
-      d->e = a->e * b->a + a->f * b->c + b->e;
-      d->f = a->e * b->b + a->f * b->d + b->f;
+      *d = mat_con(a, b);
 }
 static inline int
 pdf_to_int(pdf_obj *o)

@@ -132,8 +132,10 @@ struct pdf_extgstate_s
       float ca;
       int AIS;
       int TK;
+      // generics
+      gs_matrix ctm;
       // text/font state
-      float fs, tl;
+      float fs, tl, tw, tc;
       float txt_ctm[6];
       float txt_lm[6];
 };
