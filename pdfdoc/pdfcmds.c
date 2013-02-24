@@ -192,7 +192,7 @@ pdf_err x_BMC(pdf_page *p)
 /// T group
 pdf_err x_Tstar(pdf_page *p)
 {
-      return pdf_ok;
+      return x_Td(p, 0, -p->s->gs.tl);
 }
 pdf_err x_Tf(pdf_page *p, pdf_obj res, float scale)
 {
@@ -262,7 +262,7 @@ pdf_err x_TJ(pdf_page *p, pdf_obj o)
 {
       int i;
       gs_matrix ctm, m;
-      float advance;
+      float advance = 0;
       pdf_extgstate *gs = &p->s->gs;
       _DMSG("TJ");
       if (o.t == eArray)
@@ -273,7 +273,8 @@ pdf_err x_TJ(pdf_page *p, pdf_obj o)
 		  pdf_obj *a = &o.value.a.items[i];
 		  if (i%2)
 		  {
-			advance = a->value.f;
+			advance = pdf_to_float(a);
+			ctm.e -= advance * gs->fs / 1000.0f;
 		  }
 		  else
 		  {
