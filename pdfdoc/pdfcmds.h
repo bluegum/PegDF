@@ -31,10 +31,10 @@ extern pdf_err x_Tm(pdf_page *p, float a, float b, float c, float d, float e, fl
 extern pdf_err x_Td(pdf_page *p, float, float);
 extern pdf_err x_TD(pdf_page *p, float a, float b);
 extern pdf_err x_TL(pdf_page *p, float);
-extern pdf_err x_Tr(pdf_page *p);
-extern pdf_err x_Ts(pdf_page *p);
+extern pdf_err x_Tr(pdf_page *p, int mode);
+extern pdf_err x_Ts(pdf_page *p, float rise);
 extern pdf_err x_Tw(pdf_page *p, float);
-extern pdf_err x_Tz(pdf_page *p);
+extern pdf_err x_Tz(pdf_page *p, float);
 /// E group
 extern pdf_err x_ET(pdf_page *p);
 extern pdf_err x_EX(pdf_page *p);

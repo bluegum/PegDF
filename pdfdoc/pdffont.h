@@ -77,7 +77,6 @@ struct pdf_font_type1_tt_s
 {
       int firstchar;
       int lastchar;
-      int *widths;
       pdf_font_descriptor *fontdescriptor;
       pdf_cmap *tounicode;
 };
@@ -106,6 +105,9 @@ struct pdf_font_s
 	    pdf_font_type1_tt tt;
 	    pdf_font_type3 type3;
       } font;
+      int firstchar;
+      int lastchar;
+      float *widths;
       // private
       int ref;
       pdf_font* next;
@@ -118,5 +120,6 @@ extern void pdf_cmap_tounicode_parse(pdf_obj *cmap, pdf_font *f, pdfcrypto_priv*
 extern unsigned int asciihex2int(unsigned char *c);
 extern int unicode_get_cmap(pdf_font *f, unsigned int c, unsigned char *uni);
 extern int pdf_font_tounicode(pdf_font *f, unsigned int cid, unsigned char *uni);
+extern float pdf_font_widths_get(pdf_font* f, u32 cid);
 
 #endif // PDFFONT_H

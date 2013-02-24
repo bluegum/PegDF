@@ -7,10 +7,11 @@
 typedef struct h5_state_s h5_state;
 struct h5_state_s
 {
-      float fs;
+      float fs; // font scale
+      byte c[3]; // color
 };
 
-static void h5_canvas_create(FILE *f, char *id);
+static void h5_canvas_create(FILE *f, char *id, byte [3]);
 static void hs_canvas_fontscale_update(pdf_device *d, float scale);
 
 static void
@@ -23,6 +24,9 @@ pdf_dev_html_doc_begin(pdf_device *dev)
       fprintf(dev->dest.f, "%s", "</head>\n");
       dev->dest.other = pdf_malloc(sizeof(h5_state));
       ((h5_state*) dev->dest.other)->fs = 12;
+      ((h5_state*) dev->dest.other)->c[0] = 0;
+      ((h5_state*) dev->dest.other)->c[1] = 0;
+      ((h5_state*) dev->dest.other)->c[2] = 0;
 }
 static void
 pdf_dev_html_doc_end(pdf_device *dev)
@@ -51,7 +55,7 @@ pdf_dev_html_page_begin(pdf_device *dev, int i, float width, float height)
       fprintf(dev->dest.f, "<canvas id=\"Canvas%d\" width=\"%d\" height=\"%d\"", i+1, (int)width, (int)height);
       fprintf(dev->dest.f, "%s", "style=\"border:1px solid #000000;\">");
       fprintf(dev->dest.f, "%s", "</canvas>");
-      h5_canvas_create(dev->dest.f, i+1);
+      h5_canvas_create(dev->dest.f, i+1, ((h5_state*) dev->dest.other)->c);
       //fprintf(dev->dest.f, "%s", "<script>\n");
 }
 
@@ -123,13 +127,15 @@ static char *template_canvas =
 "<script> \
 var c=document.getElementById(\"Canvas%d\"); \
 var ctx=c.getContext(\"2d\"); \
-ctx.fillStyle=\"#FF0000\"; \
+ctx.fillStyle=\"#%s\"; \
 ctx.font=\"12 Arial\";";
 
 static void
-h5_canvas_create(FILE *f, char *id)
+h5_canvas_create(FILE *f, char *id, byte c[3])
 {
-      fprintf(f, template_canvas, id);
+      char buf[8];
+      sprintf(buf, "%02X%02X%02X", c[0], c[1], c[2]);
+      fprintf(f, template_canvas, id, buf);
 }
 
 static void
@@ -142,6 +148,6 @@ hs_canvas_fontscale_update(pdf_device *dev, float scale)
       if (s->fs != scale)
       {
 	    s->fs = scale;
-	    fprintf(dev->dest.f, "ctx.font=\"%f Arial\";", scale);
+	    fprintf(dev->dest.f, "ctx.font=\"%fpx Arial\";", scale);
       }
 }

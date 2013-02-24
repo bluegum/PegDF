@@ -142,6 +142,54 @@ pdf_encoding_free(pdf_font_encoding *p)
 }
 
 void
+pdf_font_widths_load(pdf_obj *a, pdf_font* f)
+{
+      int i;
+      pdf_obj *val, *w = pdf_obj_deref(a);
+      if (!w || w->t != eDict)
+	    return;
+      val = dict_get(w->value.d.dict, "Widths");
+      if (!val)
+      {
+	    f->widths = 0;
+	    return;
+      }
+      val = pdf_obj_deref(val);
+      if  (!val || val->t != eArray)
+	    return;
+      f->widths = pdf_malloc(sizeof(float)*val->value.a.len);
+      if (!f->widths)
+	    return;
+      for (i = 0; i < val->value.a.len; i++)
+      {
+	    if (val->value.a.items[i].t == eReal)
+	    {
+		  f->widths[i] = val->value.a.items[i].value.f;
+	    }
+	    else
+	    {
+		  f->widths[i] = val->value.a.items[i].value.i;
+	    }
+      }
+      val = dict_get(w->value.d.dict, "FirstChar");
+      if (val)
+	    f->firstchar = val->value.i;
+      val = dict_get(w->value.d.dict, "LastChar");
+      if (val)
+	    f->lastchar = val->value.i;
+}
+
+float
+pdf_font_widths_get(pdf_font* f, u32 cid)
+{
+      if (!f || (!f->widths))
+	    return 1000;
+      if (cid > f->lastchar)
+	    return 1000;
+      return f->widths[cid-f->firstchar];
+}
+
+void
 pdf_encoding_load(pdf_obj *a, pdf_font_encoding* e)
 {
       const char **tbl = standard_encoding;
@@ -321,6 +369,7 @@ pdf_font_load(pdf_obj *o, int cid2uni, pdfcrypto_priv* encrypt)
 	    {
 		  pdf_cid_encoding_load(a, f->encoding);
 	    }
+	    f->widths = 0;
       }
       else
       { // simple font
@@ -340,6 +389,7 @@ pdf_font_load(pdf_obj *o, int cid2uni, pdfcrypto_priv* encrypt)
 	    {
 		  pdf_encoding_load(0, f->encoding);
 	    }
+	    pdf_font_widths_load(o, f);
       }
       // composite font specific
       if ((f->type == Type0) || (f->type == Type2))
@@ -403,8 +453,14 @@ pdf_font_free(pdf_font *f)
 	    while (f)
 	    {
 		  pdf_font *next = f->next;
+		  if (f->widths)
+		  {
+			pdf_free(f->widths);
+		  }
 		  if (f->encoding)
+		  {
 			pdf_encoding_free(f->encoding);
+		  }
 		  if (f->tounicode)
 		  {
 			pdf_tounicode_free(f->tounicode);
@@ -431,7 +487,7 @@ pdf_font_find(pdf_font* f, int ref)
 }
 
 int
-pdf_character_show(pdf_device* dev, pdf_prs *s, pdf_font *f, gs_matrix *ctm, char *c)
+pdf_character_show(pdf_device* dev, pdf_prs *s, pdf_font *f, gs_matrix *ctm, char *c, unsigned int *c_id)
 {
       u32 cid;
       pdf_font_encoding *enc;
@@ -443,6 +499,7 @@ pdf_character_show(pdf_device* dev, pdf_prs *s, pdf_font *f, gs_matrix *ctm, cha
       if (!enc)
 	    return 0;
       step = (enc->get_cid)(c, &cid);
+      *c_id = cid;
       if (dev)
       {
 	    pdf_device_char_show(dev, f, s->gs.fs, ctm, cid);

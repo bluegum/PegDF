@@ -54,6 +54,8 @@ x_d(pdf_page *p, pdf_obj o)
 pdf_err
 x_g(pdf_page *p, float g)
 {
+      p->s->brush.t = DeviceGray;
+      p->s->brush.n = 1;
       return pdf_ok;
 }
 pdf_err
@@ -67,11 +69,15 @@ x_k(pdf_page *p, float c, float m, float y, float k)
 pdf_err
 x_G(pdf_page *p, float g)
 {
+      p->s->pen.t = DeviceGray;
+      p->s->pen.n = 1;
       return pdf_ok;
 }
 pdf_err
 x_K(pdf_page *p, float a, float b, float c, float d)
 {
+      p->s->pen.t = DeviceCMYK;
+      p->s->pen.n = 4;
       return pdf_ok;
 }
 
@@ -228,18 +234,21 @@ pdf_err x_Tj(pdf_page *p, pdf_obj o)
       mat_set(&m, p->s->gs.txt_ctm);
       if ((o.t == eString) || (o.t == eHexString))
       {
+	    int w;
+	    u32 cid;
 	    pdf_font *f = p->i->cur_font;
 	    for (i = 0; i < o.value.s.len;)
 	    {
 		  mat_mul(&m, &ctm, &p->s->gs.ctm);
 		  //mat_cp(&m, &ctm);
 		  int step =
-			pdf_character_show(p->i->dev, p->s, f, &m, o.value.s.buf+i);
+			pdf_character_show(p->i->dev, p->s, f, &m, o.value.s.buf+i, &cid);
 		  if (step == 0)
 			break;
 		  i += step;
 		  // TODO: use per glyph width
-		  mat_translate(&ctm, p->s->gs.fs, 0);
+		  w = pdf_font_widths_get(f, cid);
+		  mat_translate(&ctm, ((float)w)*p->s->gs.fs/1000.0f, 0);
 		  mat_mul(&m, &ctm, p->s->gs.txt_ctm);
 		  mat_cp(p->s->gs.txt_ctm, &m);
 		  mat_cp(&ctm, &m);
@@ -270,18 +279,20 @@ pdf_err x_TJ(pdf_page *p, pdf_obj o)
 		  {
 			if (o.value.a.items[i].t == eString)
 			{
-			      int j;
+			      int j, w;
+			      u32 cid;
 			      pdf_obj *a = &o.value.a.items[i];
 			      pdf_font *f = p->i->cur_font;
 			      for (j = 0; j < a->value.s.len;)
 			      {
 				    int step;
 				    m = mat_con(&ctm, &gs->ctm);
-				    step = pdf_character_show(p->i->dev, p->s, f, &m, a->value.s.buf+j);
+				    step = pdf_character_show(p->i->dev, p->s, f, &m, a->value.s.buf+j, &cid);
 				    if (!step)
 					  break;
 				    j += step;
-				    ctm.e += gs->fs;
+				    w = pdf_font_widths_get(f, cid);
+				    ctm.e += ((float)w) * gs->fs / 1000.0f;
 			      }
 			}
 		  }
@@ -339,12 +350,18 @@ pdf_err x_Tc(pdf_page *p, float tc)
       gs->tc = tc;
       return pdf_ok;
 }
-pdf_err x_Tr(pdf_page *p)
+pdf_err x_Tr(pdf_page *p, int mode)
 {
+      // Text render mode
+      pdf_extgstate *gs = &p->s->gs;
+      gs->tr = mode;
       return pdf_ok;
 }
-pdf_err x_Ts(pdf_page *p)
+pdf_err x_Ts(pdf_page *p, float ts)
 {
+      // Text rise
+      pdf_extgstate *gs = &p->s->gs;
+      gs->ts = ts;
       return pdf_ok;
 }
 pdf_err x_Tw(pdf_page *p, float tw)
@@ -353,8 +370,10 @@ pdf_err x_Tw(pdf_page *p, float tw)
       gs->tw = tw;
       return pdf_ok;
 }
-pdf_err x_Tz(pdf_page *p)
+pdf_err x_Tz(pdf_page *p, float th)
 {
+      pdf_extgstate *gs = &p->s->gs;
+      gs->th = th;
       return pdf_ok;
 }
 
@@ -384,6 +403,8 @@ pdf_err x_rg(pdf_page *p, float a, float b, float c)
 }
 pdf_err x_RG(pdf_page *p, float a, float b, float c)
 {
+      p->s->pen.t = DeviceRGB;
+      p->s->pen.n = 3;
       return pdf_ok;
 }
 pdf_err x_cm(pdf_page *p, float a, float b, float c, float d, float e, float f)

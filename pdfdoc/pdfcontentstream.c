@@ -825,7 +825,7 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                                       POP_N(1);
                                                       break;
                                                 case 'K':
-                                                      x_K(p, np[-1], np[-2], np[-3], np[-4]);
+                                                      x_K(p, np[-4], np[-3], np[-2], np[-1]);
                                                       POP_N(4);
                                                       break;
                                                 case 'M':
@@ -996,17 +996,20 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                                       POP_N(6);
                                                       break;
                                                 case TWO_HASH('T', 'r'): // Tr
-                                                      x_Tr(p);
+                                                      x_Tr(p, np[-1]);
+						      POP_N(1);
                                                       break;
                                                 case TWO_HASH('T', 's'): // Ts
-                                                      x_Ts(p);
+                                                      x_Ts(p, np[-1]);
+						      POP_N(1);
                                                       break;
                                                 case TWO_HASH('T', 'w'): // Tw
                                                       x_Tw(p, np[-1]);
                                                       POP_N(1);
                                                       break;
                                                 case TWO_HASH('T', 'z'): // Tz
-                                                      x_Tz(p);
+                                                      x_Tz(p, np[-1]);
+                                                      POP_N(1);
                                                       break;
                                                 case TWO_HASH('R', 'G'):
                                                 {
