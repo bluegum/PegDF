@@ -971,6 +971,7 @@ pdf_gstate_init(pdf_page *p)
       pdf_extgstate *gs;
       gs = &s->gs;
 
+      gs->th = 1;
       mat_init(&gs->ctm, 1, 0, 0, 1, 0, 0);
       if (rotate)
       {

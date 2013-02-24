@@ -274,7 +274,8 @@ pdf_err x_TJ(pdf_page *p, pdf_obj o)
 		  if (i%2)
 		  {
 			advance = pdf_to_float(a);
-			ctm.e -= advance * gs->fs / 1000.0f;
+			mat_translate(&m, -advance * gs->fs / 1000.0f, 0);
+			ctm = mat_con(&m, &ctm);
 		  }
 		  else
 		  {
@@ -293,7 +294,8 @@ pdf_err x_TJ(pdf_page *p, pdf_obj o)
 					  break;
 				    j += step;
 				    w = pdf_font_widths_get(f, cid);
-				    ctm.e += ((float)w) * gs->fs / 1000.0f;
+				    mat_translate(&m, (((float)w) * gs->fs / 1000.0f + gs->tc) * gs->th, 0);
+				    ctm = mat_con(&m, &ctm);
 			      }
 			}
 		  }
@@ -321,6 +323,7 @@ pdf_err x_TD(pdf_page *p, float a, float b)
 {
       gs_matrix ctm, fin;
       _DMSG("TD");
+      x_TL(p, -b);
       ctm.a = 1;
       ctm.b = 0;
       ctm.c = 0;
