@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h>
 #include "pdftypes.h"
 #include "pdffilter.h"
 #include "pdfdoc.h"
@@ -52,6 +53,13 @@ pdf_dev_html_page_begin(pdf_device *dev, int i, float width, float height)
       dev->dev_ctm.f = height;
       dev->dev_bbox.x1 = width;
       dev->dev_bbox.y1 = height;
+      {
+	    h5_state *s;
+	    if (!dev->dest.other)
+		  return;
+	    s = (h5_state*) dev->dest.other;
+	    s->fs = -1;
+      }
       fprintf(dev->dest.f, "<canvas id=\"Canvas%d\" width=\"%d\" height=\"%d\"", i+1, (int)width, (int)height);
       fprintf(dev->dest.f, "%s", "style=\"border:1px solid #000000;\">");
       fprintf(dev->dest.f, "%s", "</canvas>");
@@ -76,6 +84,8 @@ pdf_dev_html_path_paint(pdf_device *d, pdf_path* p, gs_matrix *ctm, int mode)
 {
 }
 
+#define min(a, b) ((a)<(b)?(a):(b))
+
 static void
 pdf_dev_html_char_show(pdf_device *dev, pdf_font *f, float scale, gs_matrix *ctm, unsigned int cid, unsigned int mode)
 {
@@ -83,6 +93,16 @@ pdf_dev_html_char_show(pdf_device *dev, pdf_font *f, float scale, gs_matrix *ctm
       int i, n;
       gs_matrix fin;
 
+      // PDF spec problem: type3 font don't scale well with TEXT CTM
+      // hack, should be html5/canvas' save() and restore()
+      if (scale == 1 && ctm->b == 0 && ctm->c == 0)
+      {
+	    scale = fabs(ctm->a);
+      }
+      else
+      {
+	    scale = scale * min(fabs(ctm->a), fabs(ctm->d));
+      }
       hs_canvas_fontscale_update(dev, scale);
       mat_mul(&fin, ctm, &dev->dev_ctm);
       n = pdf_font_tounicode(f, cid, uni);
