@@ -13,7 +13,7 @@
 #include "pdffont.h"
 #include "pdfdevice.h"
 
-static void pdf_gstate_init(pdf_prs *s);
+static void pdf_gstate_init(pdf_page* p);
 
 static inline pdf_group*
 pdf_group_load(pdf_obj *o)
@@ -63,7 +63,22 @@ pdf_err pdf_page_load(pdf_doc *doc, pdf_obj *o, pdf_page **page)
       p->contents = (pdf_obj*)dict_get(d, "Contents");
       v = (pdf_obj*)dict_get(d, "Rotate");
       if (v)
+      {
             p->rotate = v->value.i;
+	    if (p->rotate < 0)
+		  p->rotate = 360 - ((-p->rotate) % 360);
+	    if (p->rotate >= 360)
+		  p->rotate = p->rotate % 360;
+	    p->rotate = 90*((p->rotate + 45)/90);
+	    if (p->rotate > 360)
+		  p->rotate = 0;
+	    if (p->rotate == 90 || p->rotate == 270)
+	    {
+		  float x = p->mediabox.y1;
+		  p->mediabox.y1 =  p->mediabox.x1;
+		  p->mediabox.x1 = x;
+	    }
+      }
       p->group = pdf_group_load(dict_get(d, "Group"));
       p->annots = pdf_annots_load(dict_get(d, "Annots"));
       p->metadata = (pdf_obj*)dict_get(d, "Metadata");
@@ -160,7 +175,7 @@ pdf_err pdf_exec_page_content(pdf_page *p, pdfcrypto_priv* encrypt)
             return pdf_ok;
       // reset graphics state
       p->s = p->sstk;
-      pdf_gstate_init(p->s);
+      pdf_gstate_init(p);
       // run page contents
       pdf_cs_parse(p, encrypt, 0);
 
@@ -949,11 +964,34 @@ pdf_interpreter_font_insert(pdf_interp_state *i, pdf_font *f)
 }
 
 static void
-pdf_gstate_init(pdf_prs *s)
+pdf_gstate_init(pdf_page *p)
 {
+      pdf_prs *s = p->s;
+      int rotate = p->rotate;
       pdf_extgstate *gs;
       gs = &s->gs;
+
       mat_init(&gs->ctm, 1, 0, 0, 1, 0, 0);
+      if (rotate)
+      {
+	    switch (rotate)
+	    {
+		  case 90:
+			mat_init(&gs->ctm, 0, -1, 1, 0, 0, p->mediabox.y1);
+			break;
+		  case 180:
+			mat_init(&gs->ctm, -1, 0, 0, 1, p->mediabox.x1, 0);
+			break;
+		  case 270:
+			mat_init(&gs->ctm, 0, 1, -1, 0, p->mediabox.x1, 0);
+			break;
+		  case 360:
+			mat_init(&gs->ctm, 1, 0, 0, -1, 0, p->mediabox.y1);
+			break;
+		  default:
+			break;
+	    }
+      }
       mat_init(&gs->txt_ctm, 1, 0, 0, 1, 0, 0);
       mat_init(&gs->txt_lm, 1, 0, 0, 1, 0, 0);
 }
