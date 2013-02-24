@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "pdftypes.h"
+#include "pdfindex.h"
 #include "gsdraw.h"
 #include "pdffilter.h"
 #include "pdfdoc.h"
@@ -8,6 +9,7 @@
 pdf_err
 pdf_colorspace_set(pdf_cspace* cs, pdf_obj *o)
 {
+      pdf_obj *data = 0;
       if (!o)
 	    return pdf_ok;
       if (o->t == eArray)
@@ -36,7 +38,11 @@ pdf_colorspace_set(pdf_cspace* cs, pdf_obj *o)
 	    else if (!strcmp(pdf_to_name(obj), "Separation"))
 		  cs->t = Separation;
 	    else if (!strcmp(pdf_to_name(obj), "ICCBased"))
+	    {
 		  cs->t = ICCBased;
+		  if (o->value.a.len >= 2)
+			data = &o->value.a.items[1];
+	    }
 	    else
 		  return pdf_unknown;
 
@@ -53,8 +59,21 @@ pdf_colorspace_set(pdf_cspace* cs, pdf_obj *o)
 		  cs->n = 4;
 		  break;
 	    case ICCBased:
-		  cs->n = 3;
+	    {
+		  cs->n = 1;
+		  if (data)
+		  {
+			pdf_obj *icc = pdf_obj_deref(data);
+			if (icc && icc->t == eDict)
+			{
+			      pdf_obj *a = dict_get(icc->value.d.dict, "N");
+			      if (a && a->t == eInt)
+				    cs->n = a->value.i;
+			}
+			cs->priv = data;
+		  }
 		  break;
+	    }
 	    default:
 		  cs->n = 1;
 		  break;
