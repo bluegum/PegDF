@@ -54,15 +54,24 @@ x_d(pdf_page *p, pdf_obj o)
 pdf_err
 x_g(pdf_page *p, float g)
 {
-      p->s->brush.t = DeviceGray;
-      p->s->brush.n = 1;
+      pdf_cspace *cs = &p->s->brush;
+      cs->t = DeviceGray;
+      cs->n = 1;
+      cs->c[0] = g;
+      pdf_device_color_set(p->i->dev, cs->c, DeviceGray, 1);
       return pdf_ok;
 }
 pdf_err
 x_k(pdf_page *p, float c, float m, float y, float k)
 {
-      p->s->brush.t = DeviceCMYK;
-      p->s->brush.n = 4;
+      pdf_cspace *cs = &p->s->brush;
+      cs->t = DeviceCMYK;
+      cs->n = 4;
+      cs->c[0] = c;
+      cs->c[1] = m;
+      cs->c[2] = y;
+      cs->c[3] = k;
+      pdf_device_color_set(p->i->dev, cs->c, DeviceCMYK, 4);
       return pdf_ok;
 }
 
@@ -399,10 +408,15 @@ pdf_err x_re(pdf_page *p, float a, float b, float c, float d)
 {
       return pdf_ok;
 }
-pdf_err x_rg(pdf_page *p, float a, float b, float c)
+pdf_err x_rg(pdf_page *p, float r, float g, float b)
 {
-      p->s->brush.t = DeviceRGB;
-      p->s->brush.n = 3;
+      pdf_cspace *cs = &p->s->brush;
+      cs->t = DeviceRGB;
+      cs->n = 3;
+      cs->c[0] = r;
+      cs->c[1] = g;
+      cs->c[2] = b;
+      pdf_device_color_set(p->i->dev, cs->c, DeviceRGB, 3);
       return pdf_ok;
 }
 pdf_err x_RG(pdf_page *p, float a, float b, float c)
@@ -469,6 +483,7 @@ x_popgs(pdf_page *p)
 {
       if (p->s == &p->sstk[0])
 	    return pdf_ok;
+      pdf_update_brush(p);
       p->s--;
       return pdf_ok;
 }

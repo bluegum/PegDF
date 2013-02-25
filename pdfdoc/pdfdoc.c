@@ -996,3 +996,26 @@ pdf_gstate_init(pdf_page *p)
       mat_init(&gs->txt_ctm, 1, 0, 0, 1, 0, 0);
       mat_init(&gs->txt_lm, 1, 0, 0, 1, 0, 0);
 }
+
+void
+pdf_device_color_set(pdf_device *d, float *c, pdf_cspacetype cs, int n)
+{
+      if (d)
+	    (d->color_set)(d, c, cs, n);
+}
+
+void
+pdf_update_brush(pdf_page *p)
+{
+      pdf_prs *s0, *s1;
+      s0 = p->s - 1;
+      s1 = p->s;
+      if (s0->brush.t != s1->brush.t)
+      {
+	    return pdf_device_color_set(p->i->dev, &s0->brush.c, s0->brush.t, s0->brush.n);
+      }
+      else if (memcmp(&s0->brush.c, &s1->brush.c, s0->brush.n*sizeof(float)) != 0)
+      {
+	    return pdf_device_color_set(p->i->dev, &s0->brush.c, s0->brush.t, s0->brush.n);
+      }
+}

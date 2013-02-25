@@ -413,5 +413,6 @@ extern void pdf_interpreter_font_insert(pdf_interp_state *, pdf_font *f);
 extern int pdf_character_show(pdf_device* dev, pdf_prs *s, pdf_font *f, gs_matrix *ctm, char *c, unsigned int *cid);
 extern pdfcrypto_priv *pdf_crypto_init(pdf_encrypt* encrypt, unsigned char id1[16], char *pw, int pwlen);
 extern void pdf_device_char_show(pdf_device *dev, pdf_font *f, float scale, gs_matrix *ctm, unsigned int cid);
+extern void pdf_device_color_set(pdf_device *d, float *c, pdf_cspacetype cs, int n);
 
 #endif

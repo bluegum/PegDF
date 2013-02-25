@@ -13,10 +13,10 @@ enum pdf_cspacetype_e
 
 enum pdf_renderingintents_e
 {
-      AbsoluteColorimetric ,
-      RelativeColorimetric ,
-      Saturation ,
-      Perceptual ,
+      AbsoluteColorimetric,
+      RelativeColorimetric,
+      Saturation,
+      Perceptual,
 };
 
 struct pdf_calgray_s
@@ -87,5 +87,8 @@ struct pdf_cspace_s
 
 ////////////////////////////////
 extern pdf_err pdf_colorspace_set(pdf_cspace* p, pdf_obj *o);
+extern void gx_cmyk_to_rgb(float *cmyk, float *rgb);
+extern void gx_rgb_to_rgb(float *, float *rgb);
+extern void gx_g_to_rgb(float *, float *rgb);
 
 #endif

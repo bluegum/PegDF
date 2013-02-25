@@ -1,6 +1,7 @@
 #ifndef PDFDEVICE_H
 #define PDFDEVICE_H
 #include <stdio.h>
+#include "gsdraw.h"
 #include "pdffont.h"
 #include "pdfpaint.h"
 
@@ -21,7 +22,7 @@ struct pdf_device_s
       void (*stroke_char)(pdf_device *d, pdf_font *f, gs_matrix *ctm, unsigned int cid, unsigned int mode);
       void (*path_paint)(pdf_device *d, pdf_path*, gs_matrix *ctm, int mode);
       void (*image_paint)(pdf_device *d);
-      void (*color_set)(pdf_device *d, float *);
+      void (*color_set)(pdf_device *d, float *, pdf_cspacetype, int n);
       void (*grp_bgn)(pdf_device *d);
       void (*grp_end)(pdf_device *d);
       struct

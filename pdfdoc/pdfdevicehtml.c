@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 #include "pdftypes.h"
+#include "gsdraw.h"
 #include "pdffilter.h"
 #include "pdfdoc.h"
 #include "pdfdevice.h"
@@ -84,6 +85,50 @@ pdf_dev_html_path_paint(pdf_device *d, pdf_path* p, gs_matrix *ctm, int mode)
 {
 }
 
+static void
+pdf_dev_html_color_set(pdf_device *dev, float *c, pdf_cspacetype cs, int n)
+{
+      static char *template_color = "ctx.fillStyle=\"#%s\";";
+      char buf[128];
+      h5_state *s;
+      float out[3];
+      if (!dev->dest.other)
+	    return;
+      s = (h5_state*) dev->dest.other;
+      switch (cs)
+      {
+	    case DeviceGray:
+		  gx_g_to_rgb(c, out);
+		  break;
+	    case DeviceRGB:
+		  gx_rgb_to_rgb(c, out);
+		  break;
+	    case DeviceCMYK:
+		  gx_cmyk_to_rgb(c, out);
+		  break;
+	    default:
+		  if (n == 1)
+		  {
+			gx_g_to_rgb(c, out);
+		  }
+		  else if (n == 3)
+		  {
+			gx_rgb_to_rgb(c, out);
+		  }
+		  else if (n == 4)
+		  {
+			gx_cmyk_to_rgb(c, out);
+		  }
+		  break;
+      }
+      // quantisizing
+      s->c[0] = (byte)(out[0]*255);
+      s->c[1] = (byte)(out[1]*255);
+      s->c[2] = (byte)(out[2]*255);
+      sprintf(buf, "%02X%02X%02X", s->c[0], s->c[1], s->c[2]);
+      fprintf(dev->dest.f, template_color, buf);
+}
+
 #define min(a, b) ((a)<(b)?(a):(b))
 
 static void
@@ -138,6 +183,7 @@ pdf_dev_html_new(FILE *out)
       d->fill_char = pdf_dev_html_char_show;
       d->stroke_char = pdf_dev_html_char_show;
       d->path_paint = pdf_dev_html_path_paint;
+      d->color_set = pdf_dev_html_color_set;
       return d;
 }
 

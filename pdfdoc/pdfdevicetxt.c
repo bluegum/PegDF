@@ -43,6 +43,11 @@ pdf_dev_text_char_show(pdf_device *dev, pdf_font *f, float scale, gs_matrix *ctm
       }
 }
 
+static void
+pdf_dev_text_color_set(pdf_device *dev, float *c, pdf_cspacetype cs, int n)
+{
+}
+
 pdf_device*
 pdf_dev_text_new(FILE *out)
 {
@@ -59,5 +64,6 @@ pdf_dev_text_new(FILE *out)
       d->fill_char = pdf_dev_text_char_show;
       d->stroke_char = pdf_dev_text_char_show;
       d->path_paint = pdf_dev_text_path_paint;
+      d->color_set = pdf_dev_text_color_set;
       return d;
 }
