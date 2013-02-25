@@ -3,6 +3,7 @@
 #include "pdftypes.h"
 #include "pdfcmap.h"
 #include "pdfcrypto.h"
+#include "gsdraw.h"
 
 typedef enum pdf_font_type_e pdf_font_type;
 typedef enum pdf_font_encoding_type_e pdf_font_encoding_type;
@@ -50,7 +51,7 @@ struct pdf_font_encoding_s
 
 struct pdf_font_descriptor_s
 {
-      pdf_obj *fontname;
+      char fontname[256];
       char *fontfamily;
       pdf_obj *fontstretch;
       int fontweight;
@@ -71,13 +72,14 @@ struct pdf_font_descriptor_s
       pdf_obj *fontfile2;
       pdf_obj *fontfile3;
       unsigned char *charset;
+      // private
+      fontname_id fontname_id;
 };
 
 struct pdf_font_type1_tt_s
 {
       int firstchar;
       int lastchar;
-      pdf_font_descriptor *fontdescriptor;
       pdf_cmap *tounicode;
 };
 
@@ -89,7 +91,6 @@ struct pdf_font_type3_s
       int firstchar;
       int lastchar;
       int *widths;
-      pdf_font_descriptor *fontdescriptor;
       pdf_obj *resources;
       pdf_cmap *tounicode;
 };
@@ -97,7 +98,7 @@ struct pdf_font_type3_s
 struct pdf_font_s
 {
       pdf_font_type type;
-      char *basefont;
+      char basefont[256];
       pdf_font_encoding *encoding;
       pdf_tounicode *tounicode;
       union {
@@ -108,6 +109,7 @@ struct pdf_font_s
       int firstchar;
       int lastchar;
       float *widths;
+      pdf_font_descriptor *fontdescriptor;
       // private
       int ref;
       pdf_font* next;
@@ -121,5 +123,8 @@ extern unsigned int asciihex2int(unsigned char *c);
 extern int unicode_get_cmap(pdf_font *f, unsigned int c, unsigned char *uni);
 extern int pdf_font_tounicode(pdf_font *f, unsigned int cid, unsigned char *uni);
 extern float pdf_font_widths_get(pdf_font* f, u32 cid);
+extern int pdf_font_flags_get(pdf_font *f);
+extern char *pdf_font_basefont_get(pdf_font *f);
+extern fontname_id pdf_font_basefont_id_get(pdf_font *f);
 
 #endif // PDFFONT_H

@@ -297,6 +297,62 @@ pdf_cid_encoding_load(pdf_obj *a, pdf_font_encoding* e)
       }
 }
 
+pdf_font_descriptor *
+pdf_font_descriptor_load(pdf_obj *o)
+{
+      int flags = 0;
+      pdf_obj *fontname;
+      pdf_font_descriptor *d;
+      pdf_obj *val, *a = pdf_obj_deref(o);
+      if (!a || a->t != eDict)
+	    return 0;
+      val = dict_get(a->value.d.dict, "Flags");
+      if (!val)
+      {
+	    return 0;
+      }
+      if (val && val->t == eInt)
+      {
+	    flags = val->value.i;
+      }
+      fontname = dict_get(a->value.d.dict, "FontName");
+      if (!fontname)
+      {
+	    return 0;
+      }
+      // load
+      d = (pdf_font_descriptor*)pdf_malloc(sizeof(pdf_font_descriptor));
+      if (!d)
+      {
+	    return 0;
+      }
+      memset(d, 0, sizeof(pdf_font_descriptor));
+      d->flags = flags;
+      //
+      d->fontname[0] = 0;
+      if (fontname->t == eKey)
+      {
+	    strncpy(d->fontname, fontname->value.k, strlen(fontname->value.k)<256?strlen(fontname->value.k):256);
+	    if (strstr(d->fontname, "Monaco"))
+	    {
+		  d->fontname_id = eMonaco;
+	    }
+	    else if (strstr(d->fontname, "Sans"))
+	    {
+		  d->fontname_id = eArial;
+	    }
+	    else if (strstr(d->fontname, "Times"))
+	    {
+		  d->fontname_id = eArial;
+	    }
+	    else
+	    {
+		  d->fontname_id = eNoFontName;
+	    }
+      }
+      return d;
+}
+
 pdf_font *
 pdf_font_load(pdf_obj *o, int cid2uni, pdfcrypto_priv* encrypt)
 {
@@ -438,6 +494,16 @@ pdf_font_load(pdf_obj *o, int cid2uni, pdfcrypto_priv* encrypt)
 		  }
 	    }
       }
+      // FontDescriptor
+      a = dict_get(o->value.d.dict, "FontDescriptor");
+      if (a)
+      {
+	    f->fontdescriptor = pdf_font_descriptor_load(a);
+      }
+      else
+      {
+	    f->fontdescriptor = 0;
+      }
       return f;
   fail:
       if (f)
@@ -465,6 +531,10 @@ pdf_font_free(pdf_font *f)
 		  {
 			pdf_tounicode_free(f->tounicode);
 			f->tounicode = 0;
+		  }
+		  if (f->fontdescriptor)
+		  {
+			pdf_free(f->fontdescriptor);
 		  }
 		  pdf_free(f);
 		  f = next;
@@ -534,4 +604,32 @@ pdf_font_tounicode(pdf_font *f, unsigned int cid, unsigned char *uni)
 {
       if (f && f->unicode_get)
 	    return (f->unicode_get)(f, cid, uni);
+}
+
+int
+pdf_font_flags_get(pdf_font *f)
+{
+      if (!f || !(f->fontdescriptor))
+      {
+	    return 0;
+      }
+      return f->fontdescriptor->flags;
+}
+
+char *
+pdf_font_basefont_get(pdf_font *f)
+{
+      if (!f || !(f->fontdescriptor))
+      {
+	    return 0;
+      }
+      return f->fontdescriptor->fontname;
+}
+extern fontname_id pdf_font_basefont_id_get(pdf_font *f)
+{
+      if (!f || !(f->fontdescriptor))
+      {
+	    return 0;
+      }
+      return f->fontdescriptor->fontname_id;
 }

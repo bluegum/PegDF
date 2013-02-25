@@ -3,8 +3,28 @@
 
 #include "pdftypes.h"
 
+// Typeface Styles
+#define FFLAGS_FIXEDPITCH    0x01
+#define FFLAGS_SERIF         0x02
+#define FFLAGS_SYMBOLIC      0x04
+#define FFLAGS_SCRIPT        0x08
+#define FFLAGS_NONSYMBOLIC   0x20
+#define FFLAGS_ITALIC        0x40
+#define FFLAGS_ALLCAP        0x20000
+#define FFLAGS_SMALLCAP      0x40000
+#define FFLAGS_FORCEBOLD     0x80000
+
+typedef enum fontname_id_e fontname_id;
 typedef enum pdf_cspacetype_e pdf_cspacetype;
 typedef struct pdf_cspace_s pdf_cspace;
+
+enum fontname_id_e
+{
+      eTimes,
+      eArial,
+      eMonaco,
+      eNoFontName
+};
 
 enum pdf_cspacetype_e
 {

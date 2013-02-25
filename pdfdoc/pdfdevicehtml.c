@@ -6,29 +6,47 @@
 #include "pdfdoc.h"
 #include "pdfdevice.h"
 
+
 typedef struct h5_state_s h5_state;
+typedef enum font_family_e font_family;
+
+enum font_family_e
+{
+      eCourier,
+      eSerif,
+      eSans,
+};
+
 struct h5_state_s
 {
       float fs; // font scale
       byte c[3]; // color
+      int font_flags;
+      font_family ff;
+      fontname_id fid;
 };
 
 static void h5_canvas_create(FILE *f, char *id, byte [3]);
-static void hs_canvas_fontscale_update(pdf_device *d, float scale);
+static void hs_canvas_font_update(pdf_device *d, font_family f, fontname_id id, float scale, int, int);
+static font_family html_find_font(int font_flags);
 
 static void
 pdf_dev_html_doc_begin(pdf_device *dev)
 {
+      h5_state *s;
       fprintf(dev->dest.f, "%s", "<!DOCTYPE html>");
       fprintf(dev->dest.f, "%s", "<html>");
       fprintf(dev->dest.f, "%s", "<head>");
       fprintf(dev->dest.f, "%s", "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"/>");
       fprintf(dev->dest.f, "%s", "</head>\n");
       dev->dest.other = pdf_malloc(sizeof(h5_state));
+      s = (h5_state*)dev->dest.other;
       ((h5_state*) dev->dest.other)->fs = 12;
       ((h5_state*) dev->dest.other)->c[0] = 0;
       ((h5_state*) dev->dest.other)->c[1] = 0;
       ((h5_state*) dev->dest.other)->c[2] = 0;
+      s->font_flags = 0;
+      s->fid = eTimes;
 }
 static void
 pdf_dev_html_doc_end(pdf_device *dev)
@@ -137,7 +155,9 @@ pdf_dev_html_char_show(pdf_device *dev, pdf_font *f, float scale, gs_matrix *ctm
       unsigned char uni[8];
       int i, n;
       gs_matrix fin;
-
+      int font_flags;
+      h5_state *s = (h5_state*)dev->dest.other;
+      font_family family = eSans;
       // PDF spec problem: type3 font don't scale well with TEXT CTM
       // hack, should be html5/canvas' save() and restore()
       if (scale == 1 && ctm->b == 0 && ctm->c == 0)
@@ -148,7 +168,19 @@ pdf_dev_html_char_show(pdf_device *dev, pdf_font *f, float scale, gs_matrix *ctm
       {
 	    scale = scale * min(fabs(ctm->a), fabs(ctm->d));
       }
-      hs_canvas_fontscale_update(dev, scale);
+      // updating font?
+      if (s)
+      {
+	    family = s->ff;
+	    font_flags = pdf_font_flags_get(f);
+	    if (s->font_flags != font_flags)
+	    {
+		  s->font_flags = font_flags;
+		  family = html_find_font(font_flags);
+	    }
+      }
+
+      hs_canvas_font_update(dev, family, pdf_font_basefont_id_get(f), scale, font_flags & FFLAGS_FORCEBOLD, font_flags & FFLAGS_ITALIC);
       mat_mul(&fin, ctm, &dev->dev_ctm);
       n = pdf_font_tounicode(f, cid, uni);
       fprintf(dev->dest.f, "ctx.fillText(\"");
@@ -205,15 +237,63 @@ h5_canvas_create(FILE *f, char *id, byte c[3])
 }
 
 static void
-hs_canvas_fontscale_update(pdf_device *dev, float scale)
+hs_canvas_font_update(pdf_device *dev, font_family family, fontname_id id, float scale, int bold, int italic)
 {
+      static char *template_font ="ctx.font=\"%s %s %fpx %s\";";
       h5_state *s;
       if (!dev->dest.other)
 	    return;
       s = (h5_state*) dev->dest.other;
-      if (s->fs != scale)
+      if (s->fs != scale || s->ff != family || s->fid != id)
       {
 	    s->fs = scale;
-	    fprintf(dev->dest.f, "ctx.font=\"%fpx Arial\";", scale);
+	    s->ff = family;
+	    s->fid = id;
+	    switch (id)
+	    {
+		  case eTimes:
+			fprintf(dev->dest.f, template_font,italic?"italic ":" ", bold?"bold ":" ",  scale, "Times");
+			break;
+		  case eArial:
+			fprintf(dev->dest.f, template_font, italic?"italic ":" ", bold?"bold ":" ",  scale, "Arial");
+			break;
+		  case eMonaco:
+			fprintf(dev->dest.f, template_font, italic?"italic ":" ", bold?"bold ":" ",  scale, "Monaco");
+			break;
+		  default:
+			switch (family)
+			{
+			      case eCourier:
+				    fprintf(dev->dest.f, template_font,italic?"italic ":" ", bold?"bold ":" ",  scale, "Courier");
+				    break;
+			      case eSerif:
+				    fprintf(dev->dest.f, template_font, italic?"italic ":" ", bold?"bold ":" ",  scale, "Times");
+				    break;
+			      case eSans:
+			      default:
+				    fprintf(dev->dest.f, template_font, italic?"italic ":" ", bold?"bold ":" ",  scale, "Arial");
+				    break;
+			}
+			break;
+	    }
       }
+}
+
+static font_family
+html_find_font(int font_flags)
+{
+      font_family family;
+
+      if (font_flags & FFLAGS_FIXEDPITCH)
+      {
+	    family = eCourier;
+      }
+      else
+      {
+	    if (font_flags & FFLAGS_SERIF)
+		  family = eSerif;
+	    else
+		  family = eSans;
+      }
+      return family;
 }
