@@ -65,7 +65,9 @@ test	:	$(APP)
 		echo "failed test"; \
 	fi
 ## openssl/libcrypto.a
-$(LIB_CRYPTO) :
+$(LIB_CRYPTO) :  openssl/include/openssl/evp.h
+	@cd openssl; ./config $(OPENSSL_DEBUG); $(MAKE) build_crypto; cd ..;
+openssl/include/openssl/evp.h :
 	@cd openssl; ./config $(OPENSSL_DEBUG); $(MAKE) build_crypto; cd ..;
 
 realclean : clean
