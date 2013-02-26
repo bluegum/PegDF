@@ -32,12 +32,13 @@ vpath %.h . pdfdoc zlib
 #
 OBJ_DIR         = obj
 DEPS_DIR        = deps
+APP_DIR         = utils
 # GLOBALS TARGETS
 LIB_CRYPTO  = openssl/libcrypto.a
 TGT_LIB	=
 GLYPH_NAME_TO_UNI = glyph_name_to_uni.c
-APP = readpdf
-CLEAN = $(APP) readpdf.o pegx $(subst .c,.o,$(GLYPH_NAME_TO_UNI))
+APP = $(APP_DIR)/readpdf
+CLEAN = pegx $(subst .c,.o,$(GLYPH_NAME_TO_UNI))
 
 COMMON_HEADERS := *.h
 #######
@@ -51,16 +52,12 @@ $(APP) : $(targets)
 
 .PHONY: all realclean clean
 
-readpdf : readpdf.o $(TGT_LIB)
-
-readpdf.o : pdfread/pdfread.h | $(GLYPH_NAME_TO_UNI)
-
 pegx    :
 	$(MAKE) -C peg
 	-@cp peg/peg $@
 
-test	:	readpdf
-	@./readpdf examples/simpledict.pdf
+test	:	$(APP)
+	@$(APP) examples/simpledict.pdf
 	@if [ "$$?" -eq 0 ] ;\
 	then \
 		echo "passed test"; \
@@ -78,3 +75,4 @@ realclean : clean
 
 $(GLYPH_NAME_TO_UNI) :
 	gperf -CGD -L ANSI-C -e ';' -t -N glyph_name_to_uni -H glyph_name_hash glyphlist.txt --output-file=$(GLYPH_NAME_TO_UNI)
+

@@ -20,5 +20,5 @@ CLEAN		:= $(CLEAN) $(OBJS_$(d)) $(DEPS_$(d))
 
 TGT_LIB		:= $(TGT_LIB) $(LOCAL_LIB)
 
-$(LOCAL_LIB) : $(OBJS_$(d)) $(COMMON_HEADERS)
+$(LOCAL_LIB) : $(OBJS_$(d))
 		$(ARCHIVE)

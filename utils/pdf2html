@@ -1,0 +1,4 @@
+#!/bin/sh
+[ $# -lt 2 ] && echo \"Usage: pdf2html in.pdf out.html\" && exit 1
+! [ -e $1 ] &&  echo Error: file \""$1"\" not found &&  exit 2
+./readpdf -d html $1 $2
