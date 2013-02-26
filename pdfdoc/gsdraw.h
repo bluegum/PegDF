@@ -21,6 +21,8 @@ typedef struct pdf_cspace_s pdf_cspace;
 enum fontname_id_e
 {
       eTimes,
+      eCourier,
+      eHelvetica,
       eArial,
       eMonaco,
       eNoFontName

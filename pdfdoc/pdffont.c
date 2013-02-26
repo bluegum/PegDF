@@ -337,11 +337,23 @@ pdf_font_descriptor_load(pdf_obj *o)
 	    {
 		  d->fontname_id = eMonaco;
 	    }
-	    else if (strstr(d->fontname, "Sans"))
+	    else if (strstr(d->fontname, "Times"))
+	    {
+		  d->fontname_id = eTimes;
+	    }
+	    else if (strstr(d->fontname, "Helvetica"))
+	    {
+		  d->fontname_id = eHelvetica;
+	    }
+	    else if (strstr(d->fontname, "Courier"))
+	    {
+		  d->fontname_id = eCourier;
+	    }
+	    else if (strstr(d->fontname, "Arial"))
 	    {
 		  d->fontname_id = eArial;
 	    }
-	    else if (strstr(d->fontname, "Times"))
+	    else if (strstr(d->fontname, "Sans"))
 	    {
 		  d->fontname_id = eArial;
 	    }

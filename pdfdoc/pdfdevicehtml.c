@@ -12,7 +12,7 @@ typedef enum font_family_e font_family;
 
 enum font_family_e
 {
-      eCourier,
+      eMonoSpace,
       eSerif,
       eSans,
 };
@@ -184,17 +184,46 @@ pdf_dev_html_char_show(pdf_device *dev, pdf_font *f, float scale, gs_matrix *ctm
       mat_mul(&fin, ctm, &dev->dev_ctm);
       n = pdf_font_tounicode(f, cid, uni);
       fprintf(dev->dest.f, "ctx.fillText(\"");
-      for (i = 0; i < n; i++)
+      switch (n)
       {
-	    if (uni[i] == '\"')
-	    {
-		  fputc('\\', dev->dest.f);
-	    }
-	    else if (uni[i] == '\\')
-	    {
-		  fputc('\\', dev->dest.f);
-	    }
-	    fputc(uni[i], dev->dest.f);
+	    case 1:
+		  switch (uni[0])
+		  {
+			case  '\(':
+			case  '\)':
+			case  '\'':
+			case  '\`':
+			case  '\"':
+			case  '\\':
+			{
+			      fputc('\\', dev->dest.f);
+			      fputc(uni[0], dev->dest.f);
+			}
+			break;
+			case 11:
+			case 12:
+			case 13:
+			case 14:
+			      break;
+			default:
+			      fputc(uni[0], dev->dest.f);
+			      break;
+		  }
+		  break;
+	    default:
+		  for (i = 0; i < n; i++)
+		  {
+			if (uni[i] == '\"')
+			{
+			      fputc('\\', dev->dest.f);
+			}
+			else if (uni[i] == '\\')
+			{
+			      fputc('\\', dev->dest.f);
+			}
+			fputc(uni[i], dev->dest.f);
+		  }
+		  break;
       }
       fprintf(dev->dest.f, "\",%d,%d);\n", (int)fin.e, (int)fin.f);
 }
@@ -254,6 +283,12 @@ hs_canvas_font_update(pdf_device *dev, font_family family, fontname_id id, float
 		  case eTimes:
 			fprintf(dev->dest.f, template_font,italic?"italic ":" ", bold?"bold ":" ",  scale, "Times");
 			break;
+		  case eHelvetica:
+			fprintf(dev->dest.f, template_font, italic?"italic ":" ", bold?"bold ":" ",  scale, "Helvetica");
+			break;
+		  case eCourier:
+			fprintf(dev->dest.f, template_font, italic?"italic ":" ", bold?"bold ":" ",  scale, "Courier");
+			break;
 		  case eArial:
 			fprintf(dev->dest.f, template_font, italic?"italic ":" ", bold?"bold ":" ",  scale, "Arial");
 			break;
@@ -263,15 +298,15 @@ hs_canvas_font_update(pdf_device *dev, font_family family, fontname_id id, float
 		  default:
 			switch (family)
 			{
-			      case eCourier:
+			      case eMonoSpace:
 				    fprintf(dev->dest.f, template_font,italic?"italic ":" ", bold?"bold ":" ",  scale, "Courier");
 				    break;
-			      case eSerif:
-				    fprintf(dev->dest.f, template_font, italic?"italic ":" ", bold?"bold ":" ",  scale, "Times");
-				    break;
 			      case eSans:
-			      default:
 				    fprintf(dev->dest.f, template_font, italic?"italic ":" ", bold?"bold ":" ",  scale, "Arial");
+				    break;
+			      case eSerif:
+			      default:
+				    fprintf(dev->dest.f, template_font, italic?"italic ":" ", bold?"bold ":" ",  scale, "Times");
 				    break;
 			}
 			break;
@@ -286,11 +321,13 @@ html_find_font(int font_flags)
 
       if (font_flags & FFLAGS_FIXEDPITCH)
       {
-	    family = eCourier;
+	    family = eMonoSpace;
       }
       else
       {
 	    if (font_flags & FFLAGS_SERIF)
+		  family = eSerif;
+	    else if (font_flags & FFLAGS_SYMBOLIC)
 		  family = eSerif;
 	    else
 		  family = eSans;

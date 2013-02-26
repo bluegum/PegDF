@@ -277,29 +277,88 @@ pdf_lex_string(buffer_stream *s, unsigned char* buf, int max)
 {
       int c;
       int i = 0;
-      int escaped = 0;
 
       while ((c = mGETCHAR(s)) != EOF)
       {
-            if (escaped)
-            {
-                  escaped = 0;
-                  *buf++ = c;
-            }
-            else if (c == '(')
-                  pdf_lex_string(s, buf, max);
-            else if (c == ')')
-            {
-                  *buf = 0;
-                  return pdf_ok;
-            }
-            else if ( c == '\\')
-            {
-                  escaped = 1;
-            }
-            else
-            {
-                  *buf++ = c;
+	    switch (c)
+	    {
+		  case '(':
+			pdf_lex_string(s, buf, max);
+			break;
+		  case  ')':
+			*buf = 0;
+			return pdf_ok;
+		  case '\\':
+			if ((c = mGETCHAR(s)) != EOF)
+			{
+			      switch (c)
+			      {
+				    case 'n':
+					  *buf++ = '\n';
+					  break;
+				    case 'r':
+					  *buf++ = '\r';
+					  break;
+				    case 't':
+					  *buf++ = '\t';
+					  break;
+				    case 'b':
+					  *buf++ = '\b';
+					  break;
+				    case 'f':
+					  *buf++ = '\f';
+					  break;
+				    case '(':
+					  *buf++ = '(';
+					  break;
+				    case ')':
+					  *buf++ = ')';
+					  break;
+				    case '\\':
+					  *buf++ = '\\';
+					  break;
+				    default:
+					  if (c >= '0' && c <= '7')
+					  { // lex octal number
+						int octal = c - '0';
+						if ((c = mGETCHAR(s)) != EOF)
+						{
+						      if (c >= '0' && c <= '7')
+						      {
+							    octal = (octal << 3) + c - '0';
+							    if ((c = mGETCHAR(s)) != EOF)
+							    {
+								  if (c >= '0' && c <= '7')
+								  {
+									octal = (octal << 3) + c - '0';
+								  }
+								  else
+								  {
+									mUNGETCHAR(s);
+								  }
+							    }
+							    else
+							    {
+								  mUNGETCHAR(s);
+							    }
+						      }
+						      else
+						      {
+							    mUNGETCHAR(s);
+						      }
+						}
+						*buf++ = octal;
+					  }
+					  else
+					  {
+						*buf++ = c;
+					  }
+					  break;
+			      }
+			}
+			break;
+		  default:
+			*buf++ = c;
             }
             if (++i >= max)
                   break;
