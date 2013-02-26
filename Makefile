@@ -36,9 +36,8 @@ APP_DIR         = utils
 # GLOBALS TARGETS
 LIB_CRYPTO  = openssl/libcrypto.a
 TGT_LIB	=
-GLYPH_NAME_TO_UNI = glyph_name_to_uni.c
 APP = $(APP_DIR)/readpdf
-CLEAN = pegx $(subst .c,.o,$(GLYPH_NAME_TO_UNI))
+CLEAN =
 
 COMMON_HEADERS := *.h
 #######
@@ -51,10 +50,6 @@ include Rules.mk
 $(APP) : $(targets)
 
 .PHONY: all realclean clean
-
-pegx    :
-	$(MAKE) -C peg
-	-@cp peg/peg $@
 
 test	:	$(APP)
 	@$(APP) examples/simpledict.pdf
@@ -74,7 +69,4 @@ realclean : clean
 	- @cd openssl; if test -e Makefile ; then $(MAKE) clean; rm -f Makefile; rm crypto/opensslconf.h; rm include/openssl/evp.h; fi; cd ..;
 	- @rm $(GLYPH_NAME_TO_UNI) $(LIB_CRYTO)
 	$(MAKE) -C peg spotless
-
-$(GLYPH_NAME_TO_UNI) :
-	gperf -CGD -L ANSI-C -e ';' -t -N glyph_name_to_uni -H glyph_name_hash glyphlist.txt --output-file=$(GLYPH_NAME_TO_UNI)
 

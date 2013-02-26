@@ -19,7 +19,7 @@ include         $(DEPS_$(d))
 
 HDRS_$(d)       := $(wildcard $(d)/*.h)
 
-CLEAN           := $(CLEAN) $(OBJS_$(d)) $(DEPS_$(d)) $(d)/pdf.c $(d)/pdf_parse.o
+CLEAN           := $(CLEAN) $(OBJS_$(d)) $(DEPS_$(d)) $(d)/pdf.c $(d)/pdf_parse.o peg/peg
 
 TGT_LIB         := $(TGT_LIB) $(LOCAL_LIB)
 
@@ -28,5 +28,9 @@ $(LOCAL_LIB) : $(OBJS_$(d))  $(d)/pdf_parse.o
 	$(ARCHIVE)
 ########## peg grammar files and extra rules
 $(d)/pdf_parse.c $(d)/pdf_parse.o:	$(d)/pdf.c
-$(d)/pdf.c  : $(d)/pdf.peg ./pegx
-	./pegx -v -o $(@) $(<)
+$(d)/pdf.c  : $(d)/pdf.peg peg/peg
+	peg/peg -v -o $(@) $(<)
+peg/peg    :
+	$(MAKE) -C peg
+
+

@@ -24,6 +24,13 @@ CLEAN		:= $(CLEAN) $(OBJS_$(d)) $(DEPS_$(d))
 
 TGT_LIB		:= $(TGT_LIB) $(LOCAL_LIB)
 
-$(LOCAL_LIB) : $(OBJS_$(d))
+$(LOCAL_LIB) : $(OBJS_$(d))  $(subst .c,.o,$(GLYPH_NAME_TO_UNI))
 	@echo $^ 
 	$(ARCHIVE)
+
+GLYPH_NAME_TO_UNI := $(d)/glyph_name_to_uni.c
+
+$(GLYPH_NAME_TO_UNI) : $(d)/glyphlist.txt
+	gperf -CGD -L ANSI-C -e ';' -t -N glyph_name_to_uni -H glyph_name_hash $< --output-file=$(GLYPH_NAME_TO_UNI)
+
+CLEAN		:= $(CLEAN) $(subst .c,.o,$(GLYPH_NAME_TO_UNI))
