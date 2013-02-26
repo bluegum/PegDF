@@ -29,8 +29,10 @@ $(LOCAL_LIB) : $(OBJS_$(d))  $(subst .c,.o,$(GLYPH_NAME_TO_UNI))
 	$(ARCHIVE)
 
 GLYPH_NAME_TO_UNI := $(d)/glyph_name_to_uni.c
-
-$(GLYPH_NAME_TO_UNI) : $(d)/glyphlist.txt
+GLYPH_NAME_TO_UNI_SRC := $(d)/glyphlist.txt
+$(GLYPH_NAME_TO_UNI) : $(GLYPH_NAME_TO_UNI_SRC)
 	gperf -CGD -L ANSI-C -e ';' -t -N glyph_name_to_uni -H glyph_name_hash $< --output-file=$(GLYPH_NAME_TO_UNI)
+
+pdfdoc/pdffont.c : $(GLYPH_NAME_TO_UNI)
 
 CLEAN		:= $(CLEAN) $(subst .c,.o,$(GLYPH_NAME_TO_UNI))
