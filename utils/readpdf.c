@@ -115,8 +115,16 @@ int main(int argc, char **argv)
                               {
                                     if (isspace(argv[i][2]) || strlen(argv[i])==2)
                                     {
-                                          i++;
-					  firstpage = atoi(argv[i]);
+					  int n = strspn(argv[i+1], "0123456789");
+					  if (n == strlen(argv[i+1]))
+					  {
+						i++;
+						firstpage = atoi(argv[i]);
+					  }
+					  else
+					  {
+						firstpage = 1;
+					  }
                                     }
 				    else
 				    {
@@ -152,6 +160,11 @@ int main(int argc, char **argv)
                   }
                   i += 1;
             }
+      }
+      if (!in && out)
+      {
+	    in = out;
+	    out = 0;
       }
       if (!out)
 	    printf("\n%s%s\n\n", "Dry run on ", in);
@@ -202,7 +215,11 @@ int main(int argc, char **argv)
 		  fclose(outf);
 		  outf = 0;
 	    }
-	    pdf_write_pdf(doc, out, write_flag, 17, firstpage-1, lastpage-1, NULL, NULL);
+	    pdf_write_pdf(doc, in, out, write_flag, 17, firstpage-1, lastpage-1, NULL, NULL);
+      }
+      if (!out)
+      {
+	    printf("Need to specify output file/directory!\n");
       }
   done:
       pdf_doc_done(doc);

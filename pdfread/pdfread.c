@@ -1199,7 +1199,10 @@ pdf_open(char *in, pdf_doc **doc)
                   return pdf_io_err;
             }
       }
-
+      else
+      {
+	    return pdf_file_err;
+      }
       parser_inst = parser_new(inf, f_getchar);
       if (!parser_inst)
             return -1;

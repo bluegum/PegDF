@@ -1,3 +1,8 @@
+#include <sys/stat.h>
+#include <sys/types.h>
+#ifdef __unix__
+#include <unistd.h>
+#endif
 #include <stdio.h>
 #include <string.h>
 #include "bplustree.h"
@@ -704,21 +709,23 @@ pdf_page_obj_write(pdf_page *page, int pgidx, unsigned long write_flag, pdf_xref
 }
 
 pdf_err
-pdf_write_pdf(pdf_doc *doc, char *ofile, unsigned long write_flag, int version, int pg1st, int pglast, char *upw, char *opw)
+pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, unsigned long write_flag, int version, int pg1st, int pglast, char *upw, char *opw)
 {
-      FILE* out;
+      pdf_err e = pdf_ok;
+      FILE* out = 0;
       char linebuf[1024];
-      int i, startxref;
-      pdf_xref_internal *xref;
+      int i, startxref, err;
+      pdf_xref_internal *xref = 0;
       pdfcrypto_priv *crypto = NULL;
-
+      char *odir;
+      struct stat s;
       if (pg1st < 0)
             pg1st = 0;
       if (pglast < 0)
             pglast = doc->count-1;
       if (pglast < pg1st)
             pglast = pg1st;
-      if (!ofile)
+      if (!ofile && (!(write_flag&WRITE_PDF_PAGE_SEPARATION)))
             return pdf_ok;
       if (pdf_doc_need_passwd(doc))
       {
@@ -741,22 +748,70 @@ pdf_write_pdf(pdf_doc *doc, char *ofile, unsigned long write_flag, int version, 
       if (write_flag&WRITE_PDF_PAGE_SEPARATION)
       {
 	    char base[128];
-	    char *b = strchr(ofile, '.');
-	    if (b)
+	    char *b, *b1;
+	    // make output directory
+#ifdef __unix__
+	    b1 = basename(ofile);
+#endif
+	    b = strchr(b1, '.');
+	    if (b || b1)
 	    {
-		  memcpy(base, ofile, b-ofile);
-		  base[b-ofile] = 0;
+		  if (b)
+		  {
+			memcpy(base, b1, b-b1);
+			base[b-b1] = 0;
+		  }
+		  else
+			strcpy(base, b1);
 	    }
 	    else
 	    {
-		  memcpy(base, ofile, strlen(ofile));
-		  base[strlen(ofile)] = 0;
+		  memcpy(base, infile, strlen(infile));
+		  base[strlen(infile)] = 0;
 	    }
+	    odir = base;
+	    if ((err = stat(odir, &s)) == 0)
+	    {
+		  if ((!(S_ISDIR(s.st_mode))) && (S_ISREG(s.st_mode)))
+		  {
+			e = pdf_file_err;
+			goto done;
+		  }
+	    }
+	    if (err || (!S_ISDIR(s.st_mode)))
+	    {
+		  err = mkdir(odir, S_IRWXU | S_IRWXG);
+		  if (err != 0)
+		  {
+			e = pdf_file_err;
+			goto done;
+		  }
 
+	    }
+	    else if (err == 0 && (!S_ISDIR(s.st_mode)))
+	    {
+		  e = pdf_file_err;
+		  goto done;
+	    }
+	    //
             pglast = doc->count-1;
 	    for (i = pg1st; i <= pglast; i++)
 	    {
-		  sprintf(linebuf, "%s-%d.%s", base, i+1, "pdf");
+#ifdef __unix__
+		  b = basename(infile);
+#endif
+		  b1 = strchr(b, '.');
+		  if (b1)
+		  {
+			char striped[256];
+			memcpy(striped, b, b1-b);
+			striped[b1-b] = 0;
+			sprintf(linebuf, "%s/%s-%d.%s", odir, striped, i+1, "pdf");
+		  }
+		  else
+		  {
+			sprintf(linebuf, "%s/%s-%d.%s", odir, b, i+1, "pdf");
+		  }
 		  printf("Writing %s..\n", linebuf);
 		  out = fopen(linebuf, "wb");
 		  if (!out)
@@ -819,7 +874,8 @@ pdf_write_pdf(pdf_doc *doc, char *ofile, unsigned long write_flag, int version, 
 		  pdf_xref_internal_free(xref);
 	    if (crypto)
 		  pdf_crypto_destroy(crypto);
-	    fclose(out);
+	    if (out)
+		  fclose(out);
       }
       return pdf_ok;
 }
