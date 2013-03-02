@@ -1,4 +1,4 @@
-APP            += $(addprefix $(BIN_DIR)/, readpdf picker)
+APP            += $(addprefix $(BIN_DIR)/, readpdf picker pedal)
 d	       := utils
 
 $(OBJ_DIR)/%.o: $(d)/%.c
@@ -9,7 +9,8 @@ $(DEPS_DIR)/%.d: $(d)/%.c
 
 $(BIN_DIR)/readpdf : $(OBJ_DIR)/readpdf.o  $(TGT_LIB)
 $(BIN_DIR)/picker  : $(OBJ_DIR)/picker.o  $(TGT_LIB)
+$(BIN_DIR)/pedal   : $(OBJ_DIR)/pedal.o  $(TGT_LIB)
 
 $(OBJ_DIR)/readpdf.o : pdfread/pdfread.h
 
-CLEAN          += $(APP) $(CLEAN) $(d)/readpdf.o
+CLEAN          += $(APP) $(CLEAN) $(OBJ_DIR)/readpdf.o

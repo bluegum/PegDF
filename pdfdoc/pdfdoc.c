@@ -843,7 +843,7 @@ pdf_doc_authenticate_user_password(pdf_doc *doc, char *pw)
 }
 
 pdf_err
-pdf_doc_process_all(pdf_doc *doc, char *devtype, FILE *out, unsigned char *pw)
+pdf_doc_process_all(pdf_doc *doc, char *devtype, FILE *out, char *pw)
 {
       pdf_device *dev = NULL;
       pdfcrypto_priv *crypto = NULL;

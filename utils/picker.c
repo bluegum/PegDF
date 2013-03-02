@@ -116,12 +116,15 @@ main(int argc, char* argv[])
       //
       pdf_err e;
       pdf_doc *doc;
-      pdfcrypto *crypto;
+      pdfcrypto *crypto = 0;
       int version = 17; // for output files
       int write_flag = 0;
 
       if (argc < 2)
+      {
+	    usage();
 	    return 1;
+      }
       while (v < argc)
       {
 	    if (argv[v][0] == '-')
@@ -184,7 +187,7 @@ main(int argc, char* argv[])
 		  {
 			printf("%s", "\nInvalid parameters!\n\n");
 			usage();
-			return 0;
+			return 1;
 		  }
 	    }
 	    else
@@ -219,14 +222,16 @@ main(int argc, char* argv[])
       if (!passwd && pdf_doc_need_passwd(doc) && pdf_doc_authenticate_user_password(doc, "") != 0)
       {
 	    printf("%s\n", "Need user password, use -p option");
-	    goto err;
+	    goto err1;
       }
       if (passwd && pdf_doc_need_passwd(doc) && pdf_doc_authenticate_user_password(doc, passwd) != 0)
       {
 	    printf("%s\n", "Wrong user password!");
-	    goto err;
+	    goto err1;
       }
+#ifdef DEBUG
       printf("writing to %s\n", out);
+#endif
       if (inflate)
 	    write_flag |= WRITE_PDF_CONTENT_INFLATE;
       if (pdf_doc_need_passwd(doc))
@@ -289,11 +294,12 @@ main(int argc, char* argv[])
 	    }
       }
       // done
+  err1:
       if (crypto)
 	    pdf_crypto_destroy(crypto);
       pdf_doc_done(doc);
       pdf_finish(doc);
-     return 0;
+      return 0;
   err:
       return 1;
 }

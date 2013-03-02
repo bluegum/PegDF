@@ -5,6 +5,7 @@ CF_ALL          = -Wall -I . $(INCLUDE_ALL)
 LF_ALL          = -pg -lm -lcrypto -L openssl -ldl
 LL_ALL          =
 OPENSSL_DEBUG   =
+INSTALL = /usr/bin/install -c
 ifeq	"$(YYDEBUG)" "y"
 	CF_ALL += -DYY_DEBUG
 endif
@@ -31,6 +32,7 @@ vpath %.h . pdfdoc zlib
 OBJ_DIR         = obj
 DEPS_DIR        = deps
 BIN_DIR         = bin
+INSTALL_DIR     = /usr/local/bin
 # GLOBALS TARGETS
 LIB_CRYPTO      = openssl/libcrypto.a
 TGT_LIB	        =
@@ -68,5 +70,12 @@ realclean : clean
 	- @cd openssl; if test -e Makefile ; then $(MAKE) clean; rm -f Makefile; rm crypto/opensslconf.h; rm include/openssl/evp.h; fi; cd ..;
 	- @rm $(GLYPH_NAME_TO_UNI) $(LIB_CRYTO)
 	$(MAKE) -C peg spotless
+.PHONY    : all
+all       :  $(APP)
 
-all :  $(APP)
+.PHONY    : install
+$(INSTALL_DIR)/% : $(BIN_DIR)/%
+	cp -p $< $@
+	strip $@
+
+install   : $(INSTALL_DIR)/picker $(INSTALL_DIR)/pedal

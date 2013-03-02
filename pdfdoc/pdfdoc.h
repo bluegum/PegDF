@@ -2,6 +2,7 @@
 #define PDFDOC_H
 
 #include "pdf.h"
+#include "pdfmem.h"
 #include "gsdraw.h"
 #include "pdfresource.h"
 #include "pdffilter.h"
@@ -397,7 +398,6 @@ extern pdf_err pdf_doc_process(pdf_doc *d, pdf_device*, pdfcrypto_priv* encrypt)
 extern pdf_err pdf_open(char *in,  pdf_doc **doc);
 extern pdf_err pdf_finish(pdf_doc *doc);
 extern int pdf_doc_authenticate_user_password(pdf_doc *doc, char *pw);
-extern pdf_err pdf_doc_process_all(pdf_doc *doc, char *devtype, FILE *outf, unsigned char *pw);
 extern int pdf_doc_need_passwd(pdf_doc *doc);
 extern pdf_err pdf_write_pdf(pdf_doc *doc, char *infile, char *ofile, unsigned long write_flag, int version, int pg1st, int pglast, char *upw, char *opw);
 extern void pdf_doc_trailer_free(pdf_trailer * tr);

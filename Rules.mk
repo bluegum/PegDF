@@ -39,9 +39,10 @@ $(BIN_DIR)/% : $(OBJ_DIR)/%.o $(TGT_LIB) $(LIB_CRYPTO) | $(BIN_DIR)
 	$(LINK)
 
 # Per directory rules
-$(OBJ_DIR)/%.o : utils/%.c $(OBJ_DIR)
+$(OBJ_DIR)/%.o : utils/%.c | $(OBJ_DIR)
 	$(CC) -c $(INCLUDE_ALL) -o $@ $< $(CF_ALL)
-$(OBJ_DIR)/%.o : pdfread/%.c $(OBJ_DIR)
+$(OBJ_DIR)/%.o : pdfread/%.c | $(OBJ_DIR)
+	echo $(CF_ALL)
 	$(CC) -c $(INCLUDE_ALL) -o $@ $< $(CF_ALL)
 
 # The variables TGT_*, CLEAN and CMD_INST* may be added to by the Makefile
@@ -55,20 +56,20 @@ clean:
 	- rm -f $(CLEAN) $(TGT_LIB)
 	- rm -rf $(OBJ_DIR) $(DEPS_DIR)
 
-.PHONY:         install
-install:        targets
-	$(INST) $(TGT_BIN) -m 755 -d $(DIR_BIN)
-	$(CMD_INSTBIN)
-	$(INST) $(TGT_SBIN) -m 750 -d $(DIR_SBIN)
-	$(CMD_INSTSBIN)
-ifeq ($(wildcard $(DIR_ETC)/*),)
-	$(INST) $(TGT_ETC) -m 644 -d $(DIR_ETC)
-	$(CMD_INSTETC)
-else
-	@echo Configuration directory $(DIR_ETC) already present -- skipping
-endif
-	$(INST) $(TGT_LIB) -m 750 -d $(DIR_LIB)
-	$(CMD_INSTLIB)
+#.PHONY:         install
+#install:        targets
+#	$(INST) $(TGT_BIN) -m 755 -d $(DIR_BIN)
+#	$(CMD_INSTBIN)
+#	$(INST) $(TGT_SBIN) -m 750 -d $(DIR_SBIN)
+#	$(CMD_INSTSBIN)
+#ifeq ($(wildcard $(DIR_ETC)/*),)
+#	$(INST) $(TGT_ETC) -m 644 -d $(DIR_ETC)
+#	$(CMD_INSTETC)
+#else
+#	@echo Configuration directory $(DIR_ETC) already present -- skipping
+#endif
+#	$(INST) $(TGT_LIB) -m 750 -d $(DIR_LIB)
+#	$(CMD_INSTLIB)
 
 
 # Prevent make from removing any build targets, including intermediate ones
