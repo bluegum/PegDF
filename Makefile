@@ -2,9 +2,7 @@
 #
 INCLUDE_ALL     = -I . -I pdfdraw -I pdfdoc -I pdfread -I openssl/include -I openssl/include/openssl -I openssl -I zlib
 CF_ALL          = -Wall -I . $(INCLUDE_ALL)
-#LF_ALL          = -lz -lm -lcrypto -L openssl -ldl
-### -lz is omitted because zlib is static now
-LF_ALL          = -lm -lcrypto -L openssl -ldl
+LF_ALL          = -pg -lm -lcrypto -L openssl -ldl
 LL_ALL          =
 OPENSSL_DEBUG   =
 ifeq	"$(YYDEBUG)" "y"
@@ -23,7 +21,7 @@ endif
 #
 CC              = gcc
 COMP            = $(CC) $(CF_ALL) $(CF_TGT) -o $@ -c $<
-LINK            = $(CC) $(LF_TGT) -o $@ $^ $(LL_TGT) $(LL_ALL) $(LF_ALL)
+LINK            = $(CC) -o $@ $^  $(LL_ALL) $(LF_ALL)
 COMPLINK        = $(CC) $(CF_ALL) $(CF_TGT) $(LF_ALL) $(LF_TGT) -o $@ $< $(LL_TGT) $(LL_ALL)
 ARCHIVE         = $(AR) $(ARFLAGS) $@ $^
 MAKE            = make
@@ -32,24 +30,25 @@ vpath %.h . pdfdoc zlib
 #
 OBJ_DIR         = obj
 DEPS_DIR        = deps
-APP_DIR         = utils
+BIN_DIR         = bin
 # GLOBALS TARGETS
-LIB_CRYPTO  = openssl/libcrypto.a
-TGT_LIB	=
-APP = $(APP_DIR)/readpdf
-CLEAN =
+LIB_CRYPTO      = openssl/libcrypto.a
+TGT_LIB	        =
+APP             =
+CLEAN           =
 
 COMMON_HEADERS := *.h
 #######
 
-all :  $(APP)
+.PHONY : all realclean clean
+
+all :
 # sub dirs
 # General dir rules
 include Rules.mk
 
 $(APP) : $(targets)
 
-.PHONY: all realclean clean
 
 test	:	$(APP)
 	@$(APP) examples/simpledict.pdf
@@ -70,3 +69,4 @@ realclean : clean
 	- @rm $(GLYPH_NAME_TO_UNI) $(LIB_CRYTO)
 	$(MAKE) -C peg spotless
 
+all :  $(APP)

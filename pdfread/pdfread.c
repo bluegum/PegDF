@@ -1410,8 +1410,7 @@ pdf_open(char *in, pdf_doc **doc)
                   {
                         crypto = pdf_crypto_init(doctrailer->encrypt,
                                                  doctrailer->id[0],
-                                                 "", // password
-                                                 0 // password len
+                                                 "" // password
                               );
                   }
 #if 0

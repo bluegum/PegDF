@@ -166,7 +166,7 @@ struct in_mem_stream_s
 {
       int (*reset)(sub_stream*);
       int (*read)(sub_stream*, unsigned char *, int);
-      int (*close)(sub_stream*);
+      int (*close)(sub_stream*, int);
       int pos; // file offset
       int len, obj, gen;
       // private
@@ -233,8 +233,9 @@ im_close(sub_stream* s, int flag)
 }
 
 sub_stream*
-in_mem_stream_new(unsigned char *cache, int pos, int len, int obj, int gen)
+in_mem_stream_new(void *data, int pos, int len, int obj, int gen)
 {
+      byte *cache = (byte*) data;
       in_mem_stream *s;
       s = pdf_malloc(sizeof(in_mem_stream));
       if (!s)
@@ -261,7 +262,7 @@ init_in_mem_stream_parser_instance(pdf_parser *p)
 }
 
 static int
-string_stream_close(sub_stream* s)
+string_stream_close(sub_stream* s, int flag)
 {
       if (s)
 	    pdf_free(s);
@@ -276,4 +277,5 @@ string_stream_new(unsigned char *cache, int pos, int len, int obj, int gen)
       {
 	    s->close = string_stream_close;
       }
+      return s;
 }

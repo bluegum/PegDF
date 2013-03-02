@@ -91,9 +91,12 @@ pdf_compute_key(int r, unsigned int n, char *password, int pwlen, unsigned char 
 }
 
 pdfcrypto_priv *
-pdf_crypto_init(pdf_encrypt* encrypt, unsigned char id1[16], char *pw, int pwlen)
+pdf_crypto_init(pdf_encrypt* encrypt, unsigned char id1[16], char *pw)
 {
       pdfcrypto_priv *crypto = pdf_malloc(sizeof(pdfcrypto_priv));
+      int pwlen = 0;
+      if (pw)
+	    pwlen = strlen(pw);
       if (!crypto)
             return NULL;
       crypto->rev = encrypt->r;
@@ -462,4 +465,16 @@ pdf_cryptofilter_new(pdfcrypto_priv *crypto, int num, int gen, unsigned char *iv
       if (f)
             pdf_free(f);
       return NULL;
+}
+
+pdfcrypto_priv* pdf_crypto_load(pdf_doc *doc, char *pw)
+{
+      pdfcrypto_priv* crypto = 0;
+      if (doc->trailer->encrypt)
+      {
+	    crypto = pdf_crypto_init(doc->trailer->encrypt,
+				     doc->trailer->id[0],
+				     pw);
+      }
+      return crypto;
 }

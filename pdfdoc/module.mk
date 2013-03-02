@@ -1,6 +1,6 @@
 d	:= pdfdoc
 
-$(OBJ_DIR)/%.o: $(d)/%.c | $(LIB_CRYPTO)
+$(OBJ_DIR)/%.o: $(d)/%.c | $(LIB_CRYPTO) $(OBJ_DIR)
 	$(CC) -c $(INCLUDE_ALL) -o $@ $< $(CF_ALL)
 $(DEPS_DIR)/%.d: $(d)/%.c | $(DEPS_DIR)
 	-@rm -f $@

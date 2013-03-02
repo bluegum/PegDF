@@ -23,7 +23,7 @@ extern int pdf_obj_count();
 
 #define pdf_obj_resolve(o)                                              \
       if ((o)->t == eRef) (o) = pdf_obj_find((o)->value.r.num, (o)->value.r.gen)
-static inline pdf_obj_deref(pdf_obj *o)
+static inline pdf_obj* pdf_obj_deref(pdf_obj *o)
 {
       if ((o)->t == eRef) {
 	    pdf_obj *d;

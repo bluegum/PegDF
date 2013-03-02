@@ -137,8 +137,8 @@ struct pdf_extgstate_s
       // text/font state
       int tr;
       float fs, tl, tw, tc, ts, th;
-      float txt_ctm[6];
-      float txt_lm[6];
+      gs_matrix txt_ctm;
+      gs_matrix txt_lm;
 };
 
 struct pdf_prs_s
@@ -396,8 +396,8 @@ extern pdf_err  pdf_doc_print_info(pdf_doc *d);
 extern pdf_err pdf_doc_process(pdf_doc *d, pdf_device*, pdfcrypto_priv* encrypt);
 extern pdf_err pdf_open(char *in,  pdf_doc **doc);
 extern pdf_err pdf_finish(pdf_doc *doc);
-extern int pdf_doc_authenticate_user_password(pdf_doc *doc, unsigned char *pw, int pwlen);
-extern pdf_err pdf_doc_process_all(pdf_doc *doc, char *devtype, FILE *outf, unsigned char *pw, int pwlen);
+extern int pdf_doc_authenticate_user_password(pdf_doc *doc, char *pw);
+extern pdf_err pdf_doc_process_all(pdf_doc *doc, char *devtype, FILE *outf, unsigned char *pw);
 extern int pdf_doc_need_passwd(pdf_doc *doc);
 
 #define WRITE_PDF_LINEARIZED           0x01
@@ -411,8 +411,10 @@ extern pdf_interp_state *pdf_interpreter_new(pdf_device*, pdfcrypto_priv* encryp
 extern void pdf_interpreter_free(pdf_interp_state *i);
 extern void pdf_interpreter_font_insert(pdf_interp_state *, pdf_font *f);
 extern int pdf_character_show(pdf_device* dev, pdf_prs *s, pdf_font *f, gs_matrix *ctm, char *c, unsigned int *cid);
-extern pdfcrypto_priv *pdf_crypto_init(pdf_encrypt* encrypt, unsigned char id1[16], char *pw, int pwlen);
+extern pdfcrypto_priv *pdf_crypto_init(pdf_encrypt* encrypt, unsigned char id1[16], char *pw);
 extern void pdf_device_char_show(pdf_device *dev, pdf_font *f, float scale, gs_matrix *ctm, unsigned int cid);
 extern void pdf_device_color_set(pdf_device *d, float *c, pdf_cspacetype cs, int n);
-
+extern pdfcrypto_priv* pdf_crypto_load(pdf_doc *doc, char *pw);
+extern pdf_err pdf_page_write(pdf_doc *doc, int i/* pg# */, unsigned long write_flag, pdfcrypto_priv *crypto, int version, char *outf);
+static inline int pdf_doc_page_count(pdf_doc *doc){return doc->count;}
 #endif

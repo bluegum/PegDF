@@ -709,6 +709,41 @@ pdf_page_obj_write(pdf_page *page, int pgidx, unsigned long write_flag, pdf_xref
 }
 
 pdf_err
+pdf_page_write(pdf_doc *doc, int i/* pg# */, unsigned long write_flag, pdfcrypto_priv *crypto, int version, char *outf)
+{
+      FILE* out = 0;
+      char buf[128];
+      int startxref;
+      pdf_xref_internal *xref = 0;
+
+      out = fopen(outf, "wb");
+      if (!out)
+	    return pdf_ok;
+      sprintf(buf, "%%PDF-%d.%d\n", version/10, version%10);
+      fputs(buf, out);
+      fputs("%\333\332\331\330\n", out);
+      // scan pages
+      xref = pdf_xref_internal_create(pdf_obj_count(), doc->count);
+      if (!xref)
+	    goto done_0;
+      pdf_catalog_write(xref, out);
+      pdf_scan_page(doc->pages[i], xref);
+      pdf_write_indirect_objs(xref, out, crypto);
+      pdf_page_obj_write(doc->pages[i], i, write_flag, xref, crypto, out);
+
+      pdf_pages_obj_write(xref, i, 1, out);
+      // write xref table
+      startxref = pdf_xref_write(xref, out);
+      pdf_trailer_write(xref, startxref, out);
+      // done
+  done_0:
+      if (xref)
+	    pdf_xref_internal_free(xref);
+      fclose(out);
+      return pdf_ok;
+}
+
+pdf_err
 pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, unsigned long write_flag, int version, int pg1st, int pglast, char *upw, char *opw)
 {
       pdf_err e = pdf_ok;
@@ -736,8 +771,7 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, unsigned long write_flag,
 	    {
 		  crypto = pdf_crypto_init(doc->trailer->encrypt,
 					   doc->trailer->id[0],
-					   "", // password
-					   0 // password len
+					   "" // password
 			);
 	    }
 	    if (!crypto)
@@ -813,6 +847,9 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, unsigned long write_flag,
 			sprintf(linebuf, "%s/%s-%d.%s", odir, b, i+1, "pdf");
 		  }
 		  printf("Writing %s..\n", linebuf);
+#if 1
+		  pdf_page_write(doc, i, write_flag, crypto, version, linebuf);
+#else
 		  out = fopen(linebuf, "wb");
 		  if (!out)
 			return pdf_ok;
@@ -824,7 +861,6 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, unsigned long write_flag,
 		  if (!xref)
 			goto done_0;
 		  pdf_catalog_write(xref, out);
-
 		  pdf_scan_page(doc->pages[i], xref);
 		  pdf_write_indirect_objs(xref, out, crypto);
 		  pdf_page_obj_write(doc->pages[i], i, write_flag, xref, crypto, out);
@@ -838,6 +874,7 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, unsigned long write_flag,
 		  if (xref)
 			pdf_xref_internal_free(xref);
 		  fclose(out);
+#endif
 	    }
 	    if (crypto)
 		  pdf_crypto_destroy(crypto);

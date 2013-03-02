@@ -804,20 +804,23 @@ pdf_stream_getchar(pdf_stream *s)
 }
 
 int
-pdf_authenticate_user_password(pdf_encrypt *encrypt, unsigned char id[16], unsigned char *pw, int pwlen)
+pdf_authenticate_user_password(pdf_encrypt *encrypt, unsigned char id[16], unsigned char *pw)
 {
       pdfcrypto_priv *crypto = NULL;
       unsigned char u[32];
       int rev;
+      int pwlen;
+
+      if (!pw)
+	    pwlen = 0;
+      else
+	    pwlen = strlen(pw);
       crypto = pdf_crypto_init(encrypt, id,
-                               pw, // password
-                               pwlen // password len
-            );
+                               pw);
       rev = crypto->rev;
       // lazy authentication
       pdf_crypto_calc_userpassword(crypto, id,
-                                   pw, // password
-                                   pwlen,  // pwlen
+                                   pw, pwlen,
                                    u);
       pdf_crypto_destroy(crypto);
       if (rev == 3 || rev == 4)
@@ -832,15 +835,15 @@ pdf_authenticate_user_password(pdf_encrypt *encrypt, unsigned char id[16], unsig
 }
 
 int
-pdf_doc_authenticate_user_password(pdf_doc *doc, unsigned char *pw, int pwlen)
+pdf_doc_authenticate_user_password(pdf_doc *doc, char *pw)
 {
       return pdf_authenticate_user_password(doc->trailer->encrypt,
                                             doc->trailer->id[0],
-                                            pw, pwlen);
+                                            pw);
 }
 
 pdf_err
-pdf_doc_process_all(pdf_doc *doc, char *devtype, FILE *out, unsigned char *pw, int pwlen)
+pdf_doc_process_all(pdf_doc *doc, char *devtype, FILE *out, unsigned char *pw)
 {
       pdf_device *dev = NULL;
       pdfcrypto_priv *crypto = NULL;
@@ -850,8 +853,7 @@ pdf_doc_process_all(pdf_doc *doc, char *devtype, FILE *out, unsigned char *pw, i
       {
             crypto = pdf_crypto_init(doc->trailer->encrypt,
                                      doc->trailer->id[0],
-                                     pw, // password
-                                     pwlen // password len
+                                     pw // password
                   );
       }
       if (devtype && out)
@@ -1012,10 +1014,10 @@ pdf_update_brush(pdf_page *p)
       s1 = p->s;
       if (s0->brush.t != s1->brush.t)
       {
-	    return pdf_device_color_set(p->i->dev, &s0->brush.c, s0->brush.t, s0->brush.n);
+	    return pdf_device_color_set(p->i->dev, s0->brush.c, s0->brush.t, s0->brush.n);
       }
       else if (memcmp(&s0->brush.c, &s1->brush.c, s0->brush.n*sizeof(float)) != 0)
       {
-	    return pdf_device_color_set(p->i->dev, &s0->brush.c, s0->brush.t, s0->brush.n);
+	    return pdf_device_color_set(p->i->dev, s0->brush.c, s0->brush.t, s0->brush.n);
       }
 }

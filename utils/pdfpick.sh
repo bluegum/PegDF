@@ -10,4 +10,4 @@ case "$1" in
     *)   echo "$usage" && exit 2 ;;
 esac
 ! [ -e $2 ] &&  echo Error: file \""$2"\" not found &&  exit 3
-./readpdf -x $1 $2 $3
+readpdf -x $1 $2 $3

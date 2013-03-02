@@ -238,9 +238,9 @@ pdf_err x_Tj(pdf_page *p, pdf_obj o)
       int i;
       gs_matrix ctm, m, orig;
       _DMSG("Tj");
-      mat_set(&orig, p->s->gs.txt_ctm);
-      mat_set(&ctm, p->s->gs.txt_ctm);
-      mat_set(&m, p->s->gs.txt_ctm);
+      mat_set(&orig, &p->s->gs.txt_ctm);
+      mat_set(&ctm, &p->s->gs.txt_ctm);
+      mat_set(&m, &p->s->gs.txt_ctm);
       if ((o.t == eString) || (o.t == eHexString))
       {
 	    int w;
@@ -258,8 +258,8 @@ pdf_err x_Tj(pdf_page *p, pdf_obj o)
 		  // TODO: use per glyph width
 		  w = pdf_font_widths_get(f, cid);
 		  mat_translate(&ctm, ((float)w)*p->s->gs.fs/1000.0f, 0);
-		  mat_mul(&m, &ctm, p->s->gs.txt_ctm);
-		  mat_cp(p->s->gs.txt_ctm, &m);
+		  mat_mul(&m, &ctm, &p->s->gs.txt_ctm);
+		  mat_cp(&p->s->gs.txt_ctm, &m);
 		  mat_cp(&ctm, &m);
 	    }
       }
@@ -276,7 +276,7 @@ pdf_err x_TJ(pdf_page *p, pdf_obj o)
       _DMSG("TJ");
       if (o.t == eArray)
       {
-	    mat_set(&ctm, gs->txt_ctm);
+	    mat_set(&ctm, &gs->txt_ctm);
 	    for (i = 0; i < o.value.a.len; i++)
 	    {
 		  pdf_obj *a = &o.value.a.items[i];
@@ -323,9 +323,9 @@ pdf_err x_Td(pdf_page *p, float a, float b)
       ctm.d = 1;
       ctm.e = a;
       ctm.f = b;
-      mat_mul(&fin, &ctm, p->s->gs.txt_lm);
-      memcpy(p->s->gs.txt_ctm, &fin, sizeof(fin));
-      memcpy(p->s->gs.txt_lm, &fin, sizeof(fin));
+      mat_mul(&fin, &ctm, &p->s->gs.txt_lm);
+      memcpy(&p->s->gs.txt_ctm, &fin, sizeof(fin));
+      memcpy(&p->s->gs.txt_lm, &fin, sizeof(fin));
       return pdf_ok;
 }
 pdf_err x_TD(pdf_page *p, float a, float b)
@@ -339,8 +339,8 @@ pdf_err x_TD(pdf_page *p, float a, float b)
       ctm.d = 1;
       ctm.e = a;
       ctm.f = b;
-      mat_mul(&fin, &ctm, p->s->gs.txt_ctm);
-      memcpy(p->s->gs.txt_ctm, &ctm, sizeof(ctm));
+      mat_mul(&fin, &ctm, &p->s->gs.txt_ctm);
+      memcpy(&p->s->gs.txt_ctm, &ctm, sizeof(ctm));
       return pdf_ok;
 }
 pdf_err x_TL(pdf_page *p, float tl)

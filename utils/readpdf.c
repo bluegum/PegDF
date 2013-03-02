@@ -24,13 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-//#include "pdftypes.h"
-//#include "pdfindex.h"
-//#include "dict.h"
-#include "pdffilter.h"
 #include "pdfdoc.h"
-//#include "pdfmem.h"
-//#include "pdfread.h"
 ////////////////////////////////////////////////////
 // example application
 ////////////////////////////////////////////////////
@@ -174,7 +168,7 @@ int main(int argc, char **argv)
 	    goto done;
       if (info)
 	    pdf_doc_print_info(doc);
-      if (!passwd && pdf_doc_need_passwd(doc) && pdf_doc_authenticate_user_password(doc, (unsigned char*)"", 0) != 0)
+      if (!passwd && pdf_doc_need_passwd(doc) && pdf_doc_authenticate_user_password(doc, "") != 0)
       {
 	    printf("%s\n", "Need user password, use -p option");
 	    goto done;
@@ -195,11 +189,11 @@ int main(int argc, char **argv)
 
       if (!passwd || !pdf_doc_need_passwd(doc))
       {
-	    pdf_doc_process_all(doc, devtype, outf, (unsigned char*)"", 0);
+	    pdf_doc_process_all(doc, devtype, outf, (unsigned char*)"");
       }
       else if (passwd && pdf_doc_need_passwd(doc))
       {
-	    pdf_doc_process_all(doc, devtype, outf, (unsigned char*)passwd, strlen(passwd));
+	    pdf_doc_process_all(doc, devtype, outf, (unsigned char*)passwd);
       }
       // writing out pdf using doc structure.
       if (out && (!devtype))
