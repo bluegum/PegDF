@@ -7,6 +7,25 @@
 #include <libgen.h>
 #include "pdf.h"
 
+static void
+usage()
+{
+      const char *msg = "\
+Usage: picker [OPTIONS] -o ouput_dir inputfile\n\
+OPTIONS:\n\
+        -  :\n\
+        -- :\n\
+             to extract all pages\n\
+        -x : page numbers to be extracted\n\
+             [0-9]+ | [0-9]+, | [0-9]+-[0-9]+\n\
+        -i : to inflate page contents\n\
+        -p : user password\n\
+        -o : output directory\n\
+        --help : print this message\n\
+";
+      printf("%s", msg);
+}
+
 typedef struct num_range_s
 {
       int bgn;
@@ -107,13 +126,18 @@ main(int argc, char* argv[])
       {
 	    if (argv[v][0] == '-')
 	    {
-		  if ((argv[v][1] == 0) || (argv[v][1] == '-'))
+		  if ((argv[v][1] == 0) || ((argv[v][1] == '-') && (argv[v][2] == 0)))
 		  {
 			nr[0].bgn = 1;
 			nr[0].end = 100000;
 			v++;
 			i++;
 			continue;
+		  }
+		  if ((argv[v][1] == '-') && strncmp(&argv[v][2], "help", 4) == 0)
+		  {
+			usage();
+			return 0;
 		  }
 		  if (argv[v][1] == 'i')
 		  {
@@ -155,6 +179,12 @@ main(int argc, char* argv[])
 			v++;
 			out = argv[v];
 			v++;
+		  }
+		  else
+		  {
+			printf("%s", "\nInvalid parameters!\n\n");
+			usage();
+			return 0;
 		  }
 	    }
 	    else
