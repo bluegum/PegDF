@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <libgen.h>
-#include "pdfdoc.h"
+#include "pdf.h"
 
 typedef struct num_range_s
 {
@@ -97,7 +97,7 @@ main(int argc, char* argv[])
       //
       pdf_err e;
       pdf_doc *doc;
-      pdfcrypto_priv *crypto;
+      pdfcrypto *crypto;
       int version = 17; // for output files
       int write_flag = 0;
 

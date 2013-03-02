@@ -414,7 +414,5 @@ extern int pdf_character_show(pdf_device* dev, pdf_prs *s, pdf_font *f, gs_matri
 extern pdfcrypto_priv *pdf_crypto_init(pdf_encrypt* encrypt, unsigned char id1[16], char *pw);
 extern void pdf_device_char_show(pdf_device *dev, pdf_font *f, float scale, gs_matrix *ctm, unsigned int cid);
 extern void pdf_device_color_set(pdf_device *d, float *c, pdf_cspacetype cs, int n);
-extern pdfcrypto_priv* pdf_crypto_load(pdf_doc *doc, char *pw);
 extern pdf_err pdf_page_write(pdf_doc *doc, int i/* pg# */, unsigned long write_flag, pdfcrypto_priv *crypto, int version, char *outf);
-static inline int pdf_doc_page_count(pdf_doc *doc){return doc->count;}
 #endif

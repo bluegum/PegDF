@@ -1021,3 +1021,7 @@ pdf_update_brush(pdf_page *p)
 	    return pdf_device_color_set(p->i->dev, s0->brush.c, s0->brush.t, s0->brush.n);
       }
 }
+
+int
+pdf_doc_page_count(pdf_doc *doc)
+{return doc->count;}

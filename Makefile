@@ -51,7 +51,7 @@ $(APP) : $(targets)
 
 
 test	:	$(APP)
-	@$(APP) examples/simpledict.pdf
+	@bin/readpdf examples/simpledict.pdf
 	@if [ "$$?" -eq 0 ] ;\
 	then \
 		echo "passed test"; \
