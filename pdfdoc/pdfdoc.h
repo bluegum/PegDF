@@ -1,7 +1,7 @@
 #ifndef PDFDOC_H
 #define PDFDOC_H
 
-#include "pdftypes.h"
+#include "pdf.h"
 #include "gsdraw.h"
 #include "pdfresource.h"
 #include "pdffilter.h"
@@ -10,7 +10,7 @@
 #include "pdfdevice.h"
 
 typedef struct pdf_page_s pdf_page;
-typedef struct pdf_doc_s pdf_doc;
+//typedef struct pdf_doc_s pdf_doc;
 typedef struct pdf_info_s pdf_info;
 // typedef struct pdf_extgstate_s pdf_extgstate;
 typedef struct pdf_group_s pdf_group;
@@ -399,12 +399,6 @@ extern pdf_err pdf_finish(pdf_doc *doc);
 extern int pdf_doc_authenticate_user_password(pdf_doc *doc, char *pw);
 extern pdf_err pdf_doc_process_all(pdf_doc *doc, char *devtype, FILE *outf, unsigned char *pw);
 extern int pdf_doc_need_passwd(pdf_doc *doc);
-
-#define WRITE_PDF_LINEARIZED           0x01
-#define WRITE_PDF_INCREMENT            0x02
-#define WRITE_PDF_CONTENT_INFLATE      0x10
-#define WRITE_PDF_DECIPHER             0x20
-#define WRITE_PDF_PAGE_SEPARATION      0x40
 extern pdf_err pdf_write_pdf(pdf_doc *doc, char *infile, char *ofile, unsigned long write_flag, int version, int pg1st, int pglast, char *upw, char *opw);
 extern void pdf_doc_trailer_free(pdf_trailer * tr);
 extern pdf_interp_state *pdf_interpreter_new(pdf_device*, pdfcrypto_priv* encrypt);

@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include "pdf.h"
 #include "pdfdoc.h"
 ////////////////////////////////////////////////////
 // example application

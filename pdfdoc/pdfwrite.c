@@ -7,6 +7,7 @@
 #include <string.h>
 #include "bplustree.h"
 #include "dict.h"
+#include "pdf.h"
 #include "pdffilter.h"
 #include "pdfindex.h"
 #include "pdfdoc.h"

@@ -1,8 +1,17 @@
 #ifndef PDF_H
 #define PDF_H
+
 #include "pdftypes.h"
+
+#define WRITE_PDF_LINEARIZED           0x01
+#define WRITE_PDF_INCREMENT            0x02
+#define WRITE_PDF_CONTENT_INFLATE      0x10
+#define WRITE_PDF_DECIPHER             0x20
+#define WRITE_PDF_PAGE_SEPARATION      0x40
+
 typedef struct pdfcrypto_priv_s pdfcrypto;
 typedef struct pdf_doc_s pdf_doc;
+
 extern pdfcrypto* pdf_crypto_load(pdf_doc *doc, char *pw);
 extern int pdf_doc_page_count(pdf_doc *doc);
 extern int pdf_doc_need_passwd(pdf_doc *doc);

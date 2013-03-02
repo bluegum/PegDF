@@ -193,6 +193,12 @@ main(int argc, char* argv[])
 		  break;
 	    }
       } // while
+      if (i == 0)
+      {
+	    printf("%s", "\nNo page number/ranges are specified!\n\n");
+	    usage();
+	    return 0;
+      }
       if (!in)
       {
 	    printf("%s\n", "need input file");
@@ -221,6 +227,8 @@ main(int argc, char* argv[])
 	    goto err;
       }
       printf("writing to %s\n", out);
+      if (inflate)
+	    write_flag |= WRITE_PDF_CONTENT_INFLATE;
       if (pdf_doc_need_passwd(doc))
       {
 	    crypto = pdf_crypto_load(doc, passwd);
