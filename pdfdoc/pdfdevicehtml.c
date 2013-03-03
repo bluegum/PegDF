@@ -120,7 +120,46 @@ pdf_dev_html_path_add(pdf_device *dev, byte *p, int n)
 	    case M:
 	    {
 		  path_m *mm = (path_m*)p;
-		  fprintf(dev->dest.f, "ctx.moveTo(%f,%f);", mm->x, mm->y);
+		  mat_pt(&dev->dev_ctm, mm->x, mm->y, &x, &y);
+		  fprintf(dev->dest.f, "ctx.moveTo(%f,%f);", x, y);
+		  break;
+	    }
+	    case L:
+	    {
+		  path_l *ll = (path_l*)p;
+		  mat_pt(&dev->dev_ctm, ll->x, ll->y, &x, &y);
+		  fprintf(dev->dest.f, "ctx.lineTo(%f,%f);", x, y);
+		  break;
+	    }
+	    case C:
+	    {
+		  path_c *cc = (path_c*)p;
+		  float x2, y2, x3, y3;
+
+		  mat_pt(&dev->dev_ctm, cc->x1, cc->y1, &x, &y);
+		  mat_pt(&dev->dev_ctm, cc->x2, cc->y2, &x2, &y2);
+		  mat_pt(&dev->dev_ctm, cc->x3, cc->y3, &x3, &y3);
+		  fprintf(dev->dest.f, "ctx.bezierCurveTo(%f,%f,%f,%f,%f,%f);", x, y, x2, y2, x3, y3);
+		  break;
+	    }
+	    case V:
+	    {
+		  path_v *vv = (path_v*)p;
+		  float x2, y2, x3, y3;
+
+		  mat_pt(&dev->dev_ctm, vv->x2, vv->y2, &x2, &y2);
+		  mat_pt(&dev->dev_ctm, vv->x3, vv->y3, &x3, &y3);
+		  fprintf(dev->dest.f, "ctx. quadraticCurveTo(%f,%f,%f,%f);", x2, y2, x3, y3);
+		  break;
+	    }
+	    case Y:
+	    {
+		  path_y *yy = (path_y*)p;
+		  float x3, y3;
+
+		  mat_pt(&dev->dev_ctm, yy->x1, yy->y1, &x, &y);
+		  mat_pt(&dev->dev_ctm, yy->x3, yy->y3, &x3, &y3);
+		  fprintf(dev->dest.f, "ctx.bezierCurveTo(%f,%f,%f,%f,%f,%f);", x, y, x3, y3, x3, y3);
 		  break;
 	    }
 	    case RE:
@@ -142,7 +181,67 @@ pdf_dev_html_path_add(pdf_device *dev, byte *p, int n)
 }
 
 static void
-pdf_dev_html_path_paint(pdf_device *d, pdf_path* p, gs_matrix *ctm, int mode)
+pdf_dev_html_path_stroke(pdf_device *d, stroke_state *ss)
+{
+      h5_state *s;
+      s = (h5_state*) d->dest.other;
+      if (ss)
+      {
+	    if (ss->lw < 1)
+		  fprintf(d->dest.f, "ctx.lineWidth=1;");
+	    else
+		  fprintf(d->dest.f, "ctx.lineWidth=%f;", ss->lw);
+	    switch (ss->lc)
+	    {
+		  case 0:
+			fprintf(d->dest.f, "ctx.lineCap=\'butt\';");
+			break;
+		  case 1:
+			fprintf(d->dest.f, "ctx.lineCap = \'round\';");
+			break;
+		  case 2:
+			fprintf(d->dest.f, "ctx.lineCap = \'square\';");
+			break;
+		  default:
+			break;
+	    }
+	    switch (ss->lj)
+	    {
+		  case 0:
+			fprintf(d->dest.f, "ctx.lineJoin=\"bevel\";");
+			break;
+		  case 1:
+			fprintf(d->dest.f, "ctx.lineJoin=\"round\";");
+			break;
+		  case 2:
+			fprintf(d->dest.f, "ctx.lineJoin=\"miter\";");
+			break;
+		  default:
+			break;
+	    }
+#if 0
+	    if (ss->dash_n)
+	    {
+		  int i;
+		  fprintf(d->dest.f, "ctx.setLineDash\([");
+		  for (i = 0; i < ss->dash_n - 1; i++)
+			fprintf(d->dest.f, "%f,", ss->dash[i]);
+		  fprintf(d->dest.f, "%f", ss->dash[i]);
+		  fprintf(d->dest.f, "]\);");
+		  fprintf(d->dest.f, "ctx.lineDashOffset=%d;", ss->dash_offset);
+	    }
+	    else
+	    {
+		  fprintf(d->dest.f, "ctx.setLineDash\(\);");
+	    }
+#endif
+      }
+      fprintf(d->dest.f, "ctx.stroke();");
+      s->path_flag = 0;
+}
+
+static void
+pdf_dev_html_path_fill(pdf_device *d, int mode)
 {
       h5_state *s;
       s = (h5_state*) d->dest.other;
@@ -291,7 +390,8 @@ pdf_dev_html_new(FILE *out)
       d->page_end = pdf_dev_html_page_end;
       d->fill_char = pdf_dev_html_char_show;
       d->stroke_char = pdf_dev_html_char_show;
-      d->path_paint = pdf_dev_html_path_paint;
+      d->path_fill = pdf_dev_html_path_fill;
+      d->path_stroke = pdf_dev_html_path_stroke;
       d->color_set = pdf_dev_html_color_set;
       d->path_add = pdf_dev_html_path_add;
       return d;

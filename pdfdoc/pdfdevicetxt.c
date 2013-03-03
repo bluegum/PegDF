@@ -27,7 +27,12 @@ pdf_dev_text_page_end(pdf_device *dev)
 }
 
 static void
-pdf_dev_text_path_paint(pdf_device *d, pdf_path* p, gs_matrix *ctm, int mode)
+pdf_dev_text_path_stroke(pdf_device *d, stroke_state *s)
+{
+}
+
+static void
+pdf_dev_text_path_fill(pdf_device *d, int mode)
 {
 }
 
@@ -68,7 +73,8 @@ pdf_dev_text_new(FILE *out)
       d->page_end = pdf_dev_text_page_end;
       d->fill_char = pdf_dev_text_char_show;
       d->stroke_char = pdf_dev_text_char_show;
-      d->path_paint = pdf_dev_text_path_paint;
+      d->path_fill = pdf_dev_text_path_fill;
+      d->path_stroke = pdf_dev_text_path_stroke;
       d->color_set = pdf_dev_text_color_set;
       d->path_add = pdf_dev_text_path_add;
       return d;

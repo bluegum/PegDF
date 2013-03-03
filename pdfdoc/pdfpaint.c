@@ -17,8 +17,7 @@ pdf_path_add(pdf_extgstate *gs, e_path_kind t, float a, float b, float c, float 
 	    {
 		  path_m m;
 		  m.t = t;
-		  m.x = a;
-		  m.y = b;
+		  mat_pt(&gs->ctm, a, b, &m.x, &m.y);
 		  memcpy(p, &m, sizeof(m));
 		  gs->path_top += sizeof(m);
 	    }
@@ -27,8 +26,7 @@ pdf_path_add(pdf_extgstate *gs, e_path_kind t, float a, float b, float c, float 
 	    {
 		  path_m l;
 		  l.t = t;
-		  l.x = a;
-		  l.y = b;
+		  mat_pt(&gs->ctm, a, b, &l.x, &l.y);
 		  memcpy(p, &l, sizeof(l));
 		  gs->path_top += sizeof(l);
 	    }
@@ -37,38 +35,31 @@ pdf_path_add(pdf_extgstate *gs, e_path_kind t, float a, float b, float c, float 
 	    {
 		  path_c cc;
 		  cc.t = t;
-		  cc.x1 = a;
-		  cc.y1 = b;
-		  cc.x2 = c;
-		  cc.y2 = d;
-		  cc.x3 = e;
-		  cc.y3 = f;
+		  mat_pt(&gs->ctm, a, b, &cc.x1, &cc.y1);
+		  mat_pt(&gs->ctm, c, d, &cc.x2, &cc.y2);
+		  mat_pt(&gs->ctm, e, f, &cc.x3, &cc.y3);
 		  memcpy(p, &cc, sizeof(cc));
 		  gs->path_top += sizeof(cc);
 	    }
 	    break;
 	    case V:
 	    {
-		  path_v cc;
-		  cc.t = t;
-		  cc.x2 = a;
-		  cc.y2 = b;
-		  cc.x3 = c;
-		  cc.y3 = d;
-		  memcpy(p, &cc, sizeof(cc));
-		  gs->path_top += sizeof(cc);
+		  path_v vv;
+		  vv.t = t;
+		  mat_pt(&gs->ctm, a, b, &vv.x2, &vv.y2);
+		  mat_pt(&gs->ctm, c, d, &vv.x3, &vv.y3);
+		  memcpy(p, &vv, sizeof(vv));
+		  gs->path_top += sizeof(vv);
 	    }
 	    break;
 	    case Y:
 	    {
-		  path_y cc;
-		  cc.t = t;
-		  cc.x1 = a;
-		  cc.y1 = b;
-		  cc.x3 = c;
-		  cc.y3 = d;
-		  memcpy(p, &cc, sizeof(cc));
-		  gs->path_top += sizeof(cc);
+		  path_y yy;
+		  yy.t = t;
+		  mat_pt(&gs->ctm, a, b, &yy.x1, &yy.y1);
+		  mat_pt(&gs->ctm, c, d, &yy.x3, &yy.y3);
+		  memcpy(p, &yy, sizeof(yy));
+		  gs->path_top += sizeof(yy);
 	    }
 	    break;
 	    case H:
@@ -105,7 +96,7 @@ pdf_device_path_add(pdf_device *d, byte *p, int n)
 }
 
 pdf_err
-pdf_path_fill(pdf_device *dev, pdf_extgstate *gs, int even_odd)
+pdf_path_paint(pdf_device *dev, pdf_extgstate *gs, int stroke, int even_odd)
 {
       byte *base = gs->path_base;
       byte *top = gs->path_top;
@@ -148,8 +139,24 @@ pdf_path_fill(pdf_device *dev, pdf_extgstate *gs, int even_odd)
 			break;
 	    }
       }
-      if (dev && dev->path_paint)
-	    (dev->path_paint)(dev, 0, 0, 0);
+      if (stroke)
+      {
+	    stroke_state ss;
+	    ss.lw = gs->LW;
+	    ss.ml = gs->ML;
+	    ss.lj = gs->LJ;
+	    ss.lc = gs->LC;
+	    memcpy(&ss.dash, gs->D, sizeof(float)*gs->D_n);
+	    ss.dash_n = gs->D_n;
+	    ss.dash_offset = gs->D_OFFSET;
+	    if (dev && dev->path_stroke)
+		  (dev->path_stroke)(dev, &ss);
+      }
+      else
+      {
+	    if (dev && dev->path_fill)
+		  (dev->path_fill)(dev, 0);
+      }
       gs->path_top = gs->path_base;
       return pdf_ok;
 }

@@ -281,6 +281,7 @@ typedef struct path_v_t path_v;
 typedef struct path_y_t path_y;
 typedef struct path_h_t path_h;
 typedef struct path_re_t path_re;
+typedef struct stroke_state_s stroke_state;
 
 struct path_m_t
 {
@@ -315,6 +316,14 @@ struct path_re_t
 {
       e_path_kind t;
       float x, y, w, h;
+};
+
+struct stroke_state_s
+{
+      float lw, ml; // line_width, mitre_limit
+      int lj, lc;   // line_join, line_cap
+      float dash[32];
+      int dash_n, dash_offset;
 };
 
 // generics

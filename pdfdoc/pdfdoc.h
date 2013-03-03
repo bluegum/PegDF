@@ -112,7 +112,8 @@ struct pdf_extgstate_s
       int LC;
       int LJ;
       float ML;
-      int *D;
+      float D[32], D_OFFSET;
+      int D_n;
       char *RI;
       int OP;
       int op;
@@ -415,4 +416,5 @@ extern void pdf_device_char_show(pdf_device *dev, pdf_font *f, float scale, gs_m
 extern void pdf_device_color_set(pdf_device *d, float *c, pdf_cspacetype cs, int n);
 extern pdf_err pdf_page_write(pdf_doc *doc, int i/* pg# */, unsigned long write_flag, pdfcrypto_priv *crypto, int version, char *outf);
 extern void pdf_path_add(pdf_extgstate *gs, e_path_kind t, float a, float b, float c, float d, float e, float f);
+extern pdf_err pdf_path_paint(pdf_device *dev, pdf_extgstate *gs, int stroke, int even_odd);
 #endif

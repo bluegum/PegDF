@@ -3,7 +3,7 @@
 
 extern pdf_err x_cs(pdf_page *p, pdf_obj o);
 extern pdf_err x_CS(pdf_page *p, pdf_obj o);
-extern pdf_err x_d(pdf_page *p, pdf_obj o);
+extern pdf_err x_d(pdf_page *p, pdf_obj o, float);
 extern pdf_err x_g(pdf_page *p, float g);
 extern pdf_err x_k(pdf_page *p, float a, float b, float c, float d);
 extern pdf_err x_n(pdf_page *p);
@@ -55,4 +55,9 @@ extern pdf_err x_M(pdf_page *p, float miterlimit);
 extern pdf_err x_Do(pdf_page *p, pdf_obj);
 extern pdf_err x_popgs(pdf_page *p);
 extern pdf_err x_pushgs(pdf_page *p);
+///
+extern pdf_err x_h(pdf_page *p);
+extern pdf_err x_s(pdf_page *p);
+extern pdf_err x_S(pdf_page *p);
+
 #endif

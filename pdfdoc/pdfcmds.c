@@ -41,11 +41,19 @@ x_CS(pdf_page *p, pdf_obj o)
 }
 
 pdf_err
-x_d(pdf_page *p, pdf_obj o)
+x_d(pdf_page *p, pdf_obj o, float offset)
 {
       _DMSG("op: d");
+      pdf_extgstate *gs = &p->s->gs;
       if (o.t == eArray)
       {
+	    int i;
+	    for (i = 0; i < o.value.a.len; i++)
+	    {
+		  gs->D[i] = pdf_to_float(&o.value.a.items[i]);
+	    }
+	    gs->D_OFFSET = offset;
+	    gs->D_n = o.value.a.len;
             pdf_obj_delete(&o);
       }
       return pdf_ok;
@@ -100,26 +108,36 @@ x_n(pdf_page *p)
 pdf_err
 x_m(pdf_page *p, float x, float y)
 {
+      pdf_extgstate *gs = &p->s->gs;
+      pdf_path_add(gs, M, x, y, 0,0,0,0);
       return pdf_ok;
 }
 pdf_err
 x_l(pdf_page *p, float x, float y)
 {
+      pdf_extgstate *gs = &p->s->gs;
+      pdf_path_add(gs, L, x, y, 0,0,0,0);
       return pdf_ok;
 }
 pdf_err
 x_c(pdf_page *p, float a, float b, float c, float d, float e, float f)
 {
+      pdf_extgstate *gs = &p->s->gs;
+      pdf_path_add(gs, C, a, b, c, d, e, f);
       return pdf_ok;
 }
 pdf_err
 x_v(pdf_page *p, float a, float b, float c, float d)
 {
+      pdf_extgstate *gs = &p->s->gs;
+      pdf_path_add(gs, V, a, b, c, d, 0, 0);
       return pdf_ok;
 }
 pdf_err
 x_y(pdf_page *p, float a, float b, float c, float d)
 {
+      pdf_extgstate *gs = &p->s->gs;
+      pdf_path_add(gs, Y, a, b, c, d, 0, 0);
       return pdf_ok;
 }
 pdf_err
@@ -130,21 +148,29 @@ x_i(pdf_page *p, float flatness)
 pdf_err
 x_j(pdf_page *p, int linejoin)
 {
+      pdf_extgstate *gs = &p->s->gs;
+      gs->LJ = linejoin;
       return pdf_ok;
 }
 pdf_err
 x_J(pdf_page *p, int linecap)
 {
+      pdf_extgstate *gs = &p->s->gs;
+      gs->LC = linecap;
       return pdf_ok;
 }
 pdf_err
 x_w(pdf_page *p, float linewidth)
 {
+      pdf_extgstate *gs = &p->s->gs;
+      gs->LW = linewidth;
       return pdf_ok;
 }
 pdf_err
 x_M(pdf_page *p, float miterlimit)
 {
+      pdf_extgstate *gs = &p->s->gs;
+      gs->ML = miterlimit;
       return pdf_ok;
 }
 /// B group
@@ -512,6 +538,37 @@ x_f(pdf_page *p, int even_odd)
       pdf_extgstate *gs = &p->s->gs;
       if (gs->path_base == gs->path_top)
 	    return pdf_ok;
-      pdf_path_fill(p->i->dev, gs, even_odd);
+      pdf_path_paint(p->i->dev, gs,
+		    0, // to fill
+		    even_odd);
+      return pdf_ok;
+}
+
+pdf_err
+x_h(pdf_page *p)
+{
+      pdf_extgstate *gs = &p->s->gs;
+      pdf_path_add(gs, H, 0,0,0,0,0,0);
+      return pdf_ok;
+}
+
+pdf_err
+x_S(pdf_page *p)
+{
+      pdf_extgstate *gs = &p->s->gs;
+      pdf_path_add(gs, H, 0,0,0,0,0,0);
+      x_s(p);
+      return pdf_ok;
+}
+
+pdf_err
+x_s(pdf_page *p)
+{
+      pdf_extgstate *gs = &p->s->gs;
+      if (gs->path_base == gs->path_top)
+	    return pdf_ok;
+      pdf_path_paint(p->i->dev, gs,
+		     1, // to stroke
+		     0);
       return pdf_ok;
 }

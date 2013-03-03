@@ -812,11 +812,11 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                                 case 'b':
                                                       break;
                                                 case 'c':
-                                                      x_c(p, np[-1], np[-2], np[-3], np[-4], np[-5], np[-6]);
+                                                      x_c(p, np[-6], np[-5], np[-4], np[-3], np[-2], np[-1]);
                                                       POP_N(6);
                                                       break;
                                                 case 'd':
-                                                      x_d(p, POP_O);
+                                                      x_d(p, POP_O, np[-1]);
                                                       break;
                                                 case 'f':
 						      x_f(p, 0);
@@ -826,6 +826,7 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                                       POP_N(1);
                                                       break;
                                                 case 'h':
+						      x_h(p);
                                                       break;
                                                 case 'i':
                                                       x_i(p, np[-1]); // flatness
@@ -841,7 +842,7 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                                       break;
                                                 case 'l':
                                                 {
-                                                      x_m(p, np[-2], np[-1]);
+                                                      x_l(p, np[-2], np[-1]);
                                                       POP_N(2);
                                                 }
                                                 break;
@@ -858,9 +859,10 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
 						      x_pushgs(p);
                                                       break;
                                                 case 's':
+						      x_s(p);
                                                       break;
                                                 case 'v':
-                                                      x_v(p, np[-1], np[-2], np[-3], np[-4]);
+                                                      x_v(p, np[-4], np[-3], np[-2], np[-1]);
                                                       POP_N(4);
                                                       break;
                                                 case 'w':
@@ -868,7 +870,7 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                                       POP_N(1);
                                                       break;
                                                 case 'y':
-                                                      x_y(p, np[-1], np[-2], np[-3], np[-4]);
+                                                      x_y(p, np[-4], np[-3], np[-2], np[-1]);
                                                       POP_N(4);
                                                       break;
                                                       ///
@@ -897,6 +899,7 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
 						      x_popgs(p);
                                                       break;
                                                 case 'S':
+						      x_S(p);
                                                       break;
                                                 case 'W':
                                                       break;

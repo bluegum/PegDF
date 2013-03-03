@@ -1000,6 +1000,8 @@ pdf_gstate_init(pdf_page *p)
       // path stack
       gs->path_base = p->i->path_stk;
       gs->path_top = gs->path_base;
+      gs->D_n = 0;
+      gs->D_OFFSET = 0;
 }
 
 void
