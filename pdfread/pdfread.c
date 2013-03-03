@@ -65,12 +65,16 @@ int push(e_pdf_kind t, double n, char *s)
                   if (s)
                   {
                         char *pout;
-                        int i;
-                        o.value.s.len = strlen(s)/2;
-                        pout = o.value.s.buf = pdf_malloc(o.value.s.len);
-                        for (i = 0; i < o.value.s.len; i++)
+                        int i, len = 0;
+                        int t = strlen(s);
+                        pout = o.value.s.buf = pdf_malloc((int)(t+1)/2);
+                        for (i = 0; i < t;)
                         {
                               int a = *s++;
+			      i++;
+			      if (!isxdigit(a))
+				    continue;
+			      i++;
                               if (isdigit(a)) *pout = a - '0';
                               else if (isxdigit(a)) *pout = toupper(a) - 'A' + 10;
                               *pout <<= 4;
@@ -78,7 +82,9 @@ int push(e_pdf_kind t, double n, char *s)
                               if (isdigit(a)) *pout += a - '0';
                               else if (isxdigit(a)) *pout += toupper(a) - 'A' + 10;
                               pout++;
+			      len++;
                         }
+                        o.value.s.len = len;
                   }
                   else
                         o.value.s.len = 0;

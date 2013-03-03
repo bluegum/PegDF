@@ -4,7 +4,7 @@
 void
 gx_cmyk_to_rgb(float *cmyk, float *rgb)
 {
-      float k = 0.f - cmyk[3];
+      float k = 1.0f - cmyk[3];
       rgb[0] = (1.0f - cmyk[0])*k;
       rgb[1] = (1.0f - cmyk[1])*k;
       rgb[2] = (1.0f - cmyk[2])*k;

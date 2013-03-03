@@ -202,6 +202,31 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
 		  }
 		  fprintf(f, "%s", ")");
                   break;
+	    case eHexString:
+                  fprintf(f, "\n%s", "<");
+		  if (crypto)
+		  {
+			pdf_stream *s = pdf_stream_load(o, crypto, x->page_obj_buf[x->cur_idx], 0);
+			if (s)
+			{
+			      int c;
+			      while ((c = pdf_stream_getchar(s)) != EOF)
+			      {
+				    fprintf(f, "%02X", (byte)c);
+			      }
+			      pdf_stream_free(s, 1);
+			}
+		  }
+		  else
+		  {
+			for (i = 0; i < o->value.s.len; i ++)
+			{
+			      fprintf(f, "%02X", (byte)(o->value.s.buf[i]));
+			      if ((i+1)%32==0) fputc('\n', f);
+			}
+		  }
+		  fprintf(f, "%s", ">");
+		  break;
             case eDict:
             {
                   dict_list *ll, *l = dict_to_list(o->value.d.dict);

@@ -129,7 +129,7 @@ main(int argc, char* argv[])
       {
 	    if (argv[v][0] == '-')
 	    {
-		  if ((argv[v][1] == 0) || ((argv[v][1] == '-') && (argv[v][2] == 0)))
+		  if (argv[v][1] == 0)
 		  {
 			nr[0].bgn = 1;
 			nr[0].end = 100000;
@@ -156,7 +156,15 @@ main(int argc, char* argv[])
 			      argv[v][1] = argv[v][2];
 			}
 		  }
-		  if (argv[v][1] == 'x')
+		  if ((argv[v][1] == '-') && (argv[v][2] == 0))
+		  {
+			nr[0].bgn = 1;
+			nr[0].end = 100000;
+			v++;
+			i++;
+			continue;
+		  }
+		  else if (argv[v][1] == 'x')
 		  {
 			v++;
 			range = argv[v];

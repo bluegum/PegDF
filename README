@@ -26,16 +26,19 @@ comprehensive semantic handler may better handle a string AST.
 This project is writting in the original PEG syntax.
 peg/leg parser/generater is required to build PegDF.
 
-The other purpose of this object, is to prove that the "xref" is not essential 
+The other purpose of this object, is to prove that the "xref" is not essential
 in interpreting a PDF stream. So far, this is proved to be correct.
 
-Steps to build:
-1. download peg/leg source code.
-2. "cd peg-0.1.4"
-3. "make; make install"
-4. "cd PegDF"
-5. make
-6. ./readpdf infile [-o outfile] [outfile]
+HOW TO BUILD:
+1. git clone ...
+2. Install "gperf"
+3. Run "make realclean; make; sudo make install"
+4. Tesing
+  4.1 ./readpdf infile [-o outfile] [outfile]
+ or
+  4.2 picker
+ or
+  4.3 pedal
 
 Usage on "readpdf":
     readpdf [-p passwd] [-x pagenum] [--help] infile [outfile] [-o outfile]
