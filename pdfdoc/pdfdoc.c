@@ -997,6 +997,9 @@ pdf_gstate_init(pdf_page *p)
       }
       mat_init(&gs->txt_ctm, 1, 0, 0, 1, 0, 0);
       mat_init(&gs->txt_lm, 1, 0, 0, 1, 0, 0);
+      // path stack
+      gs->path_base = p->i->path_stk;
+      gs->path_top = gs->path_base;
 }
 
 void

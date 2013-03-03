@@ -75,6 +75,17 @@ typedef enum pdf_kind
       eLimit
 } e_pdf_kind;
 
+typedef enum
+{
+      M,
+      L,
+      C,
+      V,
+      Y,
+      H,
+      RE,
+} e_path_kind;
+
 struct pdf_obj_s
 {
       e_pdf_kind t;
@@ -160,11 +171,13 @@ mat_translate(gs_matrix *ctm, float e, float f)
       ctm->e = e;
       ctm->f = f;
 }
+
 static inline void
 mat_cp(gs_matrix *a, gs_matrix *b)
 {
       memcpy(a, b, sizeof(gs_matrix));
 }
+
 static inline gs_matrix
 mat_con(gs_matrix *a, gs_matrix *b)
 {
@@ -177,11 +190,20 @@ mat_con(gs_matrix *a, gs_matrix *b)
       d.f = a->e * b->b + a->f * b->d + b->f;
       return d;
 }
+
 static inline void
 mat_mul(gs_matrix *d, gs_matrix *a, gs_matrix *b)
 {
       *d = mat_con(a, b);
 }
+
+static inline void
+mat_pt(gs_matrix *d, float a, float b, float *a1, float *b1)
+{
+      *a1 = a * d->a + b * d->c + d->e;
+      *b1 = a * d->b + b * d->d + d->f;
+}
+
 static inline int
 pdf_to_int(pdf_obj *o)
 {
@@ -251,6 +273,51 @@ pdf_rect_resolve(pdf_obj *o)
       return r;
 }
 
+// paths
+typedef struct path_m_t path_m;
+typedef struct path_l_t path_l;
+typedef struct path_c_t path_c;
+typedef struct path_v_t path_v;
+typedef struct path_y_t path_y;
+typedef struct path_h_t path_h;
+typedef struct path_re_t path_re;
+
+struct path_m_t
+{
+      e_path_kind t;
+      float x, y;
+};
+struct path_l_t
+{
+      e_path_kind t;
+      float x, y;
+};
+struct path_c_t
+{
+      e_path_kind t;
+      float x1, y1, x2, y2, x3, y3;
+};
+struct path_v_t
+{
+      e_path_kind t;
+      float x2, y2, x3, y3;
+};
+struct path_y_t
+{
+      e_path_kind t;
+      float x1, y1, x3, y3;
+};
+struct path_h_t
+{
+      e_path_kind t;
+};
+struct path_re_t
+{
+      e_path_kind t;
+      float x, y, w, h;
+};
+
+// generics
 static inline
 pdf_obj pdf_int_to_obj(int i)
 {

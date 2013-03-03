@@ -32,6 +32,11 @@ pdf_dev_text_path_paint(pdf_device *d, pdf_path* p, gs_matrix *ctm, int mode)
 }
 
 static void
+pdf_dev_text_path_add(pdf_device *dev, byte *p, int n)
+{
+}
+
+static void
 pdf_dev_text_char_show(pdf_device *dev, pdf_font *f, float scale, gs_matrix *ctm, unsigned int cid, unsigned int mode)
 {
       unsigned char uni[8];
@@ -65,5 +70,6 @@ pdf_dev_text_new(FILE *out)
       d->stroke_char = pdf_dev_text_char_show;
       d->path_paint = pdf_dev_text_path_paint;
       d->color_set = pdf_dev_text_color_set;
+      d->path_add = pdf_dev_text_path_add;
       return d;
 }

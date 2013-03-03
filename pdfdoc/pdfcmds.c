@@ -93,6 +93,8 @@ x_K(pdf_page *p, float a, float b, float c, float d)
 pdf_err
 x_n(pdf_page *p)
 {
+      pdf_extgstate *gs = &p->s->gs;
+      gs->path_top = gs->path_base;
       return pdf_ok;
 }
 pdf_err
@@ -406,6 +408,8 @@ pdf_err x_EMC(pdf_page *p)
 }
 pdf_err x_re(pdf_page *p, float a, float b, float c, float d)
 {
+      pdf_extgstate *gs = &p->s->gs;
+      pdf_path_add(gs, RE, a, b, c, d, 0, 0);
       return pdf_ok;
 }
 pdf_err x_rg(pdf_page *p, float r, float g, float b)
@@ -491,9 +495,23 @@ x_popgs(pdf_page *p)
 pdf_err
 x_pushgs(pdf_page *p)
 {
+      pdf_extgstate *gs;
       if (p->s == &p->sstk[31])
 	    return pdf_ok;
       memcpy(&p->s[1], p->s, sizeof(pdf_prs));
       p->s++;
+      gs = p->s;
+      gs->path_base = gs[-1].path_top;
+      gs->path_top = gs->path_base;
+      return pdf_ok;
+}
+
+pdf_err
+x_f(pdf_page *p, int even_odd)
+{
+      pdf_extgstate *gs = &p->s->gs;
+      if (gs->path_base == gs->path_top)
+	    return pdf_ok;
+      pdf_path_fill(p->i->dev, gs, even_odd);
       return pdf_ok;
 }

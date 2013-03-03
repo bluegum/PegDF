@@ -24,6 +24,7 @@ struct h5_state_s
       int font_flags;
       font_family ff;
       fontname_id fid;
+      int path_flag;
 };
 
 static void h5_canvas_create(FILE *f, char *id, byte [3]);
@@ -47,6 +48,7 @@ pdf_dev_html_doc_begin(pdf_device *dev)
       ((h5_state*) dev->dest.other)->c[2] = 0;
       s->font_flags = 0;
       s->fid = eTimes;
+      s->path_flag = 0;
 }
 static void
 pdf_dev_html_doc_end(pdf_device *dev)
@@ -99,8 +101,54 @@ pdf_dev_html_page_end(pdf_device *dev)
 }
 
 static void
+pdf_dev_html_path_add(pdf_device *dev, byte *p, int n)
+{
+      e_path_kind t = (e_path_kind)(p[0]);
+      float x, y;
+      h5_state *s;
+
+      s = (h5_state*) dev->dest.other;
+
+      if (s->path_flag == 0)
+      {
+	    fprintf(dev->dest.f, "ctx.beginPath();");
+	    s->path_flag = 1;
+      }
+
+      switch (t)
+      {
+	    case M:
+	    {
+		  path_m *mm = (path_m*)p;
+		  fprintf(dev->dest.f, "ctx.moveTo(%f,%f);", mm->x, mm->y);
+		  break;
+	    }
+	    case RE:
+	    {
+		  path_re *re = (path_re*)p;
+		  float w, h;
+		  mat_pt(&dev->dev_ctm, re->x, re->y, &x, &y);
+		  mat_pt(&dev->dev_ctm, re->x + re->w, re->y + re->h, &w, &h);
+		  w -= x;
+		  h -= y;
+		  //w = fabs(w);
+		  //h = fabs(h);
+		  fprintf(dev->dest.f, "ctx.rect(%f,%f,%f,%f);", x, y, w, h);
+		  break;
+	    }
+	    default:
+		  break;
+      }
+}
+
+static void
 pdf_dev_html_path_paint(pdf_device *d, pdf_path* p, gs_matrix *ctm, int mode)
 {
+      h5_state *s;
+      s = (h5_state*) d->dest.other;
+      fprintf(d->dest.f, "%s;", "ctx.closePath();");
+      fprintf(d->dest.f, "%s;", "ctx.fill();");
+      s->path_flag = 0;
 }
 
 static void
@@ -190,9 +238,9 @@ pdf_dev_html_char_show(pdf_device *dev, pdf_font *f, float scale, gs_matrix *ctm
 		  switch (uni[0])
 		  {
 			case  '\(':
-			case  '\)':
+			case  ')':
 			case  '\'':
-			case  '\`':
+			case  '`':
 			case  '\"':
 			case  '\\':
 			{
@@ -245,6 +293,7 @@ pdf_dev_html_new(FILE *out)
       d->stroke_char = pdf_dev_html_char_show;
       d->path_paint = pdf_dev_html_path_paint;
       d->color_set = pdf_dev_html_color_set;
+      d->path_add = pdf_dev_html_path_add;
       return d;
 }
 

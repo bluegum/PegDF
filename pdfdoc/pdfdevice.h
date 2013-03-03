@@ -20,6 +20,7 @@ struct pdf_device_s
       void (*page_end)(pdf_device *d);
       void (*fill_char)(pdf_device *d, pdf_font *f, float scale, gs_matrix *ctm, unsigned int cid, unsigned int mode);
       void (*stroke_char)(pdf_device *d, pdf_font *f, gs_matrix *ctm, unsigned int cid, unsigned int mode);
+      void (*path_add)(pdf_device *d, byte *p, int n);
       void (*path_paint)(pdf_device *d, pdf_path*, gs_matrix *ctm, int mode);
       void (*image_paint)(pdf_device *d);
       void (*color_set)(pdf_device *d, float *, pdf_cspacetype, int n);
