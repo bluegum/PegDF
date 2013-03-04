@@ -60,41 +60,42 @@ x_d(pdf_page *p, pdf_obj o, float offset)
 }
 
 pdf_err
-x_g(pdf_page *p, float g)
+x_g(pdf_page *p, float g, int pen)
 {
-      pdf_cspace *cs = &p->s->brush;
+      pdf_cspace *cs;
+      if (pen)
+      {
+	    cs = &p->s->pen;
+      }
+      else
+      {
+	    cs = &p->s->brush;
+      }
       cs->t = DeviceGray;
       cs->n = 1;
       cs->c[0] = g;
-      pdf_device_color_set(p->i->dev, cs->c, DeviceGray, 1);
+      pdf_device_color_set(p->i->dev, cs->c, DeviceGray, 1, pen);
       return pdf_ok;
 }
 pdf_err
-x_k(pdf_page *p, float c, float m, float y, float k)
+x_k(pdf_page *p, float c, float m, float y, float k, int pen)
 {
-      pdf_cspace *cs = &p->s->brush;
+      pdf_cspace *cs;
+      if (pen)
+      {
+	    cs = &p->s->pen;
+      }
+      else
+      {
+	    cs = &p->s->brush;
+      }
       cs->t = DeviceCMYK;
       cs->n = 4;
       cs->c[0] = c;
       cs->c[1] = m;
       cs->c[2] = y;
       cs->c[3] = k;
-      pdf_device_color_set(p->i->dev, cs->c, DeviceCMYK, 4);
-      return pdf_ok;
-}
-
-pdf_err
-x_G(pdf_page *p, float g)
-{
-      p->s->pen.t = DeviceGray;
-      p->s->pen.n = 1;
-      return pdf_ok;
-}
-pdf_err
-x_K(pdf_page *p, float a, float b, float c, float d)
-{
-      p->s->pen.t = DeviceCMYK;
-      p->s->pen.n = 4;
+      pdf_device_color_set(p->i->dev, cs->c, DeviceCMYK, 4, pen);
       return pdf_ok;
 }
 
@@ -177,10 +178,21 @@ x_M(pdf_page *p, float miterlimit)
 pdf_err
 x_B(pdf_page *p)
 {
+      pdf_extgstate *gs = &p->s->gs;
+      byte *top = gs->path_top;
+      x_f(p, 0); // non_zero
+      gs->path_top = top;
+      x_s(p); // stroke
       return pdf_ok;
 }
 pdf_err x_Bstar(pdf_page *p)
 {
+      pdf_extgstate *gs = &p->s->gs;
+      byte *top = gs->path_top;
+      x_f(p, 1); // even_odd
+      gs->path_top = top;
+      x_s(p); // stroke
+      return pdf_ok;
       return pdf_ok;
 }
 
@@ -438,23 +450,26 @@ pdf_err x_re(pdf_page *p, float a, float b, float c, float d)
       pdf_path_add(gs, RE, a, b, c, d, 0, 0);
       return pdf_ok;
 }
-pdf_err x_rg(pdf_page *p, float r, float g, float b)
+pdf_err x_rg(pdf_page *p, float r, float g, float b, int pen)
 {
-      pdf_cspace *cs = &p->s->brush;
+      pdf_cspace *cs;
+      if (pen)
+      {
+	    cs = &p->s->pen;
+      }
+      else
+      {
+	    cs = &p->s->brush;
+      }
       cs->t = DeviceRGB;
       cs->n = 3;
       cs->c[0] = r;
       cs->c[1] = g;
       cs->c[2] = b;
-      pdf_device_color_set(p->i->dev, cs->c, DeviceRGB, 3);
+      pdf_device_color_set(p->i->dev, cs->c, DeviceRGB, 3, pen);
       return pdf_ok;
 }
-pdf_err x_RG(pdf_page *p, float a, float b, float c)
-{
-      p->s->pen.t = DeviceRGB;
-      p->s->pen.n = 3;
-      return pdf_ok;
-}
+
 pdf_err x_cm(pdf_page *p, float a, float b, float c, float d, float e, float f)
 {
       gs_matrix ctm;

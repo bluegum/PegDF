@@ -20,7 +20,8 @@ enum font_family_e
 struct h5_state_s
 {
       float fs; // font scale
-      byte c[3]; // color
+      byte brush[3]; // color
+      byte pen[3]; // color
       int font_flags;
       font_family ff;
       fontname_id fid;
@@ -34,7 +35,7 @@ static font_family html_find_font(int font_flags);
 static void
 pdf_dev_html_doc_begin(pdf_device *dev)
 {
-      h5_state *s;
+      h5_state *s = (h5_state*) dev->dest.other;
       fprintf(dev->dest.f, "%s", "<!DOCTYPE html>");
       fprintf(dev->dest.f, "%s", "<html>");
       fprintf(dev->dest.f, "%s", "<head>");
@@ -43,9 +44,12 @@ pdf_dev_html_doc_begin(pdf_device *dev)
       dev->dest.other = pdf_malloc(sizeof(h5_state));
       s = (h5_state*)dev->dest.other;
       ((h5_state*) dev->dest.other)->fs = 12;
-      ((h5_state*) dev->dest.other)->c[0] = 0;
-      ((h5_state*) dev->dest.other)->c[1] = 0;
-      ((h5_state*) dev->dest.other)->c[2] = 0;
+      s->brush[0] = 0;
+      s->brush[1] = 0;
+      s->brush[2] = 0;
+      s->pen[0] = 0;
+      s->pen[1] = 0;
+      s->pen[2] = 0;
       s->font_flags = 0;
       s->fid = eTimes;
       s->path_flag = 0;
@@ -84,7 +88,7 @@ pdf_dev_html_page_begin(pdf_device *dev, int i, float width, float height)
       fprintf(dev->dest.f, "<canvas id=\"Canvas%d\" width=\"%d\" height=\"%d\"", i+1, (int)width, (int)height);
       fprintf(dev->dest.f, "%s", "style=\"border:1px solid #000000;\">");
       fprintf(dev->dest.f, "%s", "</canvas>");
-      h5_canvas_create(dev->dest.f, i+1, ((h5_state*) dev->dest.other)->c);
+      h5_canvas_create(dev->dest.f, i+1, ((h5_state*) dev->dest.other)->brush);
       //fprintf(dev->dest.f, "%s", "<script>\n");
 }
 
@@ -236,6 +240,7 @@ pdf_dev_html_path_stroke(pdf_device *d, stroke_state *ss)
 	    }
 #endif
       }
+      fprintf(d->dest.f, "ctx.strokeStyle=\"#%02X%02X%02X\";", s->pen[0], s->pen[1], s->pen[2]);
       fprintf(d->dest.f, "ctx.stroke();");
       s->path_flag = 0;
 }
@@ -251,7 +256,7 @@ pdf_dev_html_path_fill(pdf_device *d, int mode)
 }
 
 static void
-pdf_dev_html_color_set(pdf_device *dev, float *c, pdf_cspacetype cs, int n)
+pdf_dev_html_color_set(pdf_device *dev, float *c, pdf_cspacetype cs, int n, int pen)
 {
       static char *template_color = "ctx.fillStyle=\"#%s\";";
       char buf[128];
@@ -287,11 +292,22 @@ pdf_dev_html_color_set(pdf_device *dev, float *c, pdf_cspacetype cs, int n)
 		  break;
       }
       // quantisizing
-      s->c[0] = (byte)(out[0]*255);
-      s->c[1] = (byte)(out[1]*255);
-      s->c[2] = (byte)(out[2]*255);
-      sprintf(buf, "%02X%02X%02X", s->c[0], s->c[1], s->c[2]);
-      fprintf(dev->dest.f, template_color, buf);
+      if (pen)
+      {
+	    s->pen[0] = (byte)(out[0]*255);
+	    s->pen[1] = (byte)(out[1]*255);
+	    s->pen[2] = (byte)(out[2]*255);
+	    fprintf(dev->dest.f, "ctx.strokeStyle=\"#%02X%02X%02X\";", s->pen[0], s->pen[1], s->pen[2]);
+      }
+      else
+      {
+	    s->brush[0] = (byte)(out[0]*255);
+	    s->brush[1] = (byte)(out[1]*255);
+	    s->brush[2] = (byte)(out[2]*255);
+	    fprintf(dev->dest.f, "ctx.fillStyle=\"#%02X%02X%02X\";", s->brush[0], s->brush[1], s->brush[2]);
+      }
+      //sprintf(buf, "%02X%02X%02X", s->c[0], s->c[1], s->c[2]);
+      //fprintf(dev->dest.f, template_color, buf);
 }
 
 #define min(a, b) ((a)<(b)?(a):(b))

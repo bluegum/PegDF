@@ -810,6 +810,7 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                                       x_Tj(p, POP_O);
                                                       break;
                                                 case 'b':
+						      x_B(p);
                                                       break;
                                                 case 'c':
                                                       x_c(p, np[-6], np[-5], np[-4], np[-3], np[-2], np[-1]);
@@ -822,7 +823,7 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
 						      x_f(p, 0);
                                                       break;
                                                 case 'g':
-                                                      x_g(p, np[-1]);
+                                                      x_g(p, np[-1], 0);
                                                       POP_N(1);
                                                       break;
                                                 case 'h':
@@ -837,7 +838,7 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                                       POP_N(1);
                                                       break;
                                                 case 'k':
-                                                      x_k(p, np[-4], np[-3], np[-2], np[-1]);
+                                                      x_k(p, np[-4], np[-3], np[-2], np[-1], 0);
                                                       POP_N(4);
                                                       break;
                                                 case 'l':
@@ -875,12 +876,13 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                                       break;
                                                       ///
                                                 case 'B':
+						      x_B(p);
                                                       break;
                                                 case 'F':
                                                       x_f(p, 0);
                                                       break;
                                                 case 'G':
-                                                      x_G(p, np[-1]);
+                                                      x_g(p, np[-1], 1);
                                                       POP_N(1);
                                                       break;
                                                 case 'J':
@@ -888,7 +890,7 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                                       POP_N(1);
                                                       break;
                                                 case 'K':
-                                                      x_K(p, np[-4], np[-3], np[-2], np[-1]);
+                                                      x_k(p, np[-4], np[-3], np[-2], np[-1], 1);
                                                       POP_N(4);
                                                       break;
                                                 case 'M':
@@ -915,7 +917,7 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                           switch (_2_hash)
                                           {
                                                 case TWO_HASH('b','*'):
-                                                      //x_bstar(p);
+                                                      x_Bstar(p);
                                                       break;
                                                 case (TWO_HASH('c','m')):
                                                       x_cm(p, np[-6], np[-5], np[-4], np[-3], np[-2], np[-1]);
@@ -954,7 +956,7 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                                 break;
                                                 case TWO_HASH('r','g'):
                                                 {
-                                                      x_rg(p, np[-3], np[-2], np[-1]);
+                                                      x_rg(p, np[-3], np[-2], np[-1], 0);
                                                       POP_N(3);
                                                 }
                                                 break;
@@ -975,7 +977,9 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                                       x_sh(p, POP_O);
                                                 }
                                                 break;
-                                                case TWO_HASH('B', '*'): x_Bstar(p); break; // B*
+                                                case TWO_HASH('B', '*'):
+						      x_Bstar(p);  // B*
+						      break;
                                                 case TWO_HASH('B', 'I'):  // BI
 						{
 						      ON_ERROR(pdf_parse_dict(b, &t, 1));
@@ -1077,7 +1081,7 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                                       break;
                                                 case TWO_HASH('R', 'G'):
                                                 {
-                                                      x_RG(p, np[-3], np[-2], np[-1]);
+                                                      x_rg(p, np[-3], np[-2], np[-1], 1);
                                                       POP_N(3);
                                                 }
                                                 break;

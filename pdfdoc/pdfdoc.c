@@ -1005,10 +1005,10 @@ pdf_gstate_init(pdf_page *p)
 }
 
 void
-pdf_device_color_set(pdf_device *d, float *c, pdf_cspacetype cs, int n)
+pdf_device_color_set(pdf_device *d, float *c, pdf_cspacetype cs, int n, int pen)
 {
       if (d)
-	    (d->color_set)(d, c, cs, n);
+	    (d->color_set)(d, c, cs, n, pen);
 }
 
 void
@@ -1019,11 +1019,11 @@ pdf_update_brush(pdf_page *p)
       s1 = p->s;
       if (s0->brush.t != s1->brush.t)
       {
-	    return pdf_device_color_set(p->i->dev, s0->brush.c, s0->brush.t, s0->brush.n);
+	    return pdf_device_color_set(p->i->dev, s0->brush.c, s0->brush.t, s0->brush.n, 0);
       }
       else if (memcmp(&s0->brush.c, &s1->brush.c, s0->brush.n*sizeof(float)) != 0)
       {
-	    return pdf_device_color_set(p->i->dev, s0->brush.c, s0->brush.t, s0->brush.n);
+	    return pdf_device_color_set(p->i->dev, s0->brush.c, s0->brush.t, s0->brush.n, 0);
       }
 }
 

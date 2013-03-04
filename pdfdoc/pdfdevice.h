@@ -24,7 +24,7 @@ struct pdf_device_s
       void (*path_fill)(pdf_device *d, int mode);
       void (*path_stroke)(pdf_device *d, stroke_state*);
       void (*image_paint)(pdf_device *d);
-      void (*color_set)(pdf_device *d, float *, pdf_cspacetype, int n);
+      void (*color_set)(pdf_device *d, float *, pdf_cspacetype, int n, int pen);
       void (*grp_bgn)(pdf_device *d);
       void (*grp_end)(pdf_device *d);
       struct
