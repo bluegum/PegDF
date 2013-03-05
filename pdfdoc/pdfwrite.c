@@ -686,21 +686,22 @@ pdf_page_obj_write(pdf_page *page, int pgidx, unsigned long write_flag, pdf_xref
       int content_ref_arr[1024];
       if (page->contents)
       {
-	    if ((page->contents->t == eDict) || (page->contents->t == eRef))
+	    pdf_obj *contents = pdf_obj_deref(page->contents);
+	    if (contents->t == eDict)
 	    {
-		  content_ref = pdf_page_contents_write(page->contents, write_flag, xref, out, crypto);
+		  content_ref = pdf_page_contents_write(contents, write_flag, xref, out, crypto);
 	    }
-	    else if (page->contents->t == eArray)
+	    else if (contents->t == eArray)
 	    {
 		  int i;
-		  content_num = page->contents->value.a.len;
+		  content_num = contents->value.a.len;
 		  if (content_num > 1024)
 		  {
 			fprintf(stderr, "!!!Too many content streams on one page, limits to 1024 streams!!!\n");
 			content_num = 1024;
 		  }
 		  for (i = 0; i < content_num; i++)
-			content_ref_arr[i] = pdf_page_contents_write(&page->contents->value.a.items[i], write_flag, xref, out, crypto);
+			content_ref_arr[i] = pdf_page_contents_write(&contents->value.a.items[i], write_flag, xref, out, crypto);
 	    }
       }
       if (content_ref == -1 && content_num == 0)

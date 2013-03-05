@@ -137,7 +137,7 @@ extern pdf_parser *parser_inst;
 extern int push(e_pdf_kind t, double n, char *s);
 extern int push_ref(e_pdf_kind t, int gen, int r);
 extern pdf_obj push_array(void);
-extern pdf_obj push_literal(char *s);
+extern pdf_obj push_literal(char *s, int slen);
 extern pdf_obj pop(void);
 extern pdf_obj pop_dict(void);
 extern obj_num_gen pop_obj(void);

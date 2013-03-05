@@ -389,7 +389,7 @@ extern pdf_annots* pdf_annots_load(pdf_obj* o);
 extern pdf_stream* pdf_streams_load(pdf_obj* o);
 extern pdf_err pdf_streams_free(pdf_stream* s);
 extern pdf_stream* pdf_stream_load(pdf_obj* o, pdfcrypto_priv*, int, int);
-extern pdf_err pdf_stream_free(pdf_stream *s, int flag);
+extern pdf_err pdf_stream_free(pdf_stream *s, int flag); // flag: for in_mem stream, 1 to free
 extern int pdf_stream_getchar(pdf_stream *s);
 extern pdf_err pdf_annots_free(pdf_annots *a);
 extern pdf_err pdf_resources_free(pdf_resources*);

@@ -149,16 +149,30 @@ pdf_crypto_destroy(pdfcrypto_priv *crypto)
 }
 
 void
-pdf_crypto_encrypt_arc4(unsigned char *key, unsigned char *str, int len, unsigned char *outbuf, int *outlen)
+pdf_crypto_encrypt_arc4(pdfcrypto_algorithm algo, unsigned char *key, unsigned char *str, unsigned char *outbuf, int *outlen)
 {
       EVP_CIPHER_CTX ctx;
-      const EVP_CIPHER *rc4 = EVP_rc4();
+      const EVP_CIPHER *rc4;
       int tmplen;
 
+      if (algo == e40bitsRC4)
+      {
+	    rc4 = EVP_rc4_40();
+      }
+      else
+      {
+	    rc4 = EVP_rc4();
+      }
       EVP_CIPHER_CTX_init (&ctx);
 
       EVP_EncryptInit(&ctx, rc4, key, NULL); // NULL for rc4 iv
-      if(!EVP_EncryptUpdate(&ctx, outbuf, outlen, str, len))
+#if 0
+      if (algo == e40bitsRC4)
+	    EVP_CIPHER_CTX_set_key_length(&ctx, 5);
+      else
+	    EVP_CIPHER_CTX_set_key_length(&ctx, 16);
+#endif
+      if(!EVP_EncryptUpdate(&ctx, outbuf, outlen, str, 32))
       {
             /* Error */
             return;
@@ -184,7 +198,7 @@ pdf_crypto_calc_userpassword(pdfcrypto_priv* c, unsigned char id1[16], char *pw,
 
       if (c->rev == 2)
       {
-            pdf_crypto_encrypt_arc4(c->key, pdf_key_padding, 32, o, &len);
+	    pdf_crypto_encrypt_arc4(c->algo, c->key, pdf_key_padding, o, &len);
       }
       else if (c->rev == 3 || c->rev == 4)
       {
@@ -202,14 +216,14 @@ pdf_crypto_calc_userpassword(pdfcrypto_priv* c, unsigned char id1[16], char *pw,
             EVP_DigestFinal(&ctx, digest, &digest_len);
             EVP_MD_CTX_cleanup (&ctx);
             /* step 1 - rc4 digest*/
-            pdf_crypto_encrypt_arc4(c->key, digest, 16, out, &olen);
+            pdf_crypto_encrypt_arc4(c->algo, c->key, digest, out, &olen);
             /* step 2 - rc4 19 times */
             for (x = 1; x <= 19; x++)
             {
                   int i;
                   for (i = 0; i < n; i++)
                         xor[i] = c->key[i] ^ x;
-                  pdf_crypto_encrypt_arc4(xor, out, 16, o, &olen);
+                  pdf_crypto_encrypt_arc4(c->algo, xor, out, o, &olen);
                   memcpy(out, o, 16);
             }
             memcpy(o + 16, pdf_key_padding, 16);
@@ -223,7 +237,7 @@ pdf_crypto_calc_userpassword(pdfcrypto_priv* c, unsigned char id1[16], char *pw,
 // pdf arc4 cipher
 static
 pdf_err
-pdf_filter_arc4_close(pdf_filter *f)
+pdf_filter_arc4_close(pdf_filter *f, int flag)
 {
       EVP_CIPHER_CTX *ctx;
       if (!f)
@@ -231,6 +245,7 @@ pdf_filter_arc4_close(pdf_filter *f)
       ctx = (EVP_CIPHER_CTX*)f->state;
       EVP_CIPHER_CTX_cleanup(ctx);
       pdf_free(ctx);
+      //printf("\nf=%x\n", (unsigned long)f);
       pdf_free(f);
       return pdf_ok;
 }
@@ -394,6 +409,7 @@ pdf_cryptofilter_new(pdfcrypto_priv *crypto, int num, int gen, unsigned char *iv
       const EVP_MD *md = EVP_md5();
       if (!f)
             return NULL;
+      //printf("\nc=%x", (unsigned long)f);
       memset(f, 0, sizeof(pdf_filter));
       n = crypto->len/8;
       memcpy(key, crypto->key, n);
@@ -416,7 +432,7 @@ pdf_cryptofilter_new(pdfcrypto_priv *crypto, int num, int gen, unsigned char *iv
       if (n>16)
             n = 16;
 
-      if (crypto->algo == e40plusbitsRC4)
+      if ((crypto->algo == e40plusbitsRC4) || (crypto->algo == e40bitsRC4))
       {
             EVP_CIPHER_CTX *ctx; // cipher state
             const EVP_CIPHER *rc4 = EVP_rc4();
@@ -425,7 +441,15 @@ pdf_cryptofilter_new(pdfcrypto_priv *crypto, int num, int gen, unsigned char *iv
             if (!ctx)
                   goto cf_fail; // cipher filter fail
             EVP_CIPHER_CTX_init (ctx);
-            EVP_EncryptInit(ctx, rc4, final_key, NULL); // NULL for rc4 iv
+            //EVP_DecryptInit(ctx, rc4, final_key, NULL); // NULL for rc4 iv
+	    EVP_CipherInit_ex(ctx, rc4, NULL, NULL, NULL, 0);
+	    if (crypto->algo == e40bitsRC4)
+		  EVP_CIPHER_CTX_set_key_length(ctx, 10);
+	    else
+		  EVP_CIPHER_CTX_set_key_length(ctx, 16);
+	    /* We finished modifying parameters so now we can set key and IV */
+	    EVP_CipherInit_ex(ctx, NULL, NULL, final_key, NULL, 0);
+
             f->state = (void*) ctx;
             f->close = pdf_filter_arc4_close;
             f->read = pdf_filter_arc4_read;

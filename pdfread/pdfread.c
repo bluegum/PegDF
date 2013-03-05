@@ -171,7 +171,7 @@ pdf_obj push_array(void)
       return o;
 }
 
-pdf_obj push_literal(char *s)
+pdf_obj push_literal(char *s, int slen)
 {
       if (!s)
       {
@@ -201,9 +201,9 @@ pdf_obj push_literal(char *s)
                   char *p = s;
                   char *d;
 #define isoct(a) ((a)>= '0' && (a)<= '7')
-                  o->value.s.len = strlen(s);
+                  o->value.s.len = slen;
                   o->value.s.buf = d = pdf_malloc(o->value.s.len);
-                  while (*p)
+                  while (len < slen)
                   {
                         // translate escape sequence to binary
                         if (*p == '\\')

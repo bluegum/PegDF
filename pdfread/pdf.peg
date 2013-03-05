@@ -25,20 +25,20 @@
 ####################################
 # Productions
 ####################################
-start	<- COMMENT EOL* SPACE* 
+start	<- COMMENT EOL* SPACE*
 	   / STREAM
 	   / OBJ
-	   / DELIM XREF TRAILER 
+	   / DELIM XREF TRAILER
 	   / DELIM STARTXREF {print_stack();}
 	   / DELIM GARBAGE DELIM
 	   / EOF
-DICT	<- DB 
+DICT	<- DB
 	( KEY COMMENT* (VALUE / KWORD / ID)
-	/ COMMENT  
-	)* DE 
+	/ COMMENT
+	)* DE
 DB      <- '<<' DELIM {push(eDictMarker, 0, NULL);}
 DE	<- '>>' DELIM {pop_dict();}
-KEY	<- DELIM '/' < ALPHANUM+ > DELIM  {push(eKey, 0, yytext);} 
+KEY	<- DELIM '/' < ALPHANUM+ > DELIM  {push(eKey, 0, yytext);}
 VALUE	<- (
 	   REF
 	   / NUM
@@ -49,24 +49,24 @@ VALUE	<- (
 	   / STRING
 	   / HEXSTR
 	   / KWORD
-	   ) DELIM 
+	   ) DELIM
 ARRAY	   <- '[' DELIM { push(eArrayMarker, 0, NULL); }
-	      (VALUE)* 
+	      (VALUE)*
 	      ']'  DELIM { push_array();  }
-	   
-STRING     <- STRBGN {push_literal(NULL);}
+
+STRING     <- STRBGN {push_literal(NULL, 0);}
 	      STR* STREND
 #string temporary rule
 STR	   <- (
-	      STRE  STR 
+	      STRE  STR
 	      /STRE
 	      )
 #string element
 STRE       <- (
-	       <STRA+>  {push_literal(yytext);} STR 
-  	      / <STRA+> {push_literal(yytext);}
-	      / '(' {push_literal("(");} STRE  ')' {push_literal(")");}
-	      / '(' ')' {push_literal("()");}
+	       <STRA+>  {push_literal(yytext, yyleng);} STR
+  	      / <STRA+> {push_literal(yytext, yyleng);}
+	      / '(' {push_literal("(", 1);} STRE  ')' {push_literal(")", 1);}
+	      / '(' ')' {push_literal("()", 2);}
      	      )
 #string alphabet
 STRA       <- (ESCPAREN / (!STRBGN !STREND .))
@@ -75,8 +75,8 @@ HEXSTR	   <- '<' < [0-9a-fA-F\n\r]* > '>' DELIM {push(eHexString, 0, yytext);}
 
 OBJ	<- DELIM NUM  NUM  'obj' DELIM   { push(eObjMarker, 0, NULL); }
 	COMMENT*
-	(REF 
-	/ DICT 
+	(REF
+	/ DICT
 	/ NUM
 	/ REAL
 	/ ARRAY
@@ -103,18 +103,18 @@ XREF	 <- 'xref' DELIM
 	 XREFTAB*  DELIM
 	 )+
 XREFTAB	 <- < [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9] > {push(eInt,atoi(yytext), NULL);}
-	    ' ' 
+	    ' '
 	    < [0-9][0-9][0-9][0-9][0-9] > {push(eInt,atoi(yytext), NULL);}
 	    ' '
-	    XREF_ENTRY_FLAG 
+	    XREF_ENTRY_FLAG
 	    (SP CR/SP LF/CR LF) {xref_append(pop().value.i, pop().value.i, pop());}
-	 
+
 TRAILER	        <- 'trailer' DELIM DICT DELIM {read_trailer();}
 STARTXREF      	<- DELIM 'startxref' DELIM NUM DELIM {xref_start(pop().value.i);}
 
-GARBAGE		<- . !('startxref' / 'xref'/ 
+GARBAGE		<- . !('startxref' / 'xref'/
 		      	NUM NUM 'obj' {pop();}
-			) 
+			)
 #####################################
 # Terminals
 #####################################

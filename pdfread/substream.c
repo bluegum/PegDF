@@ -113,7 +113,7 @@ fs_read(sub_stream* s, unsigned char *buf, int len)
 }
 
 static int
-fs_close(sub_stream* s)
+fs_close(sub_stream* s, int flag)
 {
       file_stream *fs = (file_stream*)s;
       (fs->p->seek)(fs->orig_offset);

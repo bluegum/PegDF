@@ -159,6 +159,7 @@ s_buffer_stream_open(pdf_obj *contents, pdfcrypto_priv * encrypt, pdf_stream *ss
       int i, n;
       int num, gen;
 
+  restart:
       if (cs->t == eArray)
       {
 	    n = cs->value.a.len;
@@ -166,6 +167,13 @@ s_buffer_stream_open(pdf_obj *contents, pdfcrypto_priv * encrypt, pdf_stream *ss
       }
       else if (cs->t == eRef)
       {
+	    pdf_obj *csa = pdf_obj_deref(cs);
+	    if (csa->t == eArray)
+	    {
+		  cs = csa;
+		  contents = csa;
+		  goto restart;
+	    }
 	    n = 1;
 	    cs = contents;
       }
@@ -184,6 +192,12 @@ s_buffer_stream_open(pdf_obj *contents, pdfcrypto_priv * encrypt, pdf_stream *ss
       if (!s)
 	    return 0;
       ss = pdf_stream_load(cs, encrypt, num, gen);
+
+      if (!ss)
+      {
+	    pdf_free(s);
+	    return 0;
+      }
       s->i = 0;
       s->n = n;
       s->content = contents;

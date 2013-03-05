@@ -193,7 +193,6 @@ pdf_err x_Bstar(pdf_page *p)
       gs->path_top = top;
       x_s(p); // stroke
       return pdf_ok;
-      return pdf_ok;
 }
 
 pdf_err x_BI(pdf_page *p, pdf_obj o)

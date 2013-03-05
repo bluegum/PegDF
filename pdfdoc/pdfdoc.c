@@ -480,7 +480,7 @@ pdf_stream*
 pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
 {
       pdf_filter *last = NULL, *raw = NULL, *crypt = NULL;
-      pdf_stream *s;
+      pdf_stream *s = 0;
       sub_stream *ss;
       pdf_obj *x, *xx, *y;
       int m, mm;
@@ -646,6 +646,8 @@ pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
             {
                   if (s)
                         pdf_free(s);
+		  if (crypt)
+			PDF_FILTER_CLOSE(crypt, 0); // do not free in_mem stream
                   return NULL;
             }
             // train them
