@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h>
 #include "pdfdoc.h"
 #include "pdfpaint.h"
 
@@ -149,6 +150,7 @@ pdf_path_paint(pdf_device *dev, pdf_extgstate *gs, int stroke, int even_odd)
 	    memcpy(&ss.dash, gs->D, sizeof(float)*gs->D_n);
 	    ss.dash_n = gs->D_n;
 	    ss.dash_offset = gs->D_OFFSET;
+	    ss.lw *= (fabs(gs->ctm.a) + fabs(gs->ctm.b));
 	    if (dev && dev->path_stroke)
 		  (dev->path_stroke)(dev, &ss);
       }

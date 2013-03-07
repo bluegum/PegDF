@@ -78,4 +78,4 @@ $(INSTALL_DIR)/% : $(BIN_DIR)/%
 	cp -p $< $@
 	strip $@
 
-install   : $(INSTALL_DIR)/picker $(INSTALL_DIR)/pedal
+install   : $(INSTALL_DIR)/picker $(INSTALL_DIR)/pedal $(INSTALL_DIR)/readpdf

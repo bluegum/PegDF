@@ -82,6 +82,7 @@ struct buffer_stream_s
       pdf_obj *content;
       int i, n;
       pdfcrypto_priv * encrypt;
+      int closed;
 };
 
 static int
@@ -99,6 +100,8 @@ s_get_char(buffer_stream *s)
                   s->p = s->buf + 2;
             }
 	filt_read:
+	    if (s->closed)
+		  return EOF;
             i = (s->f->read)(s->f, s->p, BUFFER_STREAM_BUF_SIZE);
             if (i == 0)
 	    {
@@ -106,6 +109,8 @@ s_get_char(buffer_stream *s)
 		  if (s->i == s->n)
 		  {
 			pdf_stream_free(s->s, 1);
+			s->p = s->e;
+			s->closed = 1;
 			return EOF;
 		  }
 		  else
@@ -198,6 +203,7 @@ s_buffer_stream_open(pdf_obj *contents, pdfcrypto_priv * encrypt, pdf_stream *ss
 	    pdf_free(s);
 	    return 0;
       }
+      s->closed = 0;
       s->i = 0;
       s->n = n;
       s->content = contents;

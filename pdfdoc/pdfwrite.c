@@ -311,10 +311,16 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
 			      fseek(out, curx, SEEK_SET);
 			      fprintf(out, "endstream\n");
 			}
+			else
+			{
+			      // write raw stream
+			      goto write_rawstream;
+			}
 		  }
 		  else if (strm)
 		  {
 			unsigned char c;
+		    write_rawstream:
 			fprintf(f, "%s\n", "stream");
 			strm->len = strmlen;
 			while (strm->read(strm, &c, 1))
