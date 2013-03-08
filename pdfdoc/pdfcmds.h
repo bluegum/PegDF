@@ -1,8 +1,7 @@
 #ifndef PDFCMDS_H
 #define PDFCMDS_H
 
-extern pdf_err x_cs(pdf_page *p, pdf_obj o);
-extern pdf_err x_CS(pdf_page *p, pdf_obj o);
+extern pdf_err x_colorspace(pdf_page *p, pdf_obj o, int pen);
 extern pdf_err x_d(pdf_page *p, pdf_obj o, float);
 extern pdf_err x_f(pdf_page *p, int);
 extern pdf_err x_g(pdf_page *p, float g, int pen);

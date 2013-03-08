@@ -208,6 +208,11 @@ pdf_encoding_load(pdf_obj *a, pdf_font_encoding* e)
 		  e->type = WinAnsiEncoding;
 		  tbl = win_ansi_encoding;
 	    }
+	    else if (strncmp(a->value.k, "StandardEncoding", sizeof("StandardEncoding")) == 0)
+	    {
+		  e->type = WinAnsiEncoding;
+		  tbl = standard_encoding;
+	    }
 	    else if (strncmp(a->value.k, "MacRomanEncoding", sizeof("MacRomanEncoding")) == 0)
 	    {
 		  e->type = MacRomanEncoding;
@@ -221,6 +226,7 @@ pdf_encoding_load(pdf_obj *a, pdf_font_encoding* e)
 	    else
 	    {
 		  e->type = StandardEncoding;
+		  tbl = standard_encoding;
 	    }
 	    e->get_glyph_name = get_glyph_name;
 	    if (a->t == eDict || a->t == eRef)
@@ -289,6 +295,12 @@ pdf_cid_encoding_load(pdf_obj *a, pdf_font_encoding* e)
 	    {
 		  e->get_cid = get_cid_identity;
 		  e->type = Identity_V;
+	    }
+	    else
+	    {
+		  // TODO: load known Adobe cmaps
+		  e->get_cid = get_cid_identity;
+		  e->type = Identity_H;
 	    }
       }
       else if (a->t == eDict)

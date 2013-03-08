@@ -37,6 +37,11 @@ pdf_map_insert(int n, int gen)
       pdf_map * m = parser_inst->map;
       while (m->generation != gen)
       {
+	    if (!m->next)
+	    {
+		 m->next = pdf_map_create();
+		 m->next->generation = gen;
+	    }
             m = m->next;
       }
       if (!m)

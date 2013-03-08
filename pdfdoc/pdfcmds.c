@@ -8,24 +8,9 @@
 #include "gsdraw.h"
 #include "pdffont.h"
 #include "pdfread.h" // for _DMSG
-pdf_err
-x_cs(pdf_page *p, pdf_obj o)
-{
-      pdf_obj *cspace;
-      if (p->resources && p->resources->colorspace)
-      {
-            cspace = p->resources->colorspace;
-            assert(cspace->t == eDict);
-            cspace = dict_get(cspace->value.d.dict, o.value.k);
-            pdf_obj_resolve(cspace);
-            pdf_colorspace_set(&(p->s->brush), cspace);
-      }
-      pdf_obj_delete(&o);
-      return pdf_ok;
-}
 
 pdf_err
-x_CS(pdf_page *p, pdf_obj o)
+x_colorspace(pdf_page *p, pdf_obj o, int pen)
 {
       pdf_obj *cspace;
       if (p->resources && p->resources->colorspace)
@@ -33,8 +18,29 @@ x_CS(pdf_page *p, pdf_obj o)
             cspace = p->resources->colorspace;
             assert(cspace->t == eDict);
             cspace = dict_get(cspace->value.d.dict, o.value.k);
-            pdf_obj_resolve(cspace);
-            pdf_colorspace_set(&(p->s->pen), cspace);
+	    if (cspace)
+	    {
+		  pdf_obj_resolve(cspace);
+		  if (pen)
+		  {
+			pdf_colorspace_set(&(p->s->pen), cspace);
+		  }
+		  else
+		  {
+			pdf_colorspace_set(&(p->s->brush), cspace);
+		  }
+	    }
+	    else
+	    {
+		  if (pen)
+		  {
+			pdf_colorspace_set(&(p->s->pen), &o);
+		  }
+		  else
+		  {
+			pdf_colorspace_set(&(p->s->brush), &o);
+		  }
+	    }
       }
       pdf_obj_delete(&o);
       return pdf_ok;

@@ -945,7 +945,7 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                                       break;
                                                 case (TWO_HASH('c','s')):
                                                 {
-                                                      x_cs(p, POP_O);
+                                                      x_colorspace(p, POP_O, 0);
                                                 }
                                                 break;
                                                 case (TWO_HASH('d','0')):
@@ -1022,7 +1022,7 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                                 case TWO_HASH('B', 'X'): x_BX(p); break; // BX
                                                 case TWO_HASH('C','S'):
                                                 {
-                                                      x_CS(p, POP_O);
+                                                      x_colorspace(p, POP_O, 1);
                                                 }
                                                 break;
                                                 case (TWO_HASH('D','o')):
