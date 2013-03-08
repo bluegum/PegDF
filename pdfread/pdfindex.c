@@ -58,13 +58,29 @@ pdf_map_insert(int n, int gen)
 pdf_map *
 pdf_map_find(int gen)
 {
-      return parser_inst->map;//&a_pdf_map;
+      pdf_map *m = parser_inst->map;
+      while (m)
+      {
+	    if (m->generation == gen)
+		  return m;
+	    else
+		  m = m->next;
+      }
 }
 
 int
 pdf_obj_insert(int n, int gen, void *d)
 {
       pdf_map *m = pdf_map_insert(n, gen);
+      pdf_obj *o = NULL;
+      if (o = pdf_obj_find(n, gen))
+      {
+	    char buf[128];
+	    sprintf(buf, "Duplicated object (%d,%d) is found, old one is removed!\n", n, gen);
+	    DMSG(buf);
+	    pdf_obj_delete(o);
+	    pdf_free(o);
+      }
       bpt_insert(m->head, n, d);
       return 0;
 }

@@ -368,6 +368,10 @@ bpt_insert_inner(bpt_node *r, int i, void *d)
 bpt_node*
 bpt_search_node(bpt_node *n, int i)
 {
+      if (!n)
+      {
+	    return NULL;
+      }
       if (n->leaf)
       {
 	    if (i >= n->low + BPT_ORDER_INNER)

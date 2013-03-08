@@ -719,6 +719,26 @@ pdf_parse_dict(buffer_stream *s, pdf_obj *o, int inlineimg)
 #define POP_N(n) np -= n; if (np <= num_stack) np = num_stack
 #define PUSH_O(a) *op++ = (a); if (op>=op_max) op--
 #define POP_O (op <= o) ? (*o):(*(--op))
+
+static int
+x_scn(pdf_page *p, pdf_obj *stk, int pen)
+{
+      int n;
+      stk--;
+      if (pen)
+      {
+	    n = pdf_pen_n(p);
+      }
+      else
+      {
+	    n = pdf_brush_n(p);
+      }
+      if (stk->t == eKey)
+      {
+	    pdf_obj_delete(stk);
+      }
+      return n;
+}
 /////////////////////////////////////////////////////////////////////////////////
 // Content Stream Parser
 //
@@ -1140,17 +1160,13 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                           }
                                           else if (buf[0] == 'S' && buf[1] == 'C' && buf[2] == 'N')
                                           {
-                                                int n = pdf_pen_n(p);
-                                                //x_sc(p);
+                                                int n = x_scn(p, op, 1);
                                                 POP_N(n);
-                                                //x_SCN(p);
                                           }
                                           else if (buf[0] == 's' && buf[1] == 'c' && buf[2] == 'n')
                                           {
-                                                int n = pdf_brush_n(p);
-                                                //x_sc(p);
+                                                int n = x_scn(p, op, 0);
                                                 POP_N(n);
-                                                //x_scn(p);
                                           }
                                           else
                                           {
