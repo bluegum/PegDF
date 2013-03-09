@@ -733,7 +733,7 @@ x_scn(pdf_page *p, pdf_obj *stk, int pen)
       {
 	    n = pdf_brush_n(p);
       }
-      if (stk->t == eKey)
+      if (n == 1 && stk->t == eKey)
       {
 	    pdf_obj_delete(stk);
       }
