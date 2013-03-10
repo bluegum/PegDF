@@ -361,7 +361,7 @@ struct pdf_trailer_s
       pdf_info *info;
       unsigned char id[2][32];
       // xrefstream entries
-      int index[2];
+      int index[128];
       int w[3];
       // chain
       pdf_trailer *last;

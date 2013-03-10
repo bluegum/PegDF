@@ -146,7 +146,7 @@ extern void print_stack();
 extern int xref_new(int off, int n);
 extern int xref_append(int off, int gen, pdf_obj x);
 extern void pop_comment(char *s);
-extern void pop_stream(int pos);
+extern void pop_stream(int pos, int off);
 extern void xref_start(int);
 
 /// parser helpers

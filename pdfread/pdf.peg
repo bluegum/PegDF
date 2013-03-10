@@ -90,8 +90,8 @@ STREAM   <- DELIM NUM  NUM  'obj' DELIM   { push(eObjMarker, 0, NULL); }
 	COMMENT*
 	DICT
 	(
-	    'stream' (CR LF/LF CR) {pop_stream( parser_inst->file_position+1);}
-	    / 'stream' (CR/LF) {pop_stream( parser_inst->file_position);}
+	    'stream' (CR LF/LF CR) {pop_stream( parser_inst->file_position+1, 0);}
+	    / 'stream' (CR/LF) (.) {pop_stream( parser_inst->file_position, -1);}
 	)
 
 REF	 <- NUM NUM 'R' DELIM { push_ref(eRef, pop().value.i, pop().value.i);}

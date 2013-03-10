@@ -28,7 +28,7 @@ struct pdf_xref_internal_s
       bpt_tree *entry; // storing scanned objects
       pdf_xref_table *xref;
       int page_obj_idx;
-      int page_obj_buf[10240];
+      int page_obj_buf[10240*2];
       int *page_ref_buf;
 };
 
@@ -523,9 +523,11 @@ pdf_scan_object(pdf_obj *o, pdf_xref_internal *x)
       switch (o->t)
       {
             case eRef:
-                  pdf_obj_resolve(obj);
-                  pdf_scan_object(obj, x);
+	    {
+                  pdf_obj *d = pdf_obj_deref(o);
+                  pdf_scan_object(d, x);
                   break;
+	    }
             case eDict:
             {
                   dict_list *ll, *l = dict_to_list(obj->value.d.dict);
@@ -539,11 +541,11 @@ pdf_scan_object(pdf_obj *o, pdf_xref_internal *x)
 			}
                         if (l->val.t == eRef)
                         {
+                              // recursively scan this obj for more refs
+                              pdf_scan_object(&l->val, x);
                               pdf_xref_internal_append(x, l->val.value.r.num, l->val.value.r.gen);
                               x->page_obj_buf[x->page_obj_idx] = l->val.value.r.num;
                               x->page_obj_idx ++;
-                              // recursively scan this obj for more refs
-                              pdf_scan_object(&l->val, x);
                         }
 			else if (l->val.t == eArray)
 			{
@@ -568,11 +570,21 @@ pdf_scan_object(pdf_obj *o, pdf_xref_internal *x)
 			oo = &obj->value.a.items[i];
 			if (oo->t == eRef)
 			{
-                              pdf_xref_internal_append(x, oo->value.r.num, oo->value.r.gen);
+			      if (x->page_obj_idx)
+			      {
+				    int m;
+				    for (m = 0; m < x->page_obj_idx; m++)
+				    {
+					  if (oo->value.r.num == x->page_obj_buf[m])
+						break;
+				    }
+				    if (m < x->page_obj_idx && (oo->value.r.num == x->page_obj_buf[m]))
+					  continue;
+			      }
+			      pdf_scan_object(oo, x);
+                              pdf_xref_internal_append(x, oo->value.r.num, oo->value.r.gen); // insert a dummy
                               x->page_obj_buf[x->page_obj_idx] = oo->value.r.num;
                               x->page_obj_idx ++;
-                              // recursively scan this obj for more refs
-                              pdf_scan_object(oo, x);
 			}
 		  }
 	    }
@@ -601,11 +613,11 @@ pdf_resources_scan(pdf_resources *r, pdf_xref_internal* x)
                   {
                         if (l->val.t == eRef)
                         {
+                              // recursively scan this obj for more refs
+                              pdf_scan_object(&l->val, x);
                               pdf_xref_internal_append(x, l->val.value.r.num, l->val.value.r.gen);
                               x->page_obj_buf[x->page_obj_idx] = l->val.value.r.num;
                               x->page_obj_idx ++;
-                              // recursively scan this obj for more refs
-                              pdf_scan_object(&l->val, x);
                         }
                         l = l->next;
                   }
@@ -663,7 +675,8 @@ pdf_write_indirect_objs(pdf_xref_internal *xref, FILE *out, pdfcrypto_priv *cryp
       if (xref->page_obj_idx)
       {
             int i;
-            for (i = xref->page_obj_idx - 1; i >=0; i--)
+	    // backward scanning to meet dependency
+            for (i = 0; i < xref->page_obj_idx; i++)
             {
                   int a = (int)bpt_search(xref->entry, xref->page_obj_buf[i]);
                   if (a == -1) // -1 means new item in the output tree, means need to be flushed out.

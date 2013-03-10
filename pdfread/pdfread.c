@@ -427,7 +427,7 @@ match_string(char *m)
       return 0;
 }
 
-void pop_stream(int pos)
+void pop_stream(int pos, int off)
 {
       pdf_obj *o;
       dict *d;
@@ -461,10 +461,14 @@ void pop_stream(int pos)
                   cache_stm)
             {
                   unsigned char *pcache;
-                  cache = pdf_malloc(length);
+                  cache = pdf_malloc(length - off);
                   if (!cache)
                         return;
                   pcache = cache;
+		  if (off)
+		  {
+			(parser_inst->seek)(pos+off);
+		  }
                   for (i = 0; i < length; i++)
                   {
                         if ((c = (parser_inst->getchar)()) == EOF)
@@ -476,6 +480,10 @@ void pop_stream(int pos)
                               *pcache++ = c;
                         }
                   }
+		  if (off)
+		  {
+			(parser_inst->seek)(pos+length);
+		  }
             }
             else
             {
@@ -527,7 +535,7 @@ void pop_stream(int pos)
       if (cache_stm)
       {
             extern sub_stream* in_mem_stream_new(unsigned char *cache, int pos, int len, int, int);
-            s = in_mem_stream_new(cache, pos, length, 0, 0);
+            s = in_mem_stream_new(cache, pos+off, length+off, 0, 0);
       }
       else
       {
