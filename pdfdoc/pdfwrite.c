@@ -505,7 +505,7 @@ pdf_resources_write(pdf_resources *r, pdf_xref_internal *x, FILE *o, pdfcrypto_p
       if (r->pattern)
       {
             pdf_obj_resolve(r->pattern);
-            fprintf(o, "%s", "/Shading");
+            fprintf(o, "%s", "/Pattern");
             pdf_obj_write(r->pattern, x, o, crypto);
             fprintf(o, "%s", "\n");
       }
