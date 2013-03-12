@@ -39,7 +39,7 @@ pdfdoc/pdffont.c : $(GLYPH_NAME_TO_UNI)
 
 KEYWORDS_HASH     := $(d)/keywords_hash.c
 $(KEYWORDS_HASH) : $(d)/keywords.txt
-	gperf -CGD -L ANSI-C -e ';'  $< --output-file=$(KEYWORDS_HASH)
+	gperf -CGD -L ANSI-C -e ';' -N pdf_keyword_find $< --output-file=$(KEYWORDS_HASH)
 pdfdoc/pdfdoc.c : $(KEYWORDS_HASH)
 
 CLEAN		:= $(CLEAN) $(subst .c,.o,$(GLYPH_NAME_TO_UNI))
