@@ -16,7 +16,7 @@ pdf_colorspace_set(pdf_cspace* cs, pdf_obj *o)
       {
 	    obj = o->value.a.items[0];
       }
-      else if (o->t == eKey)
+      else if (obj_is_name(o))
       {
 	    obj = *o;
       }

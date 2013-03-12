@@ -68,6 +68,7 @@ typedef enum pdf_kind
       eReal,
       eRef,
       eKey,
+      eName,
       eString,
       eHexString,
       eArray,
@@ -361,5 +362,14 @@ static inline
 void * null_val() { return 0; }
 
 typedef struct gs_rect_s pdf_rect;
+
+static inline void
+name_free(pdf_obj *n)
+{
+      if (n->t == eName)
+	    pdf_free(n->value.k);
+}
+
+#define obj_is_name(o)  ((o)->t == eKey || (o)->t == eName)
 
 #endif

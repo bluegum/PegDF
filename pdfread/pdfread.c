@@ -35,6 +35,8 @@
 #include "pdfcrypto.h"
 #include "pdfread.h"
 
+extern const char * pdf_keyword_find (register const char *str, register unsigned int len);
+
 extern int yyparse();
 extern char *yytext;
 extern void parser_free();
@@ -55,9 +57,20 @@ int push(e_pdf_kind t, double n, char *s)
                   parser_inst->stack[parser_inst->stackp].value.i = n;
                   break;
             case eKey:
-                  parser_inst->stack[parser_inst->stackp].value.k = pdf_malloc(strlen(s)+1);
-                  memcpy(parser_inst->stack[parser_inst->stackp].value.k, s, strlen(s)+1);
+	    {
+		  const char *k;
+		  if (k = pdf_keyword_find(s, strlen(s)))
+		  {
+			parser_inst->stack[parser_inst->stackp].value.k = k;
+		  }
+		  else
+		  {
+			parser_inst->stack[parser_inst->stackp].t = eName;
+			parser_inst->stack[parser_inst->stackp].value.k = pdf_malloc(strlen(s)+1);
+			memcpy(parser_inst->stack[parser_inst->stackp].value.k, s, strlen(s)+1);
+		  }
                   break;
+	    }
             case eHexString:
             {
                   pdf_obj o;
@@ -130,7 +143,7 @@ pdf_obj pop_dict(void)
             {
                   //printf("%s|", (char*)(parser_inst->stack[parser_inst->stackp+1].value.k));
                   dict_insert(d, parser_inst->stack[parser_inst->stackp+1].value.k, a);
-                  pdf_free(parser_inst->stack[parser_inst->stackp+1].value.k);
+                  name_free(&parser_inst->stack[parser_inst->stackp+1]);
             }
             else
             {
@@ -453,10 +466,10 @@ void pop_stream(int pos, int off)
             if (o) cache_stm = 1;
             /// is it an object stream?
             o = dict_get(d, "Type");
-            if (o && o->t == eKey && (strncmp(o->value.k, "ObjStm", 6) == 0)) cache_stm = 1;
+            if (o && obj_is_name(o) && (strncmp(o->value.k, "ObjStm", 6) == 0)) cache_stm = 1;
             /// is it an xref stream?
             o = dict_get(d, "Type");
-            if (o && o->t == eKey && (strncmp(o->value.k, "XRef", 4) == 0)) cache_stm = 1;
+            if (o && obj_is_name(o) && (strncmp(o->value.k, "XRef", 4) == 0)) cache_stm = 1;
             if (//parser_inst->l.Linearized ||
                   cache_stm)
             {
@@ -619,7 +632,7 @@ pdf_err read_xrefstm(pdf_obj *o, pdf_parser *p)
       }
       d = o->value.d.dict;
       a = dict_get(d, "Type");
-      if (a && a->t == eKey)
+      if (a && obj_is_name(a))
       {
             if (strcmp(a->value.k, "XRef") != 0)
             {
@@ -1289,7 +1302,7 @@ pdf_open(char *in, pdf_doc **doc)
                   else
                   {
                         l = dict_get(first_obj->value.d.dict, "Type");
-                        if (l && l->t == eKey && (strncmp(l->value.k, "ObjStm", 6) == 0))
+                        if (l && obj_is_name(l) && (strncmp(l->value.k, "ObjStm", 6) == 0))
                         {
                               DMSG("Procssing Object stream");
                               err = objstream_read(first_obj, parser_inst->cur_obj, parser_inst->cur_gen, NULL);
@@ -1298,7 +1311,7 @@ pdf_open(char *in, pdf_doc **doc)
                                     objstms = objstream_mark(objstms, parser_inst->cur_obj, parser_inst->cur_gen);
                               }
                         }
-                        else if (l && l->t == eKey && (strncmp(l->value.k, "XRef", 4) == 0))
+                        else if (l && obj_is_name(l) && (strncmp(l->value.k, "XRef", 4) == 0))
                         {
                               DMSG("Procssing xref stream");
                               read_xrefstm(first_obj, parser_inst);
@@ -1367,7 +1380,7 @@ pdf_open(char *in, pdf_doc **doc)
                         if (o && o->t == eDict)
                         {
                               pdf_obj *t = dict_get(o->value.d.dict, "Type");
-                              if (t && t->t == eKey)
+                              if (t && obj_is_name(t))
                               {
 				    if (strncmp(t->value.k, "XRef", 4) == 0)
                                     {

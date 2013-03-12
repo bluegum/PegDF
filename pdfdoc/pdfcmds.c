@@ -228,12 +228,12 @@ pdf_err x_BDC(pdf_page *p, pdf_obj n, pdf_obj o)
       {
             pdf_obj_delete(&o);
       }
-      else if (o.t == eKey)
+      else if (o.t == eName)
       {
             pdf_obj_delete(&o);
       }
 
-      if (n.t == eKey)
+      if (n.t == eName)
       {
             pdf_obj_delete(&n);
       }
@@ -487,7 +487,7 @@ pdf_err x_gs(pdf_page *p, pdf_obj o)
       pdf_resources *r = p->resources;
       pdf_obj *extg, *thisg;
       pdf_extgstate* g = NULL;
-      if (o.t != eKey)
+      if (!obj_is_name(&o))
 	    return pdf_ok;
       // find it in resources
       extg = r->extgstate;
@@ -515,7 +515,7 @@ pdf_err x_sh(pdf_page *p, pdf_obj o)
 pdf_err x_Do(pdf_page *p, pdf_obj o)
 {
       pdf_obj *x;
-      assert(o.t == eKey);
+      assert(obj_is_name(&o));
       if (p->resources && p->resources->xobject)
       {
             x = p->resources->xobject;

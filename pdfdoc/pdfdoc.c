@@ -118,7 +118,7 @@ pdf_err pdf_page_tree_load(pdf_doc *d, pdf_obj *o)
             a = dict_get(o->value.d.dict, "Type");
             if (!a)
                   return pdf_ok;
-            if (a->t == eKey && a->value.k)
+            if (obj_is_name(a) && a->value.k)
             {
                   if (strcmp(a->value.k, "Pages") == 0)
                   {
@@ -392,12 +392,12 @@ pdf_cf_load(pdf_obj *o, pdf_cryptfilter **cf)
 
       if (!o)
 	    return pdf_ok;
-      if (o->t != eKey && o->t != eDict)
+      if (!obj_is_name(o) && o->t != eDict)
 	    return pdf_ok;
-      if (o->t == eKey &&
+      if (obj_is_name(o) &&
 	  strcmp(o->value.k, "Identity") == 0)
 	    return pdf_ok;
-      if (o->t == eKey)
+      if (obj_is_name(o))
 	    return pdf_ok;
       a = dict_get(o->value.d.dict, "StdCF"); // Dont support private CF
       if (!a)
@@ -413,7 +413,7 @@ pdf_cf_load(pdf_obj *o, pdf_cryptfilter **cf)
             return pdf_ok;
       memset(*cf, 0, sizeof(pdf_cryptfilter));
       a = dict_get(o->value.d.dict, "CFM");
-      if (a && a->t == eKey)
+      if (a && obj_is_name(a))
       {
             if (strcmp(a->value.k, "V2") == 0)
             {
@@ -433,7 +433,7 @@ pdf_cf_load(pdf_obj *o, pdf_cryptfilter **cf)
             }
       }
       a = dict_get(o->value.d.dict, "AuthEvent");
-      if (a && a->t == eKey)
+      if (a && obj_is_name(a))
       {
             if (strcmp(a->value.k, "EFOpen") == 0)
             {
@@ -581,7 +581,7 @@ pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
                   mm = x->value.a.len;
                   xx = x->value.a.items;
             }
-            else if (x->t == eKey)
+            else if (obj_is_name(x))
             {
                   mm = 1;
                   xx = x;
@@ -592,7 +592,7 @@ pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
       {
             pdf_filterkind t = Raw;
             pdf_filter *f;
-            if (xx->t != eKey)
+            if (!obj_is_name(xx))
             {
                   break;
             }
@@ -728,7 +728,7 @@ pdf_err pdf_extgstate_free(pdf_extgstate*g)
 static inline char*
 pdf_key_resolve(pdf_obj*o)
 {
-      if (!o || o->t != eKey)
+      if (!o || (!obj_is_name(o)))
             return NULL;
       return o->value.k;
 }
