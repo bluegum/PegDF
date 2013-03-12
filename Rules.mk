@@ -20,6 +20,7 @@ include         pdfdoc/module.mk
 include         pdfdraw/module.mk
 include         zlib/module.mk
 include         utils/module.mk
+include         pkgs/module.mk
 
 # General directory independent rules
 
