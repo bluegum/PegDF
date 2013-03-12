@@ -42,17 +42,16 @@ Usage:\n\
            -x : extract a single at pagenum, start from 1\n\
            -s : separate page\n\
            -i : inflate content streams\n\
-           -d : device\n\
            -I : print catalog\n\
            --help : print this\n\
-\n\
-    Devices: text html \
 \n\
     Example#1: to extract each and every page and write into a sequence of pdf files with inflated content stream,\n\
          and the output are with format as: out%d.pdf:\n\
          ./readpdf -x0 -s -i in.pdf out.pdf\n\
-         To extract page#3 and onwards:\n\
-         ./readpdf -x3 -s -i in.pdf out.pdf\n\
+         To inflate all page contents and write to a new pdf file:\n\
+         ./readpdf -i in.pdf out.pdf\n\
+         To extract from page#3 to lastpage write to a new pdf file:\n\
+         ./readpdf -x 3 in.pdf out.pdf\n\
  \n"
 	    );
 }
@@ -62,13 +61,12 @@ int main(int argc, char **argv)
       int i = 1;
       char *in = NULL;
       char *out = NULL;
-      char *devtype = NULL;
       pdf_doc *doc;
       char *passwd = NULL;
       int firstpage = 1;
       int lastpage = -1;
       int inflate = 0;
-      unsigned char write_flag = 0;
+      char write_flag = 0;
       int separation = 0;
       int info = 0;
       FILE *outf = 0;
@@ -125,20 +123,12 @@ int main(int argc, char **argv)
 				    {
 					  firstpage = atoi(argv[i]+2);
 				    }
-				    lastpage = firstpage;
+				    //lastpage = firstpage;
 			      }
 			      break;
 			      case 'i':
 				    inflate = 1;
 				    break;
-			      case 'd':
-                              {
-				    if (isspace(argv[i][2]) || argv[i][2] == 0)
-                                    {
-					  devtype = argv[2];
-                                    }
-			      }
-			      break;
 			      case 'I':
 				    info = 1;
 				    break;
@@ -175,7 +165,7 @@ int main(int argc, char **argv)
 	    goto done;
       }
 
-      if (out && (inflate || devtype))
+      if (out && inflate)
       {
 #ifdef DEBUG
             printf("writing = %s\n", out);
@@ -190,14 +180,14 @@ int main(int argc, char **argv)
 
       if (!passwd || !pdf_doc_need_passwd(doc))
       {
-	    pdf_doc_process_all(doc, devtype, outf, (unsigned char*)"");
+	    pdf_doc_process_all(doc, 0, outf, "");
       }
       else if (passwd && pdf_doc_need_passwd(doc))
       {
-	    pdf_doc_process_all(doc, devtype, outf, (unsigned char*)passwd);
+	    pdf_doc_process_all(doc, 0, outf, passwd);
       }
       // writing out pdf using doc structure.
-      if (out && (!devtype))
+      if (out)
       {
 	    if (inflate)
 		  write_flag |= WRITE_PDF_CONTENT_INFLATE;
