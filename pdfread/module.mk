@@ -34,5 +34,5 @@ peg/peg    :
 	$(MAKE) -C peg
 
 $(KEYWORDS_HASH) : $(d)/keywords.txt
-	gperf -CGD -L ANSI-C -e ';' -N pdf_keyword_find $< --output-file=$(KEYWORDS_HASH_OUT)
+	sort $< | uniq | gperf -CGD -L ANSI-C -e ';' -N pdf_keyword_find --output-file=$(KEYWORDS_HASH_OUT)
 $(d)/pdfread.c : $(KEYWORDS_HASH)
