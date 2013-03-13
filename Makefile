@@ -1,6 +1,6 @@
 ### Build flags for all targets
 #
-INCLUDE_ALL     = -I . -I pdfdraw -I pdfdoc -I pdfread -I openssl/include -I openssl/include/openssl -I openssl -I zlib
+INCLUDE_ALL     = -I . -I include -I pdfdraw -I pdfdoc -I pdfread -I openssl/include -I openssl/include/openssl -I openssl -I zlib
 CF_ALL          = -Wall -I . $(INCLUDE_ALL)
 LF_ALL          = -pg -lm -lcrypto -L openssl -ldl
 LL_ALL          =
@@ -69,6 +69,7 @@ openssl/include/openssl/evp.h :
 realclean : clean
 	- @cd openssl; if test -e Makefile ; then $(MAKE) clean; rm -f Makefile; rm crypto/opensslconf.h; rm include/openssl/evp.h; fi; cd ..;
 	- @rm $(GLYPH_NAME_TO_UNI) $(LIB_CRYTO)
+	- @rm $(LIBJPEG_CLEAN)
 	$(MAKE) -C peg spotless
 .PHONY    : all
 all       :  $(APP)

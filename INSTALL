@@ -1,0 +1,17 @@
+There are some utilities to be installed before you run "make", "make install".
+For ubuntu, type in the followings:
+sudo apt-get install gperf
+sudo apt-get install nasm
+sudo apt-get install cmake
+
+"gperf" is used by PegDF to generate some hash tables.
+"nasm" is required by "libjpeg-turbo"
+"cmake" is required by "openjpeg"
+
+Once those three are in system, simply run
+
+make; sudo make install
+
+Currently "make install" install PegDF utilities into /usr/local/bin.
+readpdf, picker, and pedal are the PegDF utils to manipulate
+pdf file.
