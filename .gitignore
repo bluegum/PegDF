@@ -5,3 +5,9 @@ pdfread/pdf.c
 readpdf
 openssl/Makefile
 openssl/crypto
+pkgs/libjpeg-turbo
+pkgs/libjpeg-turbo/simd/*.lo
+pkgs/libjpeg-turbo/*.lo
+pkgs/openjpeg
+pkgs/openjpeg/src/bin/
+pkgs/openjpeg/thirdparty
