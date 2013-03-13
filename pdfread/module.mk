@@ -6,7 +6,10 @@ $(DEPS_DIR)/%.d: $(d)/%.c | $(DEPS_DIR)
 
 LOCAL_LIB       := $(OBJ_DIR)/libpdfread.a
 
-SRCS_$(d)       := pdfread.c bplustree.c dict.c tst.c pdfindex.c pdfmem.c substream.c
+KEYWORDS_HASH   := keywords_hash.c
+KEYWORDS_HASH_OUT := $(d)/keywords_hash.c
+
+SRCS_$(d)       := pdfread.c bplustree.c dict.c tst.c pdfindex.c pdfmem.c substream.c $(KEYWORDS_HASH)
 
 OBJS_$(d)	:= $(addprefix $(OBJ_DIR)/, $(SRCS_$(d):%.c=%.o))
 
@@ -30,4 +33,6 @@ $(d)/pdf.c  : $(d)/pdf.peg peg/peg
 peg/peg    :
 	$(MAKE) -C peg
 
-
+$(KEYWORDS_HASH) : $(d)/keywords.txt
+	gperf -CGD -L ANSI-C -e ';' -N pdf_keyword_find $< --output-file=$(KEYWORDS_HASH_OUT)
+$(d)/pdfread.c : $(KEYWORDS_HASH)

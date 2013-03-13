@@ -1,0 +1,1241 @@
+XRef
+# Trailer
+Size
+Prev
+Root
+Encrypt
+Info
+ID
+# Catalog
+Version
+Extensions
+Pages
+PageLabels
+Names
+Dests
+ViewerPreferences
+PageLayout
+PageMode
+Outlines
+Threads
+OpenAction
+AA
+URI
+AcroForm
+Metadata
+StructTreeRoot
+MarkInfo
+Lang
+SpiderInfo
+OutputIntents
+PieceInfo
+OCProperties
+Perms
+Legal
+Requirements
+Collection
+NeedsRendering
+# XRef Stream
+Index
+W
+XRefStm
+# Object Streams
+Type
+N
+First
+Extends
+# Stream
+Length
+Filter
+DecodeParms
+F
+FFilter
+FDecodeParms
+DL
+# Filters
+SubFilter
+ASCIIHexDecode
+ASCII85Decode
+LZWDecode
+FlateDecode
+RunLengthDecode
+CCITTFaxDecode
+JBIG2Decode
+DCTDecode
+JPXDecode
+Crypt
+# Encryption
+V
+CF
+StmF
+StrF
+EFF
+# Standard Encryption Dictionary
+R
+O
+U
+P
+EncryptMetadata
+Recipients
+P
+# Crypt Filters
+CFM
+AuthEvent
+Identity
+# Page Tree Nodes
+Parent
+Kids
+Count
+# Page Objects
+LastModified
+Resources
+MediaBox
+CropBox
+BleedBox
+TrimBox
+ArtBox
+BoxColorInfo
+Contents
+Rotate
+Group
+Thumb
+B
+Dur
+Trans
+Annots
+AA
+Metadata
+PieceInfo
+StructParents
+ID
+PZ
+SeparationInfo
+Tabs
+TemplateInstantiated
+PresSteps
+UserUnit
+VP
+# Name dictionary
+Dests
+AP
+JavaScript
+Pages
+Templates
+IDS
+URLS
+EmbeddedFiles
+AlternatePresentations
+Renditions
+# Resource dictionary
+ExtGState
+ColorSpace
+Pattern
+Shading
+XObject
+Font
+ProcSet
+Properties
+# name tree node
+Kids
+Names
+Limits
+# Number Trees
+Kids
+Nums
+Limits
+# Function dictionary
+FunctionType
+Domain
+Range
+# Type0 function
+Size
+BitsPerSample
+Order
+Encode
+Decode
+# Type2 function
+C0
+C1
+N
+# Type3 function
+Functions
+Bounds
+Encode
+# File specification
+Type
+FS
+F
+UF
+DOS
+Mac
+Unix
+ID
+V
+EF
+RF
+Desc
+CI
+# Embedded File stream
+Type
+Subtype
+Params
+Size
+CreationDate
+ModDate
+Mac
+CheckSum
+Creator
+ResFork
+D
+P
+# Developer extension
+Type
+BaseVersion
+ExtensionLevel
+# Graphics state
+ExtGState
+LW
+LC
+LJ
+ML
+D
+RI
+OP
+op
+OPM
+Font
+BG
+BG2
+UCR
+UCR2
+TR
+TR2
+HT
+FL
+SM
+SA
+BM
+SMask
+CA
+ca
+AIS
+TK
+# Color spaces
+DeviceGray
+DeviceRGB
+DeviceCMYK
+CalGray
+CalRGB
+Lab
+ICCBased
+Indexed
+Pattern
+Separation
+DeviceN
+# CalGray/CalRGB/Lab
+WhitePoint
+BlackPoint
+Gamma
+Matrix
+Range
+# ICC
+N
+Alternate
+Range
+Metadata
+# Rendering Intent
+AbsoluteColormetric
+RelativeColorimetric
+Saturation
+Perceptual
+# DeviceN
+Subtype
+Colorants
+Process
+MixingHints
+ColorSpace
+Components
+Solidities
+PrintingOrder
+DotGain
+# Pattern
+Type
+PatternType
+PaintType
+TilingType
+BBox
+XStep
+YStep
+Resources
+Matrix
+# Shading Pattern
+Type
+PatternType
+Shading
+Matrix
+ExtGState
+ShadingType
+ColorSpace
+Background
+BBox
+AntiAlias
+# Type1 Shading
+Domain
+Matrix
+Function
+# Type2 Shading
+Coords
+Domain
+Function
+Extend
+# Type3 Shading
+Coords
+Domain
+Function
+Extend
+# Type4 Shading
+BitsPerCoordinate
+BitsPerComponent
+BitsPerFlag
+Decode
+Function
+# Type5 Shading
+BitsPerCoordinate
+BitsPerComponent
+VerticesPerRow
+Decode
+Function
+# Type6 Shading
+BitsPerCoordinate
+BitsPerComponent
+Decode
+Function
+# PostScript XObjets
+Type
+Subtype
+Level1
+# Image
+Width
+Height
+ColorSpace
+BitsPerComponent
+Intent
+ImageMask
+Mask
+Decode
+Interpolate
+Alternates
+SMask
+SMaskInData
+Name
+StructParent
+ID
+OPI
+Metadata
+OC
+# Alternate Image
+Image
+DefaultForPrinting
+OC
+# Form
+Type
+Subtype
+FormType
+BBox
+Matrix
+Resources
+Group
+Ref
+Metadata
+PieceInfo
+LastModified
+StructParent
+StructParents
+OPI
+OC
+Name
+# Group XObj
+Type
+S
+# Reference XObj
+F
+Page
+ID
+# Optional Content Groups
+Type
+Name
+Intent
+Usage
+OCGs
+P
+VE
+OCGs
+D
+Configs
+Name
+Creator
+BaseState
+ON
+OFF
+Intent
+AS
+Order
+ListMode
+RBGroups
+Locked
+CreatorInfo
+Language
+Lang
+Preferred
+Export
+Zoom
+Print
+Subtype
+PrintState
+View
+User
+PageElement
+Event
+OCGs
+Category
+# Font Types
+Type0
+Type1
+MMType1
+Type3
+TrueType
+CIDFontType0
+CIDFontType2
+# Type1 Fonts
+Type
+Subtype
+Name
+BaseFont
+FirstChar
+LastChar
+Widths
+FontDescriptor
+Encoding
+ToUnicode
+# Type 3 font
+Type
+Subtype
+Name
+FontBBox
+FontMatrix
+CharProcs
+Encoding
+LastChar
+Widths
+FontDescriptor
+Resources
+ToUnicode
+# Character Encoding
+Type
+BaseEncoding
+Differences
+# CIDSystemInfo
+Registry
+Ordering
+Supplement
+# CIDFont
+Type
+Subtype
+BaseFont
+CIDSystemInfo
+FontDescriptor
+DW
+W
+DW2
+W2
+CIDToGIDMap
+# CMap stream
+Type
+CMapName
+CIDSystemInfo
+WMode
+UseCMap
+# Type 0 Font
+Type
+Subtype
+BaseFont
+Encoding
+DescendantFonts
+ToUnicode
+# Font Descriptors
+Type
+FontName
+FontFamily
+FontStretch
+FontWeight
+Flags
+FontBBox
+ItalicAngle
+Ascent
+Descent
+Leading
+CapHeight
+XHeight
+StemV
+StemH
+AvgWidth
+MaxWidth
+MissingWidth
+FontFile
+FontFile2
+FontFile3
+CharSet
+# Font Descriptors for CIDFonts
+Style
+Lang
+FD
+CIDSet
+# Embedded Font Programs
+FontFile
+FontFile2
+FontFile3
+FontFile3
+FontFile3
+Length1
+Length2
+Subtype
+Metadata
+# Spot Functions
+SimpleDot
+InvertedSimpleDot
+DoubleDot
+InvertedDoubleDot
+CosineDot
+Double
+InvertedDouble
+Line
+LineX
+LineY
+Round
+Ellipse
+EllipseA
+InvertedEllipseA
+EllipseB
+EllipseC
+InvertedEllipseC
+Square
+Cross
+Rhomboid
+Diamond
+# Type 1 Halftones
+Type
+HalftoneType
+HalftoneName
+Frequency
+Angle
+SpotFunction
+AccurateScreens
+TransferFunction
+# Type 6 Halftones
+Type
+HalftoneType
+HalftoneName
+Width
+Height
+TransferFunction
+# Type 10 Halftones
+Type
+HalftoneType
+HalftoneName
+Xsquare
+Ysquare
+TransferFunction
+# Type 16 Halftones
+Type
+HalftoneType
+HalftoneName
+Width
+Height
+Width2
+Height2
+TransferFunction
+# Type 5 Halftones
+Type
+HalftoneType
+HalftoneName
+Default
+# Blend Mode
+Normal
+Compatible
+Multiply
+Screen
+Overlay
+Darken
+Lighten
+ColorDodge
+ColorBurn
+HardLight
+SoftLight
+Difference
+Exclusion
+Hue
+Saturation
+Color
+Luminosity
+# Soft-Mask
+Type
+S
+G
+BC
+TR
+Matte
+# Transparency Group
+S
+CS
+I
+K
+# Viewer Preferences
+HideToolbar
+HideMenubar
+HideWindowUI
+FitWindow
+CenterWindow
+DisplayDocTitle
+NonFullScreenPageMode
+Direction
+ViewArea
+ViewClip
+PrintArea
+PrintClip
+PrintScaling
+Duplex
+PickTrayByPDFSize
+PrintPageRange
+NumCopies
+# Document Outline
+Type
+First
+Last
+Count
+Title
+Parent
+Prev
+Next
+First
+Last
+Count
+Dest
+A
+SE
+C
+F
+# Collections
+Type
+Schema
+D
+View
+Sort
+N
+O
+V
+E
+S
+A
+# Page Labels
+Type
+S
+P
+St
+# Thread
+Type
+F
+I
+# Bead
+Type
+T
+N
+V
+P
+R
+# Transition
+Type
+S
+D
+Dm
+M
+Di
+SS
+B
+# Navigation Node
+Type
+NA
+PA
+Next
+Prev
+Dur
+# Annotation
+Type
+Subtype
+Rect
+Contents
+P
+NM
+M
+F
+AP
+AS
+Border
+C
+StructParent
+OC
+# Border Styles
+Type
+W
+S
+D
+I
+# Appearance Stream
+N
+R
+D
+# Annotation types
+Text
+Link
+FreeText
+Line
+Square
+Circle
+Polygon
+PolyLine
+Highlight
+Underline
+Squiggly
+StrikeOut
+Stamp
+Caret
+Ink
+Popup
+FileAttachment
+Sound
+Movie
+Widget
+Screen
+PrinterMark
+TrapNet
+Watermark
+3D
+Redact
+# Markup Annotations
+T
+Popup
+CA
+RC
+CreationDate
+IRT
+Subj
+RT
+IT
+ExData
+# Annotation States
+Marked
+Review
+# Text Annotations
+Subtype
+Open
+Name
+State
+StateModel
+# Link Annotations
+Subtype
+A
+Dest
+H
+PA
+QuadPoints
+BS
+# Free Text Annotations
+Subtype
+DA
+Q
+RC
+DS
+CL
+IT
+FreeText
+FreeTextCallout
+FreeTextTypeWriter
+BE
+RD
+BS
+LE
+# Line Annotations
+Subtype
+L
+BS
+LE
+IC
+LL
+LLE
+Cap
+IT
+LLO
+CP
+Measure
+CO
+# Line ending styles
+Square
+Circle
+Diamond
+OpenArrow
+ClosedArrow
+None
+Butt
+ROpenArrow
+RClosedArrow
+Slash
+# Squire and Circle Annotations
+Subtype
+BS
+IC
+BE
+RD
+# Polygon and Polyline Annotations
+Subtype
+Vertices
+LE
+BS
+IC
+BE
+IT
+Measure
+# Text Markup Annotations
+Subtype
+QuadPoints
+# Caret Annotations
+Subtype
+RD
+Sy
+Caret
+# Rubber Stamp Annotations
+Subtype
+Name
+# Ink Annotations
+Subtype
+InkList
+BS
+# Pop-up Annotations
+Subtype
+Parent
+Open
+# File Attachment Annotations
+Subtype
+FS
+Name
+# Sound Annotations
+Subtype
+Sound
+Name
+# Movie Annotations
+Subtype
+T
+Movie
+A
+#Screen Annotations
+Subtype
+T
+MK
+A
+AA
+# Widget Annotations
+Subtype
+H
+MK
+A
+AA
+BS
+Parent
+# appearance characteristics
+R
+BC
+BG
+CA
+RC
+AC
+I
+RI
+IX
+IF
+TP
+# Watermark Annotations
+Subtype
+FixedPrint
+# fixed print
+Type
+Matrix
+H
+V
+# Redaction Annotations
+Subtype
+QuadPoints
+IC
+RO
+OverlayText
+Repeat
+DA
+Q
+# Actions
+Type
+S
+Next
+# annotation’s additional-actions
+E
+X
+D
+U
+Fo
+BI
+PO
+PC
+PV
+PI
+# page object’s additional-actions
+O
+C
+# form field’s additional-actions
+K
+F
+V
+C
+WC
+WS
+DS
+WP
+DP
+# Action Types
+GoTo
+GoToR
+GoToE
+Launch
+Thread
+URI
+Sound
+Movie
+Hide
+Named
+SubmitForm
+ResetForm
+ImportData
+JavaScript
+SetOCGState
+Rendition
+Trans
+GoTo3DView
+# Go-To Actions
+S
+D
+# Remote Go-To Actions
+S
+F
+D
+NewWindow
+# Embedded Go-To Actions
+S
+F
+D
+NewWindow
+T
+R
+N
+P
+A
+T
+# Launch Actions
+S
+F
+Win
+Mac
+Unix
+NewWindow
+F
+D
+O
+P
+# Thread Actions
+S
+F
+D
+B
+# URI Actions
+S
+URI
+IsMap
+Base
+# Sound Actions
+S
+Sound
+Volume
+Synchronous
+Repeat
+Mix
+# Movie Actions
+S
+Annotation
+T
+Operation
+# Hide Actions
+S
+T
+H
+# Named Actions
+NextPage
+PrevPage
+FirstPage
+LastPage
+S
+N
+# Set-OCG-State Actions
+S
+State
+PreserveRB
+# Rendition Actions
+S
+R
+AN
+OP
+JS
+# Transition Actions
+S
+Trans
+# Go-To-3D-View Actions
+S
+TA
+V
+# JavaScript Actions
+S
+JS
+# Interactive Form
+Fields
+NeedAppearances
+SigFlags
+CO
+DR
+DA
+Q
+XFA
+# Field Dictionaries
+FT
+Parent
+Kids
+T
+TU
+TM
+Ff
+V
+DV
+AA
+# Variable Text
+DA
+Q
+DS
+RV
+# Check Boxes
+Opt
+# Text Fields
+MaxLen
+# Choice Fields
+Opt
+TI
+I
+# Signature Fields
+Lock
+SV
+Type
+Action
+Fields
+# Entries in a signature field seed value dictionary
+Type
+Ff
+Filter
+SubFilter
+DigestMethod
+V
+Cert
+Reasons
+MDP
+TimeStamp
+LegalAttestation
+AddRevInfo
+# Entries in a certificate seed value dictionary
+Type
+Ff
+Subject
+SubjectDN
+KeyUsage
+Issuer
+OID
+URLType
+# Submit-Form Action
+S
+F
+Fields
+Flags
+# Reset-Form Action
+S
+Fields
+Flags
+# Import-Data Action
+S
+F
+# FDF Catalog
+Version
+FDF
+F
+ID
+Fields
+Status
+Pages
+Encoding
+Annots
+Differences
+Target
+EmbeddedFDFs
+JavaScript
+# Additional entry in an embedded file stream dictionary for an encrypted FDF file
+EncryptionRevision
+Before
+After
+AfterPermsReady
+Doc
+# FDF Fields
+Kids
+T
+V
+Ff
+SetFf
+ClrFf
+F
+SetF
+ClrF
+AP
+APRef
+IF
+Opt
+A
+AA
+RV
+# Entries in an icon fit dictionary
+SW
+S
+A
+FB
+# FDF page dictionary
+Templates
+Info
+# FDF template dictionary
+TRef
+Fields
+Rename
+Name
+F
+# FDF Annotation Dictionaries
+Page
+# Digital Signatures
+Type
+Filter
+SubFilter
+Contents
+Cert
+ByteRange
+Reference
+Changes
+Name
+M
+Location
+Reason
+ContactInfo
+R
+V
+Prop_Build
+Prop_AuthTime
+Prop_AuthType
+Type
+TransformMethod
+TransformParams
+Data
+DigestMethod
+# DocMDP transform parameters
+Type
+P
+V
+# UR
+Type
+Document
+V
+Annots
+Form
+Signature
+EF
+P
+# FieldMDP
+Type
+Action
+Fields
+V
+# Permissions
+DocMDP
+UR3
+# Legal Content Attestations
+JavaScriptActions
+LaunchActions
+URIActions
+MovieActions
+SoundActions
+HideAnnotationActions
+GoToRemoteActions
+AlternateImages
+ExternalStreams
+TrueTypeFonts
+ExternalRefXobjects
+ExternalOPIdicts
+NonEmbeddedFonts
+DevDepGS_OP
+DevDepGS_HT
+DevDepGS_TR
+DevDepGS_UCR
+DevDepGS_BG
+DevDepGS_FL
+Annotations
+OptionalContent
+Attestation
+# Viewport
+Type
+BBox
+Name
+Measure
+# measure dictionary
+Type
+Subtype
+R
+X
+Y
+D
+A
+T
+S
+O
+CYX
+# number format
+Type
+U
+C
+F
+D
+FD
+RT
+RD
+PS
+SS
+O
+# Document Requirements
+Type
+S
+RH
+# Requirement Handlers
+Type
+S
+Script

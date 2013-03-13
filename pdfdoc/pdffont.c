@@ -200,7 +200,7 @@ pdf_encoding_load(pdf_obj *a, pdf_font_encoding* e)
 	    e->get_cid = get_cid_simple;
 	    return;
       }
-      if (a->t == eKey)
+      if (obj_is_name(a))
       {
 	restart:
 	    if (strncmp(a->value.k, "WinAnsiEncoding", sizeof("WinAnsiEncoding")) == 0)
@@ -239,7 +239,7 @@ pdf_encoding_load(pdf_obj *a, pdf_font_encoding* e)
 	    if (!a)
 		  return;
 	    o = dict_get(a->value.d.dict, "BaseEncoding");
-	    if (o && o->t == eKey)
+	    if (o && obj_is_name(o))
 	    {
 		  goto restart;
 	    }
@@ -263,7 +263,7 @@ pdf_encoding_load(pdf_obj *a, pdf_font_encoding* e)
 			if (j < 256)
 			{
 			      i++;
-			      while (o->value.a.items[i].t == eKey)
+			      while (obj_is_name(&o->value.a.items[i]))
 			      {
 				    struct glyphlist *gl = glyph_name_to_uni(o->value.a.items[i].value.k, strlen(o->value.a.items[i].value.k));
 				    if (gl)
@@ -284,7 +284,7 @@ pdf_encoding_load(pdf_obj *a, pdf_font_encoding* e)
 void
 pdf_cid_encoding_load(pdf_obj *a, pdf_font_encoding* e)
 {
-      if (a->t == eKey)
+      if (obj_is_name(a))
       {
 	    if (strncmp(a->value.k, "Identity-H", sizeof("Identity-H")) == 0)
 	    {
@@ -342,7 +342,7 @@ pdf_font_descriptor_load(pdf_obj *o)
       d->flags = flags;
       //
       d->fontname[0] = 0;
-      if (fontname->t == eKey)
+      if (obj_is_name(fontname))
       {
 	    strncpy(d->fontname, fontname->value.k, strlen(fontname->value.k)<256?strlen(fontname->value.k):256);
 	    if (strstr(d->fontname, "Monaco"))
@@ -399,7 +399,7 @@ pdf_font_load(pdf_obj *o, int cid2uni, pdfcrypto_priv* encrypt)
       f->ref = ref;
       f->next = NULL;
       a = dict_get(o->value.d.dict, "Subtype");
-      if (a && a->t == eKey)
+      if (a && obj_is_name(a))
       {
 	    // Simple font types
 	    if (strncmp(a->value.k, "TrueType", 8) == 0)
@@ -457,7 +457,7 @@ pdf_font_load(pdf_obj *o, int cid2uni, pdfcrypto_priv* encrypt)
 	    {
 		  pdf_encoding_load(a, f->encoding);
 	    }
-	    else if (a->t == eKey)
+	    else if (obj_is_name(a))
 	    {
 		  pdf_encoding_load(a, f->encoding);
 	    }

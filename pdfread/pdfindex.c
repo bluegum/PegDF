@@ -135,7 +135,7 @@ pdf_obj_delete(pdf_obj *o)
             case eHexString:
                   pdf_free(o->value.s.buf);
                   break;
-            case eKey:
+            case eName:
                   pdf_free(o->value.k);
                   break;
             case eArray:

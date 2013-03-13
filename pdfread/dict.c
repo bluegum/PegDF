@@ -64,6 +64,7 @@ array_print(pdf_obj *a)
                         printf("ref(%d,%d) ", o->value.r.num, o->value.r.gen);
                         break;
                   case eKey:
+                  case eName:
                         printf("name(%s) ", o->value.k);
                         break;
                   case eString:
@@ -112,6 +113,7 @@ dict_print_keyval(char *key, void *val, void *x)
                         printf("%s = ref(%d,%d)\n", key, o->value.r.num, o->value.r.gen);
                         break;
                   case eKey:
+                  case eName:
                         printf("%s = name(%s)\n", key, o->value.k);
                         break;
                   case eString:

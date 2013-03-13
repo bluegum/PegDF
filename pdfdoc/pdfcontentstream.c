@@ -11,6 +11,8 @@
 #include "pdfcmds.h"
 #include "dict.h"
 
+extern const char * pdf_keyword_find (register const char *str, register unsigned int len);
+
 #define mGETCHAR(s) s_get_char(s)
 #define mUNGETCHAR(s) s_unget_char(s)
 typedef struct buffer_stream_s buffer_stream;
@@ -572,12 +574,23 @@ pdf_lex_obj(buffer_stream *s, pdf_obj *o)
                   }
                   break;
             case '/':
+	    {
+		  const char *k;
                   ON_ERROR(pdf_lex_name(s, tokenbuf, LEX_BUF_LEN));
-                  o->t = eKey;
-                  o->value.k = pdf_malloc(strlen((char*)tokenbuf)+1);
-                  memcpy(o->value.k, tokenbuf, (strlen((char*)tokenbuf)+1));
+		  if (k = pdf_keyword_find(tokenbuf, strlen(tokenbuf)))
+		  {
+			o->t = eKey;
+			o->value.k = k;
+		  }
+		  else
+		  {
+			o->t = eName;
+			o->value.k = pdf_malloc(strlen((char*)tokenbuf)+1);
+			memcpy(o->value.k, tokenbuf, (strlen((char*)tokenbuf)+1));
+		  }
                   mUNGETCHAR(s);
                   break;
+	    }
 	    case EOF:
 		  goto done;
 		  break;
@@ -733,7 +746,7 @@ x_scn(pdf_page *p, pdf_obj *stk, int pen)
       {
 	    n = pdf_brush_n(p);
       }
-      if (n == 1 && stk->t == eKey)
+      if (n == 1 && obj_is_name(stk))
       {
 	    pdf_obj_delete(stk);
       }
@@ -814,13 +827,24 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                         }
                         break;
                   case '/':
+		  {
+			const char *k;
                         ON_ERROR(pdf_lex_name(b, buf, LEX_BUF_LEN));
-                        t.t = eKey;
-                        t.value.k = pdf_malloc(strlen((char*)buf)+1);
-                        memcpy(t.value.k, buf, (strlen((char*)buf)+1));
+			if (k = pdf_keyword_find(buf, strlen(buf)))
+			{
+			      t.t = eKey;
+			      t.value.k = k;
+			}
+			else
+			{
+			      t.t = eName;
+			      t.value.k = pdf_malloc(strlen((char*)buf)+1);
+			      memcpy(t.value.k, buf, (strlen((char*)buf)+1));
+			}
                         PUSH_O(t);
                         mUNGETCHAR(b);
                         break;
+		  }
                   case '.':
                   case '+':
                   case '-':
