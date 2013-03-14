@@ -1,13 +1,12 @@
 d               := pdfread
+KEYWORDS_HASH   := keywords_hash.c
+KEYWORDS_HASH_OUT := $(d)/keywords_hash.c
 
-$(DEPS_DIR)/%.d: $(d)/%.c | $(DEPS_DIR)
+$(DEPS_DIR)/%.d: $(d)/%.c | $(KEYWORDS_HASH_OUT) $(DEPS_DIR)
 	-@rm -f $@
 	$(CC) -MM -MT $(subst .c,.o,$(subst pdfread/, $(OBJ_DIR)/, $<)) $(INCLUDE_ALL) $< >> $@
 
 LOCAL_LIB       := $(OBJ_DIR)/libpdfread.a
-
-KEYWORDS_HASH   := keywords_hash.c
-KEYWORDS_HASH_OUT := $(d)/keywords_hash.c
 
 SRCS_$(d)       := pdfread.c bplustree.c dict.c tst.c pdfindex.c pdfmem.c substream.c $(KEYWORDS_HASH)
 
@@ -33,6 +32,8 @@ $(d)/pdf.c  : $(d)/pdf.peg peg/peg
 peg/peg    :
 	$(MAKE) -C peg
 
-$(KEYWORDS_HASH) : $(d)/keywords.txt
+$(KEYWORDS_HASH) : $(KEYWORDS_HASH_OUT)
+
+$(KEYWORDS_HASH_OUT) : $(d)/keywords.txt
 	sort $< | uniq | gperf -CGD -L ANSI-C -e ';' -N pdf_keyword_find --output-file=$(KEYWORDS_HASH_OUT)
 $(d)/pdfread.c : $(KEYWORDS_HASH)
