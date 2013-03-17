@@ -8,7 +8,7 @@ $(DEPS_DIR)/%.d: $(d)/%.c | $(KEYWORDS_HASH_OUT) $(DEPS_DIR)
 
 LOCAL_LIB       := $(OBJ_DIR)/libpdfread.a
 
-SRCS_$(d)       := pdfread.c bplustree.c dict.c tst.c pdfindex.c pdfmem.c substream.c $(KEYWORDS_HASH)
+SRCS_$(d)       := pdfread.c bplustree.c dict.c tst.c tst_compact.c pdfindex.c pdfmem.c substream.c $(KEYWORDS_HASH)
 
 OBJS_$(d)	:= $(addprefix $(OBJ_DIR)/, $(SRCS_$(d):%.c=%.o))
 
