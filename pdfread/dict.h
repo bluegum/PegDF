@@ -1,7 +1,25 @@
 #ifndef DICT_H
 #define DICT_H
+
+#define TSTC
+
+#ifdef TSTC
+#include "tst_compact.h"
+#else
 #include "tst.h"
+#endif
+
 #include "pdftypes.h"
+
+typedef void (*dict_k_free)(void *);
+
+typedef struct
+{
+      void *v;
+      char *k;
+      dict_k_free f;
+} dict_entry;
+
 
 struct dict_s
 {
@@ -50,5 +68,9 @@ dict_list_free(dict_list *l)
 
 extern dict_array* dict_to_array(dict *d);
 extern dict_list* dict_to_list(dict *d);
+extern dict_entry* dict_entry_new(void *v, char *k, dict_k_free);
+extern void dict_entry_free(void *v, void*);
+extern void entry_no_free(void *e);
+extern void entry_name_free(void *e);
 
 #endif

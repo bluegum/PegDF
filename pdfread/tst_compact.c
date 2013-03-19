@@ -1,193 +1,277 @@
+/*
+ * A trie implementation, I call it tst_compact, I noticed the number of malloc's greatly reduced,
+ * however, the total memory savings are negligible.
+ * Node deletion is not implemented.
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "tst_compact.h"
 #include "pdfmem.h"
 
-typedef struct tnode {
-      unsigned char splitchar;
-      Tptr lokid, eqkid, hikid;
-      int leaf;
+typedef struct tnode
+{
+      char *s; // splitchar string
       char *k;
+      void *v;
+      Tptr sib, kid;
 } Tnode;
 
-static
-Tptr
-tstc_inner_new(char *k, int i, Tptr eqkid)
+Tptr tstc_new(char *k, char *s, void *val)
 {
-      Tptr n = (Tptr) pdf_malloc(sizeof(Tnode));
-      n->splitchar = k[i];
-      n->lokid = n->hikid = 0;
-      n->k = k;
-      n->eqkid = eqkid;
-      return n;
+      Tptr p;
+      p = (Tptr) pdf_malloc(sizeof(Tnode));
+      memset(p, 0, sizeof(Tnode));
+      p->s = s;
+      p->k = k;
+      p->v = val;
+      return p;
 }
 
-Tptr _tstc_insert(Tptr p, char *k, int i, void *val)
+Tptr tstc_sib_add(Tptr head, char *k, char *s, void *v)
 {
-      if (p == 0)
+      Tptr n = head;
+      Tptr nn;
+      while (n && n->sib && *n->sib->s < *s)
       {
-	    Tptr n;
-            n = (Tptr) pdf_malloc(sizeof(Tnode));
-	    n->leaf = 1;
-	    n->splitchar = 0;
-            n->lokid = n->eqkid = n->hikid = 0;
-	    n->eqkid = val;
-	    n->k = k;
-	    p = tstc_inner_new(k, i, n);
-	    return p;
+	    n = n->sib;
       }
-
-      if (!p->splitchar)
+      nn = tstc_new(k, s, v);
+      if (n == head && *head->s > *nn->s)
       {
-	    if (k[i] >= p->k[i])
-	    {
-		  p->hikid = _tstc_insert(p->hikid, k, i, val);
-	    }
-	    else
-	    {
-		  p->eqkid = _tstc_insert(p->lokid, k, i, val);
-	    }
+	    nn->sib = head;
+	    return nn;
       }
-      else if (k[i] < p->splitchar)
+      if (n->sib)
       {
-            p->lokid = _tstc_insert(p->lokid, k, i, val);
-      }
-      else if (k[i] > p->splitchar)
-      {
-            p->hikid = _tstc_insert(p->hikid, k, i, val);
+	    Tptr t = n->sib;
+	    n->sib = nn;
+	    n->sib->sib = t;
       }
       else
       {
-            if (k[i] == 0)
-	    {
-                  p->eqkid = (Tptr)val;
+	    n->sib = nn;
+      }
+      return head;
+}
+
+Tptr tstc_kid_add(Tptr head, char *k, char *s, void *v)
+{
+      Tptr p = head;
+      while (!p->kid && *s++)
+      {
+	    p->kid = tstc_new(k, s, v);
+	    p = p->kid;
+      }
+      p->s = 0;
+      p->v = v;
+      p->k = k;
+      return p;
+}
+
+Tptr _tstc_insert(Tptr p, char *k, char *s, void *v)
+{
+      int i = 0;
+      Tptr x, t = p, orig = p, last = p;
+      if (p == 0)
+      {
+	    p = tstc_new(k, s, v);
+	    return p;
+      }
+      // search siblings
+      if (!p->sib && *p->s != *s)
+      {
+	    x = tstc_new(k, s, v);
+	    if (*p->s < *s)
+	    { // append
+		  p->sib = x;
 	    }
-	    else if (p->splitchar)
+	    else
+	    { // swap
+		  x->sib = p;
+		  p = x;
+	    }
+	    return p;
+      }
+      while (t && *t->s < *s) { last = t; t = t->sib; };
+      if (!t)
+      {
+	    // append
+	    last->sib = tstc_new(k, s, v);
+      }
+      else if (*last->s < *s && *t->s > *s)
+      {
+	    // insert
+	    x = tstc_new(k, s, v);
+	    x->sib = t;
+	    last->sib = x;
+      }
+      else
+      {	    // found head
+	    x = t;
+	    char *ts = t->s;
+	    // iterate kid
+	    while (t->kid && *ts && *s && *s==*t->s)
 	    {
-		  Tptr t;
-		  t = p->eqkid;
-		  if (t->leaf)
+		  x = t;
+		  t = t->kid;
+		  ts++, s++;
+	    }
+	    // expand kid
+	    if (!t->kid && *s == *ts)
+	    {
+		  while (!t->kid && *ts && *s && *s==*t->s)
 		  {
-			int eq = strcmp(k, t->k);
-			if (eq > 0)
-			{
-			      t->hikid = _tstc_insert(t->hikid, k, i+1, val);
-			}
-			else if (eq < 0)
-			{
-			      t->lokid = _tstc_insert(t->lokid, k, i+1, val);
-			}
-			else
-			{
-			      // replace value
-			      t->eqkid = val;
-			}
+			x = t;
+			t->kid = tstc_new(t->k, ts+1, t->v);
+			t = t->kid;
+			s++;
+			ts++;
 		  }
-		  else
+		  // add sib
 		  {
-			p->eqkid = _tstc_insert(t->eqkid, k, i+1, val);
+			Tptr y = tstc_sib_add(t, k, s, v);
+			if (y != t)
+			{ // update parent->kid
+			      x->kid = y;
+			}
 		  }
 	    }
 	    else
-	    {
-		  p = _tstc_insert(p->eqkid, k, i+1, val);
+	    { // add sib
+		  Tptr y;
+		  if (*t->s == *s)
+		  {
+			y = _tstc_insert(t, k, s, v);
+		  }
+		  else if (*s == 0)
+		  {
+			y = tstc_new(k, s, v);
+			*y = *x;
+			x->sib = y;
+			x->kid = tstc_new(k, s, v);
+			return p;
+		  }
+		  else
+		  {
+			y = tstc_sib_add(t, k, s, v);
+		  }
+		  if (y != t)
+		  {
+			if (p == t)
+			      p = y;
+			else
+			      x->kid = y;
+		  }
 	    }
       }
       return p;
 }
 
-Tptr
-tstc_insert(Tptr p, char *k, void *val)
-{
-      return _tstc_insert(p, k, 0, val);
-}
-
 /* recursive search */
 static
-void*
-_tstc_rfind(Tptr p, char *s, int i)
+int
+_tstc_rfind(Tptr n, char *s, int i, void **v)
 {
-      if (!p) return 0;
-      if (!p->splitchar)
+      int found = 0;
+      *v = 0;
+
+      if (!n)
+	    return 0;
+      while (n)
       {
-	    int eq = strcmp(s, &p->k[i]);
-	    if (eq == 0)
+	    if (*n->s == *s)
+		  break;
+	    n = n->sib;
+      }
+      if (!n)
+	    return 0;
+
+      if (*s == *n->s && n->kid)
+      {
+	    if (n->kid->s[0] == 0)
 	    {
-		  return p->eqkid;
-	    }
-	    else if (eq > 0)
-	    {
-		  return _tstc_rfind(p->hikid, s, i);
+		  if (s[1] == 0)
+		  {
+			found = 1;
+			*v = n->kid->v;
+			return found;
+		  }
+		  else if (n->kid->sib)
+			found = _tstc_rfind(n->kid->sib, s+1, i, v);
+		  else
+			found = _tstc_rfind(n->sib, s, i, v);
 	    }
 	    else
 	    {
-		  return _tstc_rfind(p->lokid, s, i);
+		  found = _tstc_rfind(n->kid, s+1, i, v);
 	    }
       }
-      if (*s < p->splitchar)
+      else if (!n->kid && *n->s == *s)
       {
-            return _tstc_rfind(p->lokid, s, i);
+	    if (strcmp(n->s, s) == 0)
+	    {
+		  *v = n->v;
+		  found = 1;
+	    }
+	    else
+	    {
+		  found = _tstc_rfind(n->sib, s, i, v);
+	    }
       }
-      else if (*s > p->splitchar)
-            return _tstc_rfind(p->hikid, s, i);
       else
       {
-            return _tstc_rfind(p->eqkid, ++s, ++i);
+	    found = _tstc_rfind(n->kid, s+1, i, v);
       }
+      return found;
 }
 
-void*
-tstc_find(Tptr p, char *s)
+int
+tstc_find(Tptr p, char *s, void **v)
 {
-      return _tstc_rfind(p, s, 0);
-}
-
-Tptr tstc_init()
-{
-      return  _tstc_insert(0, 0, 0, 0);
+      return _tstc_rfind(p, s, 0, v);
 }
 
 void
 tstc_free(Tptr n)
 {
       if (!n)
-      {
 	    return;
-      }
-      if (!n->splitchar)
+      while (n)
       {
-	    tstc_free(n->lokid);
-	    tstc_free(n->hikid);
-	    pdf_free(n);
-      }
-      else
-      {
-	    tstc_free(n->lokid);
-	    tstc_free(n->eqkid);
-	    tstc_free(n->hikid);
-	    pdf_free(n);
+	    if (!n->kid)
+	    {
+		  Tptr p = n->sib;
+		  pdf_free(n);
+		  n = p;
+	    }
+	    else
+	    {
+		  if (n->kid)
+		  {
+			Tptr p = n->sib;
+			tstc_free(n->kid);
+			pdf_free(n);
+			n = p;
+		  }
+		  else
+			n = n->sib;
+	    }
       }
 }
 
 void
-tstc_call(Tptr n, tstc_f f)
+tstc_call(Tptr n, tstc_f f, void *a)
 {
       if (!n)
-      {
 	    return;
-      }
-      if (!n->splitchar)
+      while (n)
       {
-	    tstc_call(n->lokid, f);
-	    tstc_call(n->hikid, f);
-	    f(n->eqkid);
-      }
-      else
-      {
-	    tstc_call(n->lokid, f);
-	    tstc_call(n->eqkid, f);
-	    tstc_call(n->hikid, f);
+	    if (!n->kid)
+		  f(n->v, a);
+	    else
+		  tstc_call(n->kid, f, a);
+	    n = n->sib;
       }
 }
 
@@ -195,33 +279,26 @@ void
 tstc_print(Tptr n)
 {
       if (!n)
-      {
 	    return;
-      }
-      if (!n->splitchar)
+      while (n)
       {
-	    printf("%s:0x%08x\n", n->k, (int)n->eqkid);
-	    if (n->hikid)
-	    {
-		  tstc_print(n->hikid);
-	    }
+	    if (!n->kid)
+		  printf("%s:0x%x\n", n->k, (int)n->v);
 	    else
-	    {
-		  tstc_print(n->lokid);
-	    }
-      }
-      else
-      {
-	    tstc_print(n->lokid);
-	    tstc_print(n->eqkid);
-	    tstc_print(n->hikid);
+		  tstc_print(n->kid);
+	    n = n->sib;
       }
 }
 
-#if 1
+Tptr tstc_insert(Tptr p, char *k, void *v)
+{
+      return _tstc_insert(p, k, k, v);
+}
+
+#if 0
 static
 void
-val_free(void *v)
+val_free(void *v, void *a)
 {
       pdf_free(v);
 }
@@ -233,23 +310,25 @@ main(int arc, char **argv)
       Tptr p, t = 0;
       void *v;
 
-      t = tstc_insert(t, "quick", 888);
-      t = tstc_insert(t, "a", (void*)11);
-      t = tstc_insert(t, "a0", 21);
-      t = tstc_insert(t, "a1", 22);
-      t = tstc_insert(t, "a2", 23);
-      t = tstc_insert(t, "b", 12);
-      t = tstc_insert(t, "abc", 1);
-      t = tstc_insert(t, "abcd", 2);
-      t = tstc_insert(t, "abce", 3);
-      t = tstc_insert(t, "abcef", 4);
-      t = tstc_insert(t, "x", 13);
+      t = tstc_insert(t, "X0", (void*)10);
+      t = tstc_insert(t, "X1", (void*)0);
+      t = tstc_insert(t, "X2", (void*)101);
+      t = tstc_insert(t, "F1", (void*)1);
+      t = tstc_insert(t, "F3", (void*)3);
+      t = tstc_insert(t, "F2", (void*)2);
+      t = tstc_insert(t, "abca", (void*)4);
+      t = tstc_insert(t, "abcef", (void*)14);
+      t = tstc_insert(t, "xquis", (void*)13);
+      t = tstc_insert(t, "quick", (void*)888);
+      t = tstc_insert(t, "G0", (void*)113);
+      t = tstc_insert(t, "Length", (void*)1113);
+      t = tstc_insert(t, "Group", (void*)1888);
 
-      i = tstc_find(t, "abcd");
-      i = tstc_find(t, "abc");
-      i = tstc_find(t, "abcefg");
-      i = tstc_find(t, "abcef");
-      i = tstc_find(t, "x");
+      i = (int)tstc_find(t, "F2", &v);
+      i = (int)tstc_find(t, "abc", &v);
+      i = (int)tstc_find(t, "abcefg", &v);
+      i = (int)tstc_find(t, "abcef", &v);
+      i = (int)tstc_find(t, "x", &v);
 
       tstc_print(t);
       tstc_free(t);
@@ -258,7 +337,7 @@ main(int arc, char **argv)
       v = pdf_malloc(1024);
       t = tstc_insert(t, "dummy", v);
       tstc_print(t);
-      tstc_call(t, val_free);
+      tstc_call(t, val_free, 0);
       tstc_free(t);
       return 0;
 }

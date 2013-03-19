@@ -5,6 +5,31 @@
 #include "dict.h"
 #include "pdfmem.h"
 
+static void dict_free_val(char *key, void *val, void *x);
+
+dict_entry*
+dict_entry_new(void *v, char *k, dict_k_free f)
+{
+      dict_entry *e;
+      e = pdf_malloc(sizeof(dict_entry));
+      e->v = v;
+      e->k = k;
+      e->f = f;
+      return e;
+}
+
+void
+dict_entry_free(void *v, void *a)
+{
+      dict_entry *e = (dict_entry*)v;
+      if (e)
+      {
+	    e->f(e->k);
+	    dict_free_val(0, e->v, 0);
+	    pdf_free(e);
+      }
+}
+
 dict* dict_new()
 {
       dict * d = pdf_malloc(sizeof(dict));
@@ -20,22 +45,44 @@ dict* dict_insert(dict* d, char *key, void *val)
 {
       if (d)
       {
+#ifdef TSTC
+            if (d->dict)
+            {
+                  d->dict = tstc_insert(d->dict, key, val);
+	    }
+	    else
+	    {
+                  d->dict = tstc_insert(NULL, key, val);
+	    }
+#else
             if (d->dict)
             {
                   tst_insert(d->dict, key, val);
-            }
-            else
-            {
+	    }
+	    else
+	    {
                   d->dict = tst_insert(NULL, key, val);
-            }
+	    }
+#endif
 	    d->n += 1;
       }
       return NULL;
 }
 
-void*   dict_get(dict* d, char *key)
+void*
+dict_get(dict* d, char *key)
 {
+#ifdef TSTC
+      dict_entry *e = 0;
+      int r = (dict_entry*) tstc_find(d->dict, key, &e);
+      if (r)
+      {
+	    return e->v;
+      }
+      return e;
+#else
       return (void*) tst_search(d->dict, key);
+#endif
 }
 
 static void
@@ -49,6 +96,8 @@ dict_free_val(char *key, void *val, void *x)
             pdf_free(val);
       //printf("dict_free_val on entry: %s\n", key);
 }
+
+#ifndef TSTC
 
 static void
 array_print(pdf_obj *a)
@@ -145,6 +194,7 @@ dict_print_keyval(char *key, void *val, void *x)
             }
       }
 }
+#endif
 
 void  dict_free(dict* d)
 {
@@ -152,10 +202,15 @@ void  dict_free(dict* d)
       {
             if (d->dict)
             {
+#ifdef TSTC
+		  tstc_call(d->dict, dict_entry_free, 0);
+		  tstc_free(d->dict);
+#else
                   tst_print_reset(1);
                   tst_traverse(d->dict, dict_free_val, NULL);
                   tst_cleanup(d->dict);
                   tst_print_reset(-1);
+#endif
             }
 	    if (d->stream)
 	    {
@@ -173,13 +228,18 @@ void dict_dump(dict* d)
       {
             if (d->dict)
             {
+#ifdef TSTC
+		  tstc_print(d->dict);
+#else
                   tst_print_reset(1);
                   tst_traverse(d->dict, dict_print_keyval, NULL);
                   tst_print_reset(-1);
+#endif
             }
       }
 }
 
+#ifndef TSTC
 // TODO: insert to head, and return head of list.
 static
 void
@@ -202,7 +262,7 @@ dict_list_append(char *key, void *v, dict_list* l)
 	    head->last = l->last;
       }
 }
-
+#endif
 // returned object belongs to caller.
 // Experimental: using list as target by imitating "LISP" style.
 dict_list*
@@ -213,9 +273,12 @@ dict_to_list(dict *d)
       l->val.t = eLimit;
       if (d && d->dict)
       {
+#ifdef TSTC
+#else
 	    tst_print_reset(1);
 	    tst_traverse(d->dict, (tst_hook)dict_list_append, l);
 	    tst_print_reset(-1);
+#endif
       }
       if (l->val.t == eLimit)
       {
@@ -225,6 +288,20 @@ dict_to_list(dict *d)
       return l;
 }
 
+#ifdef TSTC
+static
+void
+dict_tstc_array_append(void *v, void* arr)
+{
+      dict_entry *e = (dict_entry*)v;
+      char *key = e->k;
+      dict_array * a = (dict_array*)arr;
+      a->items[a->cur].key = pdf_malloc(strlen(key)+1);
+      memcpy(a->items[a->cur].key, key, strlen(key)+1);
+      a->items[a->cur].val = *((pdf_obj*)(e->v));
+      a->cur += 1;
+}
+#else
 static
 void
 dict_array_append(char *key, void *v, dict_array* a)
@@ -234,7 +311,7 @@ dict_array_append(char *key, void *v, dict_array* a)
       a->items[a->cur].val = *((pdf_obj*)v);
       a->cur += 1;
 }
-
+#endif
 // returned object belongs to caller.
 dict_array*
 dict_to_array(dict *d)
@@ -248,9 +325,13 @@ dict_to_array(dict *d)
 	    return NULL;
       if (d && d->dict)
       {
+#ifdef TSTC
+	    tstc_call(d->dict, dict_tstc_array_append, (void*)a);
+#else
 	    tst_print_reset(1);
 	    tst_traverse(d->dict, (tst_hook)dict_array_append, a);
 	    tst_print_reset(-1);
+#endif
       }
       return a;
 }

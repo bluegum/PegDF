@@ -125,6 +125,19 @@ int push(e_pdf_kind t, double n, char *s)
       return 0;
 }
 
+void entry_no_free(void *e)
+{
+}
+
+void
+entry_name_free(void *e)
+{
+      if (e)
+	    pdf_free(e);
+      else
+	    printf("!?\n");
+}
+
 pdf_obj pop(void)   { return parser_inst->stack[parser_inst->stackp--]; }
 
 // pop dict entries off stack and assemble a dict obj and push onto stack
@@ -142,8 +155,22 @@ pdf_obj pop_dict(void)
             if (i%2)
             {
                   //printf("%s|", (char*)(parser_inst->stack[parser_inst->stackp+1].value.k));
-                  dict_insert(d, parser_inst->stack[parser_inst->stackp+1].value.k, a);
+#ifdef TSTC
+		  dict_entry *ent;
+		  if (parser_inst->stack[parser_inst->stackp+1].t == eName)
+		  {
+			ent = dict_entry_new(a, parser_inst->stack[parser_inst->stackp+1].value.k, entry_name_free);
+		  }
+		  else
+		  {
+			ent = dict_entry_new(a, parser_inst->stack[parser_inst->stackp+1].value.k, entry_no_free);
+		  }
+                  dict_insert(d, parser_inst->stack[parser_inst->stackp+1].value.k, ent);
+#else
+		  dict_insert(d, parser_inst->stack[parser_inst->stackp+1].value.k, a);
                   name_free(&parser_inst->stack[parser_inst->stackp+1]);
+#endif
+                  //name_free(&parser_inst->stack[parser_inst->stackp+1]);
             }
             else
             {

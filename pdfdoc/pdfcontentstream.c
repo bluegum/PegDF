@@ -709,8 +709,23 @@ pdf_parse_dict(buffer_stream *s, pdf_obj *o, int inlineimg)
                         return pdf_syntax_err;
                   val = pdf_malloc(sizeof(pdf_obj));
                   *val = v;
+#ifdef TSTC
+		  {
+			dict_entry *ent;
+			if (k.t == eName)
+			{
+			      ent = dict_entry_new(val, k.value.k, entry_name_free);
+			}
+			else
+			{
+			      ent = dict_entry_new(val, k.value.k, entry_no_free);
+			}
+			dict_insert(d, k.value.k, ent);
+		  }
+#else
                   dict_insert(d, k.value.k, val);
                   pdf_obj_delete(&k);
+#endif
             }
 	    else if (inlineimg && c == 'I')
 	    {

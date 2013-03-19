@@ -4,10 +4,10 @@
 
 #ifdef DEBUG
 
-static int all_mem;
-static int all_mallocs;
-static int all_frees;
-static int all_reallocs;
+static int all_mem = 0;
+static int all_mallocs = 0;
+static int all_frees = 0;
+static int all_reallocs = 0;
 
 void *
 track_malloc(size_t n)
