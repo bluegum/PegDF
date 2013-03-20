@@ -2,7 +2,7 @@
 #
 INCLUDE_ALL     = -I . -I include -I pdfdraw -I pdfdoc -I pdfread -I openssl/include -I openssl/include/openssl -I openssl -I zlib
 CF_ALL          = -Wall -I . $(INCLUDE_ALL)
-LF_ALL          = -pg -lm -lcrypto -L openssl -ldl
+LF_ALL          = -lm -lcrypto -L openssl -ldl
 LL_ALL          =
 OPENSSL_DEBUG   =
 INSTALL = /usr/bin/install -c
@@ -13,8 +13,9 @@ ifeq    "$(DEBUG_STM)" "y"
 	DEBUG := "y"
 endif
 ifeq	"$(DEBUG)" "y"
-	CF_ALL += -g -DDEBUG
+	CF_ALL += -pg -g -DDEBUG
 	OPENSSL_DEBUG = -d
+	LF_ALL += -pg
 else
 	CF_ALL += -O3
 endif
@@ -38,6 +39,7 @@ LIB_CRYPTO      = openssl/libcrypto.a
 TGT_LIB	        =
 APP             =
 CLEAN           =
+PKG_CLEAN       =
 
 COMMON_HEADERS := *.h
 #######
@@ -69,7 +71,7 @@ openssl/include/openssl/evp.h :
 realclean : clean
 	- @cd openssl; if test -e Makefile ; then $(MAKE) clean; rm -f Makefile; rm crypto/opensslconf.h; rm include/openssl/evp.h; fi; cd ..;
 	- @rm $(GLYPH_NAME_TO_UNI) $(LIB_CRYTO)
-	- @rm $(LIBJPEG_CLEAN)
+	- @rm $(PKG_CLEAN)
 	$(MAKE) -C peg spotless
 .PHONY    : all
 all       :  $(APP)

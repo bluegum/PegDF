@@ -21,6 +21,7 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
+#include "pdfmem.h"
 #include "pdftypes.h"
 #include "pdfindex.h"
 #include "dict.h"
@@ -53,6 +54,8 @@ void parser_free()
       if (yyctx->text)   free(yyctx->text);
       if (yyctx->thunks) free(yyctx->thunks);
       if (yyctx->vals)   free(yyctx->vals);
+      if (parser_inst->stack)
+	    free(parser_inst->stack);
 #endif
 }
 #undef malloc

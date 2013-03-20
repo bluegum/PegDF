@@ -91,6 +91,10 @@ static int
 s_get_char(buffer_stream *s)
 {
       assert(s);
+      if (s->p != s->e)
+      {
+            return *s->p++;
+      }
       if (s->p == s->e)
       {
             int i;
@@ -445,7 +449,7 @@ pdf_lex_number(buffer_stream *s, int c, float *out)
       float b = 0;
       float man = 0.1;
       int i = 0;
-      int sign = 0;
+      float sign = 1;
 
       if (c == '.')
       {
@@ -462,7 +466,7 @@ pdf_lex_number(buffer_stream *s, int c, float *out)
       {
             a = 0;
             man = 0.1;
-	    sign = 1;
+	    sign = -1;
       }
       else
       {
@@ -498,8 +502,7 @@ pdf_lex_number(buffer_stream *s, int c, float *out)
             }
       }
       *out = a+b;
-      if (sign)
-	    *out = -(*out);
+      *out = sign * (*out);
       return pdf_ok;
 }
 

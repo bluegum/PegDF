@@ -592,8 +592,6 @@ void pop_stream(int pos, int off)
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-extern pdf_parser* parser_new(FILE *in, parser_getchar getchar);
-
 // return 0: ok
 int read_linearized_dict(pdf_obj *o, linearized *l)
 {
@@ -850,7 +848,7 @@ objstream_read(pdf_obj *o, int num, int gen, pdfcrypto_priv *crypto)
             goto fail1;
       // construct parser
       oldparser = parser_inst;
-      parser_inst = parser_new(NULL, s_getchar);
+      parser_inst = parser_new(NULL, s_getchar, 1024*8); // 8K stack ought to be enough for all objs in obj_stream
       parser_inst->infile = oldparser->infile;
       // switch in the global obj map
       if (parser_inst->map)
@@ -949,6 +947,8 @@ objstream_read(pdf_obj *o, int num, int gen, pdfcrypto_priv *crypto)
       }
       ////////////////////
   fail:
+      if (parser_inst->stack)
+	    pdf_free(parser_inst->stack);
       pdf_free(parser_inst);
       parser_inst = oldparser;
       if (err == pdf_syntax_err)
@@ -962,12 +962,18 @@ fail1:
 
 /// make a new parser
 pdf_parser*
-parser_new(FILE *in, parser_getchar getchar)
+parser_new(FILE *in, parser_getchar getchar, int stack_size)
 {
       pdf_parser *parser_inst;
       parser_inst = (pdf_parser*)pdf_malloc(sizeof(pdf_parser));
       if (!parser_inst)
             return NULL;
+      parser_inst->stack = (pdf_obj*)pdf_malloc(sizeof(pdf_obj)*stack_size);
+      if (!parser_inst->stack)
+      {
+	    pdf_free(parser_inst);
+	    return NULL;
+      }
       parser_inst->parse_finished = 0;
       parser_inst->infile = in;
       parser_inst->getchar = getchar;
@@ -1257,7 +1263,7 @@ pdf_open(char *in, pdf_doc **doc)
       {
 	    return pdf_file_err;
       }
-      parser_inst = parser_new(inf, f_getchar);
+      parser_inst = parser_new(inf, f_getchar, 1024*64); // large stack size for large array, ouch!
       if (!parser_inst)
             return -1;
       // configure parser

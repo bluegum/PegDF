@@ -594,31 +594,25 @@ pdf_character_show(pdf_device* dev, pdf_prs *s, pdf_font *f, gs_matrix *ctm, cha
 	    return 0;
       step = (enc->get_cid)(c, &cid);
       *c_id = cid;
-      if (dev)
+      pdf_device_char_show(dev, f, s->gs.fs, ctm, cid);
+      if (step == 1)
       {
-	    pdf_device_char_show(dev, f, s->gs.fs, ctm, cid);
+#ifdef DEBUG
+	    int n = (f->unicode_get)(f, cid, uni);
+	    fputc(uni[0]>>8, stdout);
+	    fputc(uni[0]&0xff, stdout);
+#endif
       }
-      else
+      else if (step == 4)
       {
-	    if (step == 1)
-	    {
+	    int n = (f->unicode_get)(f, cid, uni);
+	    int i;
 #ifdef DEBUG
-		  int n = (f->unicode_get)(f, cid, uni);
-		  fputc(uni[0]>>8, stdout);
-		  fputc(uni[0]&0xff, stdout);
-#endif
-	    }
-	    else if (step == 4)
+	    for (i = 0; i < n; i++)
 	    {
-		  int n = (f->unicode_get)(f, cid, uni);
-		  int i;
-		  for (i = 0; i < n; i++)
-		  {
-#ifdef DEBUG
-			fputc(uni[i]&0xff, stdout);
-#endif
-		  }
+		  fputc(uni[i]&0xff, stdout);
 	    }
+#endif
       }
       return step;
 }

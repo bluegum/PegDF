@@ -86,7 +86,7 @@ struct pdf_parser_s
 {
       int (*getchar)();
       /// parser tmporary storage
-      pdf_obj stack[65536]; // large stack size for large array, ouch!
+      pdf_obj *stack;
       int stackp;
       char* comment_string;
       //
@@ -148,6 +148,7 @@ extern int xref_append(int off, int gen, pdf_obj x);
 extern void pop_comment(char *s);
 extern void pop_stream(int pos, int off);
 extern void xref_start(int);
+extern pdf_parser* parser_new(FILE *in, parser_getchar getchar, int stack_size);
 
 /// parser helpers
 extern int stream_seek(int s);

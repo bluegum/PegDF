@@ -171,7 +171,7 @@ Tptr _tstc_insert(Tptr p, char *k, char *s, void *v)
 /* recursive search */
 static
 int
-_tstc_rfind(Tptr n, char *s, int i, void **v)
+_tstc_rfind(Tptr n, char *s, void **v)
 {
       int found = 0;
       *v = 0;
@@ -198,13 +198,13 @@ _tstc_rfind(Tptr n, char *s, int i, void **v)
 			return found;
 		  }
 		  else if (n->kid->sib)
-			found = _tstc_rfind(n->kid->sib, s+1, i, v);
+			found = _tstc_rfind(n->kid->sib, s+1, v);
 		  else
-			found = _tstc_rfind(n->sib, s, i, v);
+			found = _tstc_rfind(n->sib, s, v);
 	    }
 	    else
 	    {
-		  found = _tstc_rfind(n->kid, s+1, i, v);
+		  found = _tstc_rfind(n->kid, s+1, v);
 	    }
       }
       else if (!n->kid && *n->s == *s)
@@ -216,12 +216,12 @@ _tstc_rfind(Tptr n, char *s, int i, void **v)
 	    }
 	    else
 	    {
-		  found = _tstc_rfind(n->sib, s, i, v);
+		  found = _tstc_rfind(n->sib, s, v);
 	    }
       }
       else
       {
-	    found = _tstc_rfind(n->kid, s+1, i, v);
+	    found = _tstc_rfind(n->kid, s+1, v);
       }
       return found;
 }
@@ -229,7 +229,7 @@ _tstc_rfind(Tptr n, char *s, int i, void **v)
 int
 tstc_find(Tptr p, char *s, void **v)
 {
-      return _tstc_rfind(p, s, 0, v);
+      return _tstc_rfind(p, s, v);
 }
 
 void
