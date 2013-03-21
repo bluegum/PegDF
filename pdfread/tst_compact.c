@@ -261,16 +261,23 @@ tstc_free(Tptr n)
 }
 
 void
-tstc_call(Tptr n, tstc_f f, void *a)
+tstc_call(Tptr n, char *k, tstc_f f, void *a)
 {
       if (!n)
 	    return;
       while (n)
       {
 	    if (!n->kid)
-		  f(n->v, a);
+		  f(n->k, n->v, a);
 	    else
-		  tstc_call(n->kid, f, a);
+	    {
+		  if (k)
+		  {
+			*k++ = *n->s;
+			*k = 0;
+		  }
+		  tstc_call(n->kid, k, f, a);
+	    }
 	    n = n->sib;
       }
 }

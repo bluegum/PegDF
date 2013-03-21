@@ -19,7 +19,7 @@ dict_entry_new(void *v, char *k, dict_k_free f)
 }
 
 void
-dict_entry_free(void *v, void *a)
+dict_entry_free(char *k, void *v, void *a)
 {
       dict_entry *e = (dict_entry*)v;
       if (e)
@@ -74,7 +74,7 @@ dict_get(dict* d, char *key)
 {
 #ifdef TSTC
       dict_entry *e = 0;
-      int r = (dict_entry*) tstc_find(d->dict, key, &e);
+      int r = tstc_find(d->dict, key, (void*)&e);
       if (r)
       {
 	    return e->v;
@@ -203,7 +203,7 @@ void  dict_free(dict* d)
             if (d->dict)
             {
 #ifdef TSTC
-		  tstc_call(d->dict, dict_entry_free, 0);
+		  tstc_call(d->dict, 0, dict_entry_free, 0);
 		  tstc_free(d->dict);
 #else
                   tst_print_reset(1);
@@ -239,12 +239,12 @@ void dict_dump(dict* d)
       }
 }
 
-#ifndef TSTC
 // TODO: insert to head, and return head of list.
 static
 void
-dict_list_append(char *key, void *v, dict_list* l)
+dict_list_append(char *key, void *v, void *list)
 {
+      dict_list *l = (dict_list*)list;
       dict_list *head = l;
       if (!l)
 	    return;
@@ -252,7 +252,11 @@ dict_list_append(char *key, void *v, dict_list* l)
 	    l = l->last;
       l->key = pdf_malloc(strlen(key)+1);
       memcpy(l->key, key, strlen(key)+1);
+#ifdef TSTC
+      l->val = *(pdf_obj*)((dict_entry*)v)->v;
+#else
       l->val = *((pdf_obj*)v);
+#endif
       if (!l->last)
       {
 	    l->last = (dict_list*)pdf_malloc(sizeof(dict_list));
@@ -262,7 +266,6 @@ dict_list_append(char *key, void *v, dict_list* l)
 	    head->last = l->last;
       }
 }
-#endif
 // returned object belongs to caller.
 // Experimental: using list as target by imitating "LISP" style.
 dict_list*
@@ -274,6 +277,8 @@ dict_to_list(dict *d)
       if (d && d->dict)
       {
 #ifdef TSTC
+	    char buf[1024];
+	    tstc_call(d->dict, buf, dict_list_append, l);
 #else
 	    tst_print_reset(1);
 	    tst_traverse(d->dict, (tst_hook)dict_list_append, l);
@@ -291,7 +296,7 @@ dict_to_list(dict *d)
 #ifdef TSTC
 static
 void
-dict_tstc_array_append(void *v, void* arr)
+dict_tstc_array_append(char *k, void *v, void* arr)
 {
       dict_entry *e = (dict_entry*)v;
       char *key = e->k;
@@ -326,7 +331,7 @@ dict_to_array(dict *d)
       if (d && d->dict)
       {
 #ifdef TSTC
-	    tstc_call(d->dict, dict_tstc_array_append, (void*)a);
+	    tstc_call(d->dict, 0, (tstc_f)dict_tstc_array_append, (void*)a);
 #else
 	    tst_print_reset(1);
 	    tst_traverse(d->dict, (tst_hook)dict_array_append, a);
