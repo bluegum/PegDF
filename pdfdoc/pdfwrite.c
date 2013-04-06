@@ -204,6 +204,9 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
                     {
                         case ')':
                         case '(':
+                        case '\n':
+                        case '\r':
+                        case '\\':
                             fprintf(f, "%c%c", '\\', o->value.s.buf[i]);
                         break;
                         default:

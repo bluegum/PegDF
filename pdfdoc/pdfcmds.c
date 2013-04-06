@@ -239,8 +239,12 @@ pdf_err x_BDC(pdf_page *p, pdf_obj n, pdf_obj o)
       }
       return pdf_ok;
 }
-pdf_err x_BMC(pdf_page *p)
+pdf_err x_BMC(pdf_page *p, pdf_obj o)
 {
+      if (o.t == eName)
+      {
+            pdf_obj_delete(&o);
+      }
       return pdf_ok;
 }
 /// T group
@@ -590,5 +594,22 @@ x_s(pdf_page *p)
       pdf_path_paint(p->i->dev, gs,
 		     1, // to stroke
 		     0);
+      return pdf_ok;
+}
+
+pdf_err x_MP(pdf_page *p, pdf_obj o)
+{
+      if (o.t == eName)
+      {
+            pdf_obj_delete(&o);
+      }
+      return pdf_ok;
+}
+pdf_err x_DP(pdf_page *p, pdf_obj o, pdf_obj a)
+{
+      if (o.t == eName)
+      {
+            pdf_obj_delete(&o);
+      }
       return pdf_ok;
 }

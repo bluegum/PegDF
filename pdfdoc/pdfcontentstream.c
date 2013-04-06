@@ -1094,7 +1094,12 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                 break;
                                 case (TWO_HASH('D','P')):
                                 {
-                                    //x_DP(p);
+                                    x_DP(p, POP_O, POP_O);
+                                }
+                                break;
+                                case (TWO_HASH('M','P')):
+                                {
+                                    x_MP(p, POP_O);
                                 }
                                 break;
                                 case TWO_HASH('E','T'):
@@ -1194,7 +1199,7 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                             }
                             else if (buf[0] == 'B' && buf[1] == 'M' && buf[2] == 'C')
                             {
-                                x_BMC(p);
+                                x_BMC(p, POP_O);
                             }
                             else if (buf[0] == 'E' && buf[1] == 'M' && buf[2] == 'C')
                             {

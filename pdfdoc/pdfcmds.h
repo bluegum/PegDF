@@ -18,7 +18,9 @@ extern pdf_err x_BI(pdf_page *p, pdf_obj);
 extern pdf_err x_BT(pdf_page *p);
 extern pdf_err x_BX(pdf_page *p);
 extern pdf_err x_BDC(pdf_page *p, pdf_obj, pdf_obj);
-extern pdf_err x_BMC(pdf_page *p);
+extern pdf_err x_BMC(pdf_page *p, pdf_obj);
+extern pdf_err x_MP(pdf_page *p, pdf_obj);
+extern pdf_err x_DP(pdf_page *p, pdf_obj, pdf_obj);
 /// T group
 extern pdf_err x_Tstar(pdf_page *p);
 extern pdf_err x_Tc(pdf_page *p, float);
