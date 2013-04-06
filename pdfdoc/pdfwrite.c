@@ -199,7 +199,18 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
             else
             {
                 for (i = 0; i < o->value.s.len; i ++)
-                    fprintf(f, "%c", o->value.s.buf[i]);
+                {
+                    switch(o->value.s.buf[i])
+                    {
+                        case ')':
+                        case '(':
+                            fprintf(f, "%c%c", '\\', o->value.s.buf[i]);
+                        break;
+                        default:
+                            fprintf(f, "%c", o->value.s.buf[i]);
+                            break;
+                    }
+                }
             }
             fprintf(f, "%s", ")");
             break;
@@ -346,10 +357,12 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
         case eRef:
         {
             int a = (int)bpt_search(x->entry, o->value.r.num);
-            if (a <= 0)
-                fprintf(f, "%d %d R ", o->value.r.num, o->value.r.gen);
-            else
+            if (a > 0)
                 fprintf(f, "%d %d R ", a, o->value.r.gen);
+            else
+            {
+                fprintf(f, "%d %d R ", o->value.r.num, o->value.r.gen);
+            }
         }
         break;
         default:
@@ -587,6 +600,10 @@ pdf_scan_object(pdf_obj *o, pdf_xref_internal *x)
                     x->page_obj_buf[x->page_obj_idx] = oo->value.r.num;
                     x->page_obj_idx ++;
                 }
+                else if (oo->t == eDict || oo->t == eArray)
+                {
+                    pdf_scan_object(oo, x);
+                }
             }
 	    }
 	    break;
@@ -620,7 +637,7 @@ pdf_resources_scan(pdf_resources *r, pdf_xref_internal* x)
                     x->page_obj_buf[x->page_obj_idx] = l->val.value.r.num;
                     x->page_obj_idx ++;
                 }
-                else if (l->val.t == eDict)
+                else if (l->val.t == eDict || l->val.t == eArray)
                 {
                     pdf_scan_object(&l->val, x);
                 }
@@ -652,6 +669,8 @@ static
 void
 pdf_scan_page(pdf_page* pg, pdf_xref_internal* x)
 {
+    if (!pg)
+        return;
     x->page_obj_idx = 0;
     if (pg->resources)
     {
@@ -708,6 +727,8 @@ pdf_page_obj_write(pdf_page *page, int pgidx, unsigned long write_flag, pdf_xref
     int content_ref = -1;
     int content_num = 0;
     int content_ref_arr[1024];
+    if (!page)
+        return;
     if (page->contents)
     {
 	    pdf_obj *contents = pdf_obj_deref(page->contents);

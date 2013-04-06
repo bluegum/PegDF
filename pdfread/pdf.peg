@@ -35,10 +35,11 @@ start	<- COMMENT EOL* SPACE*
 DICT	<- DB
 	( KEY COMMENT* (VALUE / KWORD / ID)
 	/ COMMENT
+	/ . !'>' # ignore rubbish
 	)* DE
 DB      <- '<<' DELIM {push(eDictMarker, 0, NULL);}
 DE	<- '>>' DELIM {pop_dict();}
-KEY	<- DELIM '/' < ALPHANUM+ > DELIM  {push(eKey, 0, yytext);}
+KEY	<- DELIM '/' < ALPHANUM* > DELIM  {push(eKey, 0, yytext);}
 VALUE	<- (
 	   REF
 	   / NUM
@@ -71,7 +72,7 @@ STRE       <- (
 #string alphabet
 STRA       <- (ESCPAREN / (!STRBGN !STREND .))
 
-HEXSTR	   <- '<' < [0-9a-fA-F\n\r]* > '>' DELIM {push(eHexString, 0, yytext);}
+HEXSTR	   <- '<' < [0-9a-fA-F \t\f\n\r]* > '>' DELIM {push(eHexString, 0, yytext);}
 
 OBJ	<- DELIM NUM  NUM  'obj' DELIM   { push(eObjMarker, 0, NULL); }
 	COMMENT*

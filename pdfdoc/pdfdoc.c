@@ -65,19 +65,19 @@ pdf_err pdf_page_load(pdf_doc *doc, pdf_obj *o, pdf_page **page)
       if (v)
       {
             p->rotate = v->value.i;
-	    if (p->rotate < 0)
-		  p->rotate = 360 - ((-p->rotate) % 360);
-	    if (p->rotate >= 360)
-		  p->rotate = p->rotate % 360;
-	    p->rotate = 90*((p->rotate + 45)/90);
-	    if (p->rotate > 360)
-		  p->rotate = 0;
-	    if (p->rotate == 90 || p->rotate == 270)
-	    {
-		  float x = p->mediabox.y1;
-		  p->mediabox.y1 =  p->mediabox.x1;
-		  p->mediabox.x1 = x;
-	    }
+        if (p->rotate < 0)
+          p->rotate = 360 - ((-p->rotate) % 360);
+        if (p->rotate >= 360)
+          p->rotate = p->rotate % 360;
+        p->rotate = 90*((p->rotate + 45)/90);
+        if (p->rotate > 360)
+          p->rotate = 0;
+        if (p->rotate == 90 || p->rotate == 270)
+        {
+          float x = p->mediabox.y1;
+          p->mediabox.y1 =  p->mediabox.x1;
+          p->mediabox.x1 = x;
+        }
       }
       p->group = pdf_group_load(dict_get(d, "Group"));
       p->annots = pdf_annots_load(dict_get(d, "Annots"));
@@ -194,12 +194,12 @@ pdf_err pdf_page_tree_walk(pdf_doc *d, pdf_device *dev, pdfcrypto_priv* encrypt)
 #ifdef DEBUG
             printf("processing page#%d\n", i);
 #endif
-	    d->pages[i]->i = interp;
-	    if (dev)
-		  (dev->page_begin)(dev, i, d->pages[i]->mediabox.x1, d->pages[i]->mediabox.y1);
+        d->pages[i]->i = interp;
+        if (dev)
+          (dev->page_begin)(dev, i, d->pages[i]->mediabox.x1, d->pages[i]->mediabox.y1);
             pdf_exec_page_content(d->pages[i], encrypt);
-	    if (dev)
-		  (dev->page_end)(dev);
+        if (dev)
+          (dev->page_end)(dev);
 #ifdef DEBUG
             printf("%s", "\n");
 #endif
@@ -291,10 +291,10 @@ pdf_err pdf_doc_process(pdf_doc *d, pdf_device *dev, pdfcrypto_priv* encrypt)
 {
       pdf_err e;
       if (dev)
-	    dev->doc_begin(dev);
+        dev->doc_begin(dev);
       e = pdf_page_tree_walk(d, dev, encrypt);
       if (dev)
-	    (dev->doc_end)(dev);
+        (dev->doc_end)(dev);
       return e;
 }
 
@@ -391,21 +391,21 @@ pdf_cf_load(pdf_obj *o, pdf_cryptfilter **cf)
       pdf_obj *a;
 
       if (!o)
-	    return pdf_ok;
+        return pdf_ok;
       if (!obj_is_name(o) && o->t != eDict)
-	    return pdf_ok;
+        return pdf_ok;
       if (obj_is_name(o) &&
-	  strcmp(o->value.k, "Identity") == 0)
-	    return pdf_ok;
+      strcmp(o->value.k, "Identity") == 0)
+        return pdf_ok;
       if (obj_is_name(o))
-	    return pdf_ok;
+        return pdf_ok;
       a = dict_get(o->value.d.dict, "StdCF"); // Dont support private CF
       if (!a)
-	    return pdf_ok;
+        return pdf_ok;
       o = a;
       pdf_obj_resolve(o);
       if (o->t != eDict)
-	    return pdf_ok;
+        return pdf_ok;
       *cf = pdf_malloc(sizeof(pdf_cryptfilter));
       if (!*cf)
             return pdf_mem_err;
@@ -440,14 +440,14 @@ pdf_cf_load(pdf_obj *o, pdf_cryptfilter **cf)
                   (*cf)->authevent = eEFOpen;
             }
             else if (strcmp(a->value.k, "DocOpen") == 0)
-	    {
+        {
                   (*cf)->authevent = eDocOpen;
-	    }
+        }
       }
       a = dict_get(o->value.d.dict, "Length");
       if (a && a->t == eInt)
       {
-	    (*cf)->length = a->value.i;
+        (*cf)->length = a->value.i;
       }
       return pdf_ok;
 }
@@ -487,8 +487,8 @@ pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
 
       if (o && o->t == eRef)
       {
-	    numobj = o->value.r.num;
-	    numgen = o->value.r.gen;
+        numobj = o->value.r.num;
+        numgen = o->value.r.gen;
       }
       // fill stream info
       pdf_obj_resolve(o);
@@ -499,37 +499,37 @@ pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
       }
       if (o->t == eDict)
       {
-	    x = dict_get(y->value.d.dict, "Length");
-	    if (!x || (x->t != eInt && x->t != eRef))
-	    {
-		  fprintf(stderr, "%s\n", "Invalid stream.");
-		  return NULL;
-	    }
-	    pdf_obj_resolve(x);
-	    s = pdf_malloc(sizeof(pdf_stream));
-	    if (!s)
-		  goto fail;
-	    memset(s, 0, sizeof(pdf_stream));
-	    s->length = x->value.i;
-	    // make raw filter
-	    /// internal struct. raw stream object
-	    ss = y->value.d.dict->stream;
-	    if (!ss)
-		  goto fail;
-	    ss->len = s->length;
+        x = dict_get(y->value.d.dict, "Length");
+        if (!x || (x->t != eInt && x->t != eRef))
+        {
+          fprintf(stderr, "%s\n", "Invalid stream.");
+          return NULL;
+        }
+        pdf_obj_resolve(x);
+        s = pdf_malloc(sizeof(pdf_stream));
+        if (!s)
+          goto fail;
+        memset(s, 0, sizeof(pdf_stream));
+        s->length = x->value.i;
+        // make raw filter
+        /// internal struct. raw stream object
+        ss = y->value.d.dict->stream;
+        if (!ss)
+          goto fail;
+        ss->len = s->length;
       }
       else if (o->t == eString)
       {
-	    s = pdf_malloc(sizeof(pdf_stream));
-	    if (!s)
-		  goto fail;
-	    memset(s, 0, sizeof(pdf_stream));
-	    s->length = o->value.s.len;
-	    // make string raw filter
-	    ss = string_stream_new(o->value.s.buf, 0, o->value.s.len, 0, 0);
+        s = pdf_malloc(sizeof(pdf_stream));
+        if (!s)
+          goto fail;
+        memset(s, 0, sizeof(pdf_stream));
+        s->length = o->value.s.len;
+        // make string raw filter
+        ss = string_stream_new(o->value.s.buf, 0, o->value.s.len, 0, 0);
       }
       else
-	    goto fail;
+        goto fail;
       if (0)//(ss->reset)(ss) != 0)
       {
             pdf_free(ss);
@@ -545,26 +545,26 @@ pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
       // chain crypto filter
       if (crypto)
       {
-	    if (crypto->algo == e40plusbitsAES || crypto->algo == e40bitsAES)
-	    {
-		  // need initial_vector
-		  unsigned char iv[16];
-		  int n;
-		  n = (raw->read)(raw, iv, 16);
-		  crypt = pdf_cryptofilter_new(crypto, numobj, numgen, iv);
-	    }
-	    else
-	    {
-		  crypt = pdf_cryptofilter_new(crypto, numobj, numgen, NULL);
-	    }
+        if (crypto->algo == e40plusbitsAES || crypto->algo == e40bitsAES)
+        {
+          // need initial_vector
+          unsigned char iv[16];
+          int n;
+          n = (raw->read)(raw, iv, 16);
+          crypt = pdf_cryptofilter_new(crypto, numobj, numgen, iv);
+        }
+        else
+        {
+          crypt = pdf_cryptofilter_new(crypto, numobj, numgen, NULL);
+        }
             if (!crypt)
                   goto fail;
             crypt->next = raw;
       }
       if (y->t == eString)
       {
-	    last = (crypt)?crypt:raw;
-	    goto done;
+        last = (crypt)?crypt:raw;
+        goto done;
       }
 
       // chain the rest
@@ -646,8 +646,8 @@ pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
             {
                   if (s)
                         pdf_free(s);
-		  if (crypt)
-			PDF_FILTER_CLOSE(crypt, 0); // do not free in_mem stream
+          if (crypt)
+            PDF_FILTER_CLOSE(crypt, 0); // do not free in_mem stream
                   return NULL;
             }
             // train them
@@ -814,9 +814,9 @@ pdf_authenticate_user_password(pdf_encrypt *encrypt, unsigned char id[16], unsig
       int pwlen;
 
       if (!pw)
-	    pwlen = 0;
+        pwlen = 0;
       else
-	    pwlen = strlen(pw);
+        pwlen = strlen(pw);
       crypto = pdf_crypto_init(encrypt, id,
                                pw);
       rev = crypto->rev;
@@ -860,17 +860,17 @@ pdf_doc_process_all(pdf_doc *doc, char *devtype, FILE *out, char *pw)
       }
       if (devtype && out)
       {
-	    if (strcmp(devtype, "text") == 0)
-		  dev = pdf_dev_text_new(out);
-	    else if (strcmp(devtype, "html") == 0)
-		  dev = pdf_dev_html_new(out);
+        if (strcmp(devtype, "text") == 0)
+          dev = pdf_dev_text_new(out);
+        else if (strcmp(devtype, "html") == 0)
+          dev = pdf_dev_html_new(out);
       }
 
       pdf_doc_process(doc, dev, crypto);
       if (crypto)
             pdf_crypto_destroy(crypto);
       if (dev)
-	    pdf_dev_destroy(dev);
+        pdf_dev_destroy(dev);
       return pdf_ok;
 }
 
@@ -922,9 +922,9 @@ pdf_doc_trailer_free(pdf_trailer * tr)
             {
                   pdf_info_free(tr->info);
                   pdf_free(tr->info);
-	    }
-	    if (tr->encrypt)
-	    {
+        }
+        if (tr->encrypt)
+        {
                   pdf_encrypt_free(tr->encrypt);
             }
             last = tr->last;
@@ -939,9 +939,9 @@ pdf_interpreter_new(pdf_device *dev, pdfcrypto_priv* encrypt)
       pdf_interp_state *i = pdf_malloc(sizeof(pdf_interp_state));
       if (i)
       {
-	    memset(i, 0, sizeof(pdf_interp_state));
-	    i->dev = dev;
-	    i->crypto = encrypt;
+        memset(i, 0, sizeof(pdf_interp_state));
+        i->dev = dev;
+        i->crypto = encrypt;
       }
       return i;
 }
@@ -951,8 +951,8 @@ pdf_interpreter_free(pdf_interp_state *i)
 {
       if (i)
       {
-	    pdf_font_free(i->font);
-	    pdf_free(i);
+        pdf_font_free(i->font);
+        pdf_free(i);
       }
 }
 
@@ -961,9 +961,9 @@ pdf_interpreter_font_insert(pdf_interp_state *i, pdf_font *f)
 {
       if (i)
       {
-	    // insert into head
-	    f->next = i->font;
-	    i->font = f;
+        // insert into head
+        f->next = i->font;
+        i->font = f;
       }
 }
 
@@ -979,23 +979,23 @@ pdf_gstate_init(pdf_page *p)
       mat_init(&gs->ctm, 1, 0, 0, 1, 0, 0);
       if (rotate)
       {
-	    switch (rotate)
-	    {
-		  case 90:
-			mat_init(&gs->ctm, 0, -1, 1, 0, 0, p->mediabox.y1);
-			break;
-		  case 180:
-			mat_init(&gs->ctm, -1, 0, 0, 1, p->mediabox.x1, 0);
-			break;
-		  case 270:
-			mat_init(&gs->ctm, 0, 1, -1, 0, p->mediabox.x1, 0);
-			break;
-		  case 360:
-			mat_init(&gs->ctm, 1, 0, 0, -1, 0, p->mediabox.y1);
-			break;
-		  default:
-			break;
-	    }
+        switch (rotate)
+        {
+          case 90:
+            mat_init(&gs->ctm, 0, -1, 1, 0, 0, p->mediabox.y1);
+            break;
+          case 180:
+            mat_init(&gs->ctm, -1, 0, 0, 1, p->mediabox.x1, 0);
+            break;
+          case 270:
+            mat_init(&gs->ctm, 0, 1, -1, 0, p->mediabox.x1, 0);
+            break;
+          case 360:
+            mat_init(&gs->ctm, 1, 0, 0, -1, 0, p->mediabox.y1);
+            break;
+          default:
+            break;
+        }
       }
       mat_init(&gs->txt_ctm, 1, 0, 0, 1, 0, 0);
       mat_init(&gs->txt_lm, 1, 0, 0, 1, 0, 0);
@@ -1010,7 +1010,7 @@ void
 pdf_device_color_set(pdf_device *d, float *c, pdf_cspacetype cs, int n, int pen)
 {
       if (d)
-	    (d->color_set)(d, c, cs, n, pen);
+        (d->color_set)(d, c, cs, n, pen);
 }
 
 void
@@ -1021,11 +1021,11 @@ pdf_update_brush(pdf_page *p)
       s1 = p->s;
       if (s0->brush.t != s1->brush.t)
       {
-	    return pdf_device_color_set(p->i->dev, s0->brush.c, s0->brush.t, s0->brush.n, 0);
+        return pdf_device_color_set(p->i->dev, s0->brush.c, s0->brush.t, s0->brush.n, 0);
       }
       else if (memcmp(&s0->brush.c, &s1->brush.c, s0->brush.n*sizeof(float)) != 0)
       {
-	    return pdf_device_color_set(p->i->dev, s0->brush.c, s0->brush.t, s0->brush.n, 0);
+        return pdf_device_color_set(p->i->dev, s0->brush.c, s0->brush.t, s0->brush.n, 0);
       }
 }
 

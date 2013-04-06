@@ -393,7 +393,7 @@ int xref_append(int off, int gen, pdf_obj o)
 {
       xreftab *x = parser_inst->xref;
 #ifdef YY_DEBUG
-      printf("xref_entry:%d,%d,%c\n", off, gen, x.value.i);
+      printf("xref_entry:%d,%d\n", off, gen);
 #endif
       if (x->idx >= x->count)
             return 0;
