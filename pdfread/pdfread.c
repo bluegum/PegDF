@@ -461,6 +461,8 @@ match_string(char *m)
             else
             {
                   s = m; // reset
+                  if (c == *s)
+                      s++;
                   continue;
             }
       }
