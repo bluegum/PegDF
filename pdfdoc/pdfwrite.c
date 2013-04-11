@@ -544,7 +544,7 @@ pdf_resources_write(pdf_resources *r, pdf_xref_internal *x, FILE *o, pdfcrypto_p
 
 static
 void
-pdf_scan_object(pdf_obj *o, pdf_xref_internal *x)
+pdf_obj_scan(pdf_obj *o, pdf_xref_internal *x)
 {
     pdf_obj *obj = o;
     if (!o)
@@ -554,7 +554,7 @@ pdf_scan_object(pdf_obj *o, pdf_xref_internal *x)
         case eRef:
 	    {
             pdf_obj *d = pdf_obj_deref(o);
-            pdf_scan_object(d, x);
+            pdf_obj_scan(d, x);
             break;
 	    }
         case eDict:
@@ -571,18 +571,18 @@ pdf_scan_object(pdf_obj *o, pdf_xref_internal *x)
                 if (l->val.t == eRef)
                 {
                     // recursively scan this obj for more refs
-                    pdf_scan_object(&l->val, x);
+                    pdf_obj_scan(&l->val, x);
                     pdf_xref_internal_append(x, l->val.value.r.num, l->val.value.r.gen);
                     x->page_obj_buf[x->page_obj_idx] = l->val.value.r.num;
                     x->page_obj_idx ++;
                 }
                 else if (l->val.t == eArray)
                 {
-                    pdf_scan_object(&l->val, x);
+                    pdf_obj_scan(&l->val, x);
                 }
                 else if (l->val.t == eDict)
                 {
-                    pdf_scan_object(&l->val, x);
+                    pdf_obj_scan(&l->val, x);
                 }
                 l = l->next;
             }
@@ -610,14 +610,14 @@ pdf_scan_object(pdf_obj *o, pdf_xref_internal *x)
                         if (m < x->page_obj_idx && (oo->value.r.num == x->page_obj_buf[m]))
                             continue;
                     }
-                    pdf_scan_object(oo, x);
+                    pdf_obj_scan(oo, x);
                     pdf_xref_internal_append(x, oo->value.r.num, oo->value.r.gen); // insert a dummy
                     x->page_obj_buf[x->page_obj_idx] = oo->value.r.num;
                     x->page_obj_idx ++;
                 }
                 else if (oo->t == eDict || oo->t == eArray)
                 {
-                    pdf_scan_object(oo, x);
+                    pdf_obj_scan(oo, x);
                 }
             }
 	    }
@@ -633,9 +633,7 @@ pdf_resources_scan(pdf_resources *r, pdf_xref_internal* x)
 {
     if (r->extgstate)
     {
-        // scan for SMask, it's the only thing in extgstate had to be referenced,
-        // the rest of extgstate are written out as  direct objs
-        // Because SMask can have stream data, so can not be inlined
+        // scan for indirect objs
         pdf_obj *gs = r->extgstate;
         pdf_obj_resolve(gs);
         if (gs->t == eDict)
@@ -647,19 +645,9 @@ pdf_resources_scan(pdf_resources *r, pdf_xref_internal* x)
                 pdf_obj *thisgs = &l->val;
                 if (l->val.t == eRef)
                     thisgs = pdf_obj_deref(&l->val);
-                if (thisgs->t == eDict)
+                if (thisgs && thisgs->t == eDict)
                 {
-                    pdf_obj *smask;
-                    if (smask = dict_get(thisgs->value.d.dict, "SMask"))
-                    {
-                        if (smask->t == eRef)
-                        {
-                            pdf_scan_object(smask, x);
-                            pdf_xref_internal_append(x, smask->value.r.num, smask->value.r.gen);
-                            x->page_obj_buf[x->page_obj_idx] = smask->value.r.num;
-                            x->page_obj_idx ++;
-                        }
-                    }
+                    pdf_obj_scan(thisgs, x);
                 }
                 l = l->next;
             }
@@ -680,14 +668,14 @@ pdf_resources_scan(pdf_resources *r, pdf_xref_internal* x)
                 if (l->val.t == eRef)
                 {
                     // recursively scan this obj for more refs
-                    pdf_scan_object(&l->val, x);
+                    pdf_obj_scan(&l->val, x);
                     pdf_xref_internal_append(x, l->val.value.r.num, l->val.value.r.gen);
                     x->page_obj_buf[x->page_obj_idx] = l->val.value.r.num;
                     x->page_obj_idx ++;
                 }
                 else if (l->val.t == eDict || l->val.t == eArray)
                 {
-                    pdf_scan_object(&l->val, x);
+                    pdf_obj_scan(&l->val, x);
                 }
                 l = l->next;
             }
@@ -697,19 +685,19 @@ pdf_resources_scan(pdf_resources *r, pdf_xref_internal* x)
     }
     if (r->xobject)
     {
-	    pdf_scan_object(r->xobject, x);
+	    pdf_obj_scan(r->xobject, x);
     }
     if (r->colorspace)
     {
-	    pdf_scan_object(r->colorspace, x);
+	    pdf_obj_scan(r->colorspace, x);
     }
     if (r->shading)
     {
-	    pdf_scan_object(r->shading, x);
+	    pdf_obj_scan(r->shading, x);
     }
     if (r->pattern)
     {
-	    pdf_scan_object(r->pattern, x);
+	    pdf_obj_scan(r->pattern, x);
     }
 }
 
@@ -734,7 +722,7 @@ pdf_scan_page(pdf_page* pg, pdf_xref_internal* x)
 	    pdf_obj_resolve(pg->contents);
 	    if (pg->contents->t == eArray)
 	    {
-            pdf_scan_object(pg->contents, x);
+            pdf_obj_scan(pg->contents, x);
 	    }
     }
 }
