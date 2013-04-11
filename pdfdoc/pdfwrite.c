@@ -5,6 +5,7 @@
 #endif
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 #include "bplustree.h"
 #include "dict.h"
 #include "pdf.h"
@@ -204,8 +205,8 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
                     {
                         case ')':
                         case '(':
-                        case '\n':
-                        case '\r':
+                            //case '\n':
+                            //case '\r':
                         case '\\':
                             fprintf(f, "%c%c", '\\', o->value.s.buf[i]);
                         break;
@@ -288,9 +289,8 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
                         continue;
                     }
                 }
-                fprintf(f, "/%s ", l->key);
+                fprintf(f, " /%s ", l->key);
                 pdf_obj_write(&l->val, x, f, crypto);
-                fprintf(f, "%s", "\n");
                 l = l->next;
             }
             fprintf(f, "%s", ">>");
@@ -361,10 +361,21 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
         {
             int a = (int)bpt_search(x->entry, o->value.r.num);
             if (a > 0)
+            {
                 fprintf(f, "%d %d R ", a, o->value.r.gen);
+            }
             else
             {
-                fprintf(f, "%d %d R ", o->value.r.num, o->value.r.gen);
+                // write direct object
+                pdf_obj *d = pdf_obj_deref(o);
+                if (d)
+                {
+                    pdf_obj_write(d, x, f, crypto);
+                }
+                else
+                { // Now we are screw'd, the reader will complain ref out of range
+                    fprintf(f, "%d %d R ", o->value.r.num, o->value.r.gen);
+                }
             }
         }
         break;
@@ -458,6 +469,7 @@ pdf_resources_write(pdf_resources *r, pdf_xref_internal *x, FILE *o, pdfcrypto_p
                 dict_array *a;
                 if (t->t == eRef)
                     pdf_obj_resolve(t);
+                assert(t->t == eDict);
                 a = dict_to_array(t->value.d.dict);
                 fprintf(o, "/%s <<", l->key);
                 if (a)
@@ -482,12 +494,12 @@ pdf_resources_write(pdf_resources *r, pdf_xref_internal *x, FILE *o, pdfcrypto_p
                     }
                     pdf_free(a);
                 }
-                fprintf(o, "%s", ">> ");
+                fprintf(o, "%s", ">>");
                 l = l->next;
             }
             // free dict_list
             dict_list_free(ll);
-            fprintf(o, "%s",  ">> ");
+            fprintf(o, "%s",  ">>");
 	    }
     } // extgstate
     if (r->font)
@@ -621,6 +633,39 @@ pdf_resources_scan(pdf_resources *r, pdf_xref_internal* x)
 {
     if (r->extgstate)
     {
+        // scan for SMask, it's the only thing in extgstate had to be referenced,
+        // the rest of extgstate are written out as  direct objs
+        // Because SMask can have stream data, so can not be inlined
+        pdf_obj *gs = r->extgstate;
+        pdf_obj_resolve(gs);
+        if (gs->t == eDict)
+        {
+            dict_list *ll, *l = dict_to_list(gs->value.d.dict);
+            ll = l;
+            while (l && l->key)
+            {
+                pdf_obj *thisgs = &l->val;
+                if (l->val.t == eRef)
+                    thisgs = pdf_obj_deref(&l->val);
+                if (thisgs->t == eDict)
+                {
+                    pdf_obj *smask;
+                    if (smask = dict_get(thisgs->value.d.dict, "SMask"))
+                    {
+                        if (smask->t == eRef)
+                        {
+                            pdf_scan_object(smask, x);
+                            pdf_xref_internal_append(x, smask->value.r.num, smask->value.r.gen);
+                            x->page_obj_buf[x->page_obj_idx] = smask->value.r.num;
+                            x->page_obj_idx ++;
+                        }
+                    }
+                }
+                l = l->next;
+            }
+            // free list
+            dict_list_free(ll);
+        }
     }
     if (r->font)
     {

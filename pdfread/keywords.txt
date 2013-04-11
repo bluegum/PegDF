@@ -7,6 +7,7 @@ Encrypt
 Info
 ID
 # Catalog
+Catalog
 Version
 Extensions
 Pages
