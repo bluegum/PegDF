@@ -14,32 +14,32 @@ do
     if [ -f "$ff" ]
     then
 	allfiles[$i]=\"$file\"
-	echo "\033[32mTesting $file";
-	echo "\033[0m"
+	echo "Testing $file";
 	readpdf "$ff"
 	if [ $? != 0 ]
 	then
 	    allstat[$i]=1
-	    echo "\033[31m $file Failed!"
+	    echo -e "\033[0;31m $file Failed!"
 	else
 	    allstat[$i]=0
-	    echo "\033[35m $file Passed!"
+	    echo -e "\033[0;32m $file Passed!"
 	fi
+    echo -e "\033[0;37m"
 	i=`expr $i + 1`
     fi
 done
-echo "\033[0m"
 #echo ${allstat[@]}
 tput bold
 i=`expr $i - 1`
 for x in `seq 0 $i`
 do
+    echo -en "\033[1;37m"
     echo -n ${allfiles[$x]} ':: '
     if [[ ${allstat[$x]} == '0' ]]
     then
-	echo PASSED
+	echo -e "\033[1;32m PASSED!\033[0;37m"
     else
-	echo FAILED
+	echo -e "\033[1;31m FAILED!\033[0;37m"
     fi
 done
 tput sgr0

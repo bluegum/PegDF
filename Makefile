@@ -82,3 +82,6 @@ $(INSTALL_DIR)/% : $(BIN_DIR)/%
 	strip $@
 
 install   : $(INSTALL_DIR)/picker $(INSTALL_DIR)/pedal $(INSTALL_DIR)/readpdf
+
+check-syntax:
+	gcc -o nul -S ${CHK_SOURCES}

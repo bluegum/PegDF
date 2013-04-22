@@ -1,6 +1,8 @@
 #ifndef PDF_H
 #define PDF_H
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "pdftypes.h"
 
 #define WRITE_PDF_LINEARIZED           0x01
@@ -22,5 +24,9 @@ extern pdf_err pdf_finish(pdf_doc *doc);
 extern pdf_err pdf_page_write(pdf_doc *doc, int i/* pg# */, unsigned long write_flag, pdfcrypto *crypto, int version, char *outf);
 extern int pdf_doc_authenticate_user_password(pdf_doc *doc, char *pw);
 extern pdf_err pdf_doc_process_all(pdf_doc *doc, char *dev, FILE *outf, char *pw);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

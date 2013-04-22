@@ -703,7 +703,7 @@ pdf_resources_scan(pdf_resources *r, pdf_xref_internal* x)
 
 static
 void
-pdf_scan_page(pdf_page* pg, pdf_xref_internal* x)
+pdf_page_scan(pdf_page* pg, pdf_xref_internal* x)
 {
     if (!pg)
         return;
@@ -835,7 +835,7 @@ pdf_page_write(pdf_doc *doc, int i/* pg# */, unsigned long write_flag, pdfcrypto
     if (!xref)
 	    goto done_0;
     pdf_catalog_write(xref, out);
-    pdf_scan_page(doc->pages[i], xref);
+    pdf_page_scan(doc->pages[i], xref);
     pdf_write_indirect_objs(xref, out, crypto);
     pdf_page_obj_write(doc->pages[i], i, write_flag, xref, crypto, out);
 
@@ -969,7 +969,7 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, unsigned long write_flag,
             if (!xref)
                 goto done_0;
             pdf_catalog_write(xref, out);
-            pdf_scan_page(doc->pages[i], xref);
+            pdf_page_scan(doc->pages[i], xref);
             pdf_write_indirect_objs(xref, out, crypto);
             pdf_page_obj_write(doc->pages[i], i, write_flag, xref, crypto, out);
 
@@ -1005,7 +1005,7 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, unsigned long write_flag,
 	    pdf_catalog_write(xref, out);
 	    for (i = pg1st; i <= pglast; i++)
 	    {
-            pdf_scan_page(doc->pages[i], xref);
+            pdf_page_scan(doc->pages[i], xref);
             pdf_write_indirect_objs(xref, out, crypto);
             pdf_page_obj_write(doc->pages[i], i, write_flag, xref, crypto, out);
 	    }
