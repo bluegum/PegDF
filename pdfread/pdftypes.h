@@ -206,48 +206,6 @@ mat_pt(gs_matrix *d, float a, float b, float *a1, float *b1)
       *b1 = a * d->b + b * d->d + d->f;
 }
 
-static inline int
-pdf_to_int(pdf_obj *o)
-{
-      if (!o || (o->t != eInt && o->t != eBool))
-            return 0; // should be NAN
-      return o->value.i;
-}
-// return number of array element
-static inline int
-pdf_to_int_array(pdf_obj *o, int *a)
-{
-      int i, n;
-      if (!o || o->t != eArray)
-            return 0;
-      n = o->value.a.len;
-      for (i = 0; i < n; i++, a++)
-      {
-            if (o->value.a.items[i].t == eInt)
-                  *a = o->value.a.items[i].value.i;
-      }
-      return n;
-}
-
-static inline float
-pdf_to_float(pdf_obj *o)
-{
-      if (!o || (o->t != eInt && o->t != eReal))
-            return 0; // should be NAN
-      if (o->t == eInt)
-            return o->value.i;
-      else
-            return o->value.f;
-}
-
-static inline char*
-pdf_to_string(pdf_obj *o)
-{
-      if (!o || o->t != eString)
-            return 0; // should be NAN
-      return o->value.s.buf;
-}
-
 // paths
 typedef struct path_m_t path_m;
 typedef struct path_l_t path_l;

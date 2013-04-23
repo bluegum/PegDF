@@ -81,9 +81,31 @@ pdf_err pdf_page_load(pdf_doc *doc, pdf_obj *o, pdf_page **page)
         }
     }
     p->group = pdf_group_load(dict_get(d, "Group"));
+    p->cropbox = pdf_dict_get(o, "CropBox");
+    p->bleedbox = pdf_dict_get(o, "BleedBox");
+    p->trimbox = pdf_dict_get(o, "TrimBox");
+    p->artbox = pdf_dict_get(o, "ArtBox");
+    p->boxcolorinfo = pdf_dict_get(o, "BoxColorInfo");
+    p->thumb = pdf_dict_get(o, "Thumb");
+    p->b = pdf_dict_get(o, "b");
+    p->dur = pdf_to_float(pdf_dict_get(o, "Dur"));
+    p->trans = pdf_dict_get(o, "Trans");
+
     p->annots = pdf_annots_load(dict_get(d, "Annots"));
-    p->metadata = (pdf_obj*)dict_get(d, "Metadata");
-    p->pieceinfo = (pdf_obj*)dict_get(d, "PieceInfo");
+    p->aa = pdf_dict_get(o, "AA");
+
+    p->metadata = pdf_dict_get(o, "Metadata");
+    p->pieceinfo = pdf_dict_get(o, "PieceInfo");
+    p->structparents = pdf_to_int(pdf_dict_get(o, "StructParents"));
+    p->id = pdf_to_int(pdf_dict_get(o, "ID"));
+    p->pz = pdf_to_float(pdf_dict_get(o, "PZ"));
+    p->separationinfo = pdf_dict_get(o, "SeparationInfo");
+    p->tabs = pdf_dict_get(o, "Tabs");
+    p->templateinstantiated = pdf_dict_get(o, "TemplateInstantiated");
+    p->pressteps = pdf_dict_get(o, "PresSteps");
+    p->userunit = pdf_to_float(pdf_dict_get(o, "UserUnit"));
+    p->vp = pdf_dict_get(o, "VP");
+    // required depends
     p->lastmodified = (pdf_obj*)dict_get(d, "LastModified");
     return pdf_ok;
 }

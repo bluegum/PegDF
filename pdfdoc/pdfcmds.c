@@ -8,6 +8,7 @@
 #include "gsdraw.h"
 #include "pdffont.h"
 #include "pdfread.h" // for _DMSG
+#include "pdf_priv.h"
 
 pdf_err
 x_colorspace(pdf_page *p, pdf_obj o, int pen)

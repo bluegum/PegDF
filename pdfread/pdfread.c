@@ -34,6 +34,7 @@
 #include "pdfmem.h"
 #include "pdfcrypto.h"
 #include "pdfread.h"
+#include "pdf_priv.h"
 
 extern const char * pdf_keyword_find (register const char *str, register unsigned int len);
 
