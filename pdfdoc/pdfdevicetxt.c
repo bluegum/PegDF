@@ -3,9 +3,10 @@
 #include "pdffilter.h"
 #include "pdfdoc.h"
 #include "pdfdevice.h"
+#include "pdfhelper.h"
 
 static void
-pdf_dev_text_doc_begin(pdf_device *dev)
+pdf_dev_text_doc_begin(pdf_device *dev, pdf_info *info)
 {
 }
 static void

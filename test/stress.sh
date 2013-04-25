@@ -7,15 +7,19 @@ SAVEIFS=$IFS
 i=0
 allfiles=( )
 allstat=( )
+
+READPDF=readpdf
+if [ -f bin/readpdf ] ; then READPDF=bin/readpdf; fi
+
 for file in $1/*.pdf
 do
     ff=${file// /\\ }
-    echo $ff
+#    echo $ff
     if [ -f "$ff" ]
     then
 	allfiles[$i]=\"$file\"
 	echo "Testing $file";
-	readpdf "$ff"
+	${READPDF} "$ff"
 	if [ $? != 0 ]
 	then
 	    allstat[$i]=1

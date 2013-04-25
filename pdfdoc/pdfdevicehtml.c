@@ -6,7 +6,6 @@
 #include "pdfdoc.h"
 #include "pdfdevice.h"
 
-
 typedef struct h5_state_s h5_state;
 typedef enum font_family_e font_family;
 
@@ -32,15 +31,27 @@ static void h5_canvas_create(FILE *f, char *id, byte [3]);
 static void hs_canvas_font_update(pdf_device *d, font_family f, fontname_id id, float scale, int, int);
 static font_family html_find_font(int font_flags);
 
+static void html_info_write(pdf_device *dev, pdf_info *info)
+{
+    if (info->title)
+        fprintf(dev->dest.f, "<title>%s</title>", info->title);
+    if (info->keywords)
+        fprintf(dev->dest.f, "<meta name=\"keywords\" content=\"%s\">", info->keywords);
+    if (info->author)
+        fprintf(dev->dest.f, "<meta name=\"author\" content=\"%s\">", info->author);
+}
+
 static void
-pdf_dev_html_doc_begin(pdf_device *dev)
+pdf_dev_html_doc_begin(pdf_device *dev, pdf_info *i)
 {
       h5_state *s = (h5_state*) dev->dest.other;
       fprintf(dev->dest.f, "%s", "<!DOCTYPE html>");
       fprintf(dev->dest.f, "%s", "<html>");
       fprintf(dev->dest.f, "%s", "<head>");
       fprintf(dev->dest.f, "%s", "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"/>");
-      fprintf(dev->dest.f, "%s", "</head>\n");
+      if (i)
+          html_info_write(dev, i);
+      fprintf(dev->dest.f, "%s", "</head>");
       dev->dest.other = pdf_malloc(sizeof(h5_state));
       s = (h5_state*)dev->dest.other;
       ((h5_state*) dev->dest.other)->fs = 12;

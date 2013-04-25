@@ -301,7 +301,7 @@ pdf_err pdf_doc_process(pdf_doc *d, pdf_device *dev, pdfcrypto_priv* encrypt)
 {
     pdf_err e;
     if (dev)
-        dev->doc_begin(dev);
+        dev->doc_begin(dev, d->trailer->info);
     e = pdf_page_tree_walk(d, dev, encrypt);
     if (dev)
         (dev->doc_end)(dev);
@@ -337,10 +337,10 @@ pdf_info_load(pdf_obj *o, pdf_info **info)
     pdf_obj *a;
     pdf_info *i;
 
+    if (!o)
+        return pdf_ok;
     *info = pdf_malloc(sizeof(pdf_info));
     if (!*info)
-        return pdf_ok;
-    if (!o)
         return pdf_ok;
 
     i = *info;
@@ -696,7 +696,7 @@ pdf_extgstate_load(pdf_obj *o)
     g->LC = pdf_to_int(pdf_dict_get(o, "LC"));
     g->LJ = pdf_to_int(pdf_dict_get(o, "LJ"));
     g->ML = pdf_to_float(pdf_dict_get(o, "ML"));
-    pdf_to_int_array(pdf_dict_get(o, "D"), g->D);
+    pdf_to_float_array(pdf_dict_get(o, "D"), g->D);
     g->RI = pdf_to_string(pdf_dict_get(o, "RI"));
     g->OP = pdf_to_int(pdf_dict_get(o, "OP"));
     g->OPM = pdf_to_int(pdf_dict_get(o, "OPM"));

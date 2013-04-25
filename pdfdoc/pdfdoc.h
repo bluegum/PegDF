@@ -9,10 +9,11 @@
 #include "pdfcrypto.h"
 #include "pdffont.h"
 #include "pdfdevice.h"
+#include "pdfinterp.h"
+#include "pdfhelper.h"
 
 typedef struct pdf_page_s pdf_page;
 //typedef struct pdf_doc_s pdf_doc;
-typedef struct pdf_info_s pdf_info;
 // typedef struct pdf_extgstate_s pdf_extgstate;
 typedef struct pdf_group_s pdf_group;
 typedef struct pdf_mask_s pdf_mask;
@@ -26,7 +27,6 @@ typedef struct pdf_encrypt_s pdf_encrypt;
 typedef struct pdf_cryptfilter_s pdf_cryptfilter;
 typedef struct pdf_stream_s pdf_stream;
 typedef struct pdf_trailer_s pdf_trailer;
-typedef struct pdf_interp_state_s pdf_interp_state;
 typedef struct pdf_extgstate_s pdf_extgstate;
 typedef struct pdf_prs_s pdf_prs;
 
@@ -201,19 +201,6 @@ enum pdf_pagemode_e
     UseAttachments
 };
 
-struct pdf_info_s
-{
-    char *title;
-    char *author;
-    char *subject;
-    char *keywords;
-    char *creator;
-    char *producer;
-    char *creationdate;
-    char *moddate;
-    enum {UNknown, TRue, FAlse} trapped;
-};
-
 struct pdf_doc_s
 {
     // catalog
@@ -372,17 +359,6 @@ struct pdf_trailer_s
     pdf_trailer *last;
 };
 
-// interpreter state
-struct pdf_interp_state_s
-{
-    pdf_device *dev;
-    pdfcrypto_priv *crypto;
-    // font cache in linked list
-    pdf_font *font, *cur_font;
-    //
-    byte path_stk[256*1024];
-};
-
 // short hands
 static inline int pdf_brush_n(pdf_page *p) { return p->s->brush.n; }
 static inline int pdf_pen_n(pdf_page *p) { return p->s->pen.n; }
@@ -412,9 +388,6 @@ extern int pdf_doc_authenticate_user_password(pdf_doc *doc, char *pw);
 extern int pdf_doc_need_passwd(pdf_doc *doc);
 extern pdf_err pdf_write_pdf(pdf_doc *doc, char *infile, char *ofile, unsigned long write_flag, int version, int pg1st, int pglast, char *upw, char *opw);
 extern void pdf_doc_trailer_free(pdf_trailer * tr);
-extern pdf_interp_state *pdf_interpreter_new(pdf_device*, pdfcrypto_priv* encrypt);
-extern void pdf_interpreter_free(pdf_interp_state *i);
-extern void pdf_interpreter_font_insert(pdf_interp_state *, pdf_font *f);
 extern int pdf_character_show(pdf_device* dev, pdf_prs *s, pdf_font *f, gs_matrix *ctm, unsigned char *c, u32 *cid);
 extern pdfcrypto_priv *pdf_crypto_init(pdf_encrypt* encrypt, unsigned char id1[16], char *pw);
 extern void pdf_device_char_show(pdf_device *dev, pdf_font *f, float scale, gs_matrix *ctm, unsigned int cid);
