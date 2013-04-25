@@ -8,10 +8,10 @@
 #include "glyph_name_to_uni.c"
 #include "pdfcrypto.h"
 #include "pdfdoc.h"
+#include "pdf_priv.h"
 
 static const char * get_glyph_name(pdf_font_encoding *e, unsigned int c);
-
-static unsigned int get_cid_simple(unsigned char *c, int *cid) { *cid = c[0];return 1; }
+static unsigned int get_cid_simple(unsigned char *c, unsigned int *cid) { *cid = c[0];return 1; }
 static int unicode_get_stub(pdf_font *f, unsigned int c, unsigned int *uni) { *uni = c; return 1; }
 
 static const int ascii_to_int[] = {
@@ -44,7 +44,7 @@ unsigned int asciihex2int(unsigned char *c)
       }
       return i;
 }
-static unsigned int get_cid_identity(unsigned char *c, int *cid)
+static unsigned int get_cid_identity(unsigned char *c, unsigned int *cid)
 {
       *cid = asciihex2int(c);
       return 4;
@@ -148,7 +148,7 @@ pdf_font_widths_load(pdf_obj *a, pdf_font* f)
       pdf_obj *val, *w = pdf_obj_deref(a);
       if (!w || w->t != eDict)
 	    return;
-      val = dict_get(w->value.d.dict, "Widths");
+      val = pdf_dict_get(w, "Widths");
       if (!val)
       {
 	    f->widths = 0;
@@ -171,10 +171,10 @@ pdf_font_widths_load(pdf_obj *a, pdf_font* f)
 		  f->widths[i] = val->value.a.items[i].value.i;
 	    }
       }
-      val = dict_get(w->value.d.dict, "FirstChar");
+      val = pdf_dict_get(w, "FirstChar");
       if (val)
 	    f->firstchar = val->value.i;
-      val = dict_get(w->value.d.dict, "LastChar");
+      val = pdf_dict_get(w, "LastChar");
       if (val)
 	    f->lastchar = val->value.i;
 }
@@ -238,7 +238,7 @@ pdf_encoding_load(pdf_obj *a, pdf_font_encoding* e)
 	    pdf_obj_resolve(a);
 	    if (!a)
 		  return;
-	    o = dict_get(a->value.d.dict, "BaseEncoding");
+	    o = pdf_dict_get(a, "BaseEncoding");
 	    if (o && obj_is_name(o))
 	    {
 		  goto restart;
@@ -248,7 +248,7 @@ pdf_encoding_load(pdf_obj *a, pdf_font_encoding* e)
 		  e->type = StandardEncoding;
 	    }
 	restart_follow:
-	    o = dict_get(a->value.d.dict, "Differences");
+	    o = pdf_dict_get(a, "Differences");
 	    if (o && o->t == eArray)
 	    {
 		  int i;
@@ -265,7 +265,7 @@ pdf_encoding_load(pdf_obj *a, pdf_font_encoding* e)
 			      i++;
 			      while (obj_is_name(&o->value.a.items[i]))
 			      {
-				    struct glyphlist *gl = glyph_name_to_uni(o->value.a.items[i].value.k, strlen(o->value.a.items[i].value.k));
+				    const struct glyphlist *gl = glyph_name_to_uni(o->value.a.items[i].value.k, strlen(o->value.a.items[i].value.k));
 				    if (gl)
 					  e->differences[j] = gl->name;
 				    if (i++ >= o->value.a.len)
@@ -318,7 +318,7 @@ pdf_font_descriptor_load(pdf_obj *o)
       pdf_obj *val, *a = pdf_obj_deref(o);
       if (!a || a->t != eDict)
 	    return 0;
-      val = dict_get(a->value.d.dict, "Flags");
+      val = pdf_dict_get(a, "Flags");
       if (!val)
       {
 	    return 0;
@@ -327,7 +327,7 @@ pdf_font_descriptor_load(pdf_obj *o)
       {
 	    flags = val->value.i;
       }
-      fontname = dict_get(a->value.d.dict, "FontName");
+      fontname = pdf_dict_get(a, "FontName");
       if (!fontname)
       {
 	    return 0;
@@ -398,7 +398,7 @@ pdf_font_load(pdf_obj *o, int cid2uni, pdfcrypto_priv* encrypt)
 	    return 0;
       f->ref = ref;
       f->next = NULL;
-      a = dict_get(o->value.d.dict, "Subtype");
+      a = pdf_dict_get(o, "Subtype");
       if (a && obj_is_name(a))
       {
 	    // Simple font types
@@ -442,7 +442,7 @@ pdf_font_load(pdf_obj *o, int cid2uni, pdfcrypto_priv* encrypt)
       if (!f->encoding)
 	    goto fail;
       memset(f->encoding, 0, sizeof(pdf_font_encoding));
-      a = dict_get(o->value.d.dict, "Encoding");
+      a = pdf_dict_get(o, "Encoding");
       if ((f->type == Type0) || (f->type == Type2))
       {
 	    if (a)
@@ -477,12 +477,12 @@ pdf_font_load(pdf_obj *o, int cid2uni, pdfcrypto_priv* encrypt)
 	    //
 	    if (f->type == CIDFontType0)
 	    {
-		  a = dict_get(o->value.d.dict, "DescendantFonts");
+		  a = pdf_dict_get(o, "DescendantFonts");
 		  if (!a)
 			goto fail;
 	    }
 #if 0
-	    a = dict_get(o->value.d.dict, "CIDSystemInfo");
+	    a = pdf_dict_get(o, "CIDSystemInfo");
 	    if (!a)
 		  goto fail;
 #endif
@@ -501,7 +501,7 @@ pdf_font_load(pdf_obj *o, int cid2uni, pdfcrypto_priv* encrypt)
       f->tounicode = 0;
       if (cid2uni)
       {
-	    a = dict_get(o->value.d.dict, "ToUnicode");
+	    a = pdf_dict_get(o, "ToUnicode");
 	    if (a)
 	    {
 		  pdf_cmap_tounicode_parse(a, f, encrypt);
@@ -519,7 +519,7 @@ pdf_font_load(pdf_obj *o, int cid2uni, pdfcrypto_priv* encrypt)
 	    }
       }
       // FontDescriptor
-      a = dict_get(o->value.d.dict, "FontDescriptor");
+      a = pdf_dict_get(o, "FontDescriptor");
       if (a)
       {
 	    f->fontdescriptor = pdf_font_descriptor_load(a);
@@ -581,7 +581,7 @@ pdf_font_find(pdf_font* f, int ref)
 }
 
 int
-pdf_character_show(pdf_device* dev, pdf_prs *s, pdf_font *f, gs_matrix *ctm, char *c, unsigned int *c_id)
+pdf_character_show(pdf_device* dev, pdf_prs *s, pdf_font *f, gs_matrix *ctm, unsigned char *c, u32 *c_id)
 {
       u32 cid;
       pdf_font_encoding *enc;

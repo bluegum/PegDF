@@ -415,11 +415,13 @@ extern void pdf_doc_trailer_free(pdf_trailer * tr);
 extern pdf_interp_state *pdf_interpreter_new(pdf_device*, pdfcrypto_priv* encrypt);
 extern void pdf_interpreter_free(pdf_interp_state *i);
 extern void pdf_interpreter_font_insert(pdf_interp_state *, pdf_font *f);
-extern int pdf_character_show(pdf_device* dev, pdf_prs *s, pdf_font *f, gs_matrix *ctm, char *c, unsigned int *cid);
+extern int pdf_character_show(pdf_device* dev, pdf_prs *s, pdf_font *f, gs_matrix *ctm, unsigned char *c, u32 *cid);
 extern pdfcrypto_priv *pdf_crypto_init(pdf_encrypt* encrypt, unsigned char id1[16], char *pw);
 extern void pdf_device_char_show(pdf_device *dev, pdf_font *f, float scale, gs_matrix *ctm, unsigned int cid);
 extern void pdf_device_color_set(pdf_device *d, float *c, pdf_cspacetype cs, int n, int pen);
 extern pdf_err pdf_page_write(pdf_doc *doc, int i/* pg# */, unsigned long write_flag, pdfcrypto_priv *crypto, int version, char *outf);
 extern void pdf_path_add(pdf_extgstate *gs, e_path_kind t, float a, float b, float c, float d, float e, float f);
 extern pdf_err pdf_path_paint(pdf_device *dev, pdf_extgstate *gs, int stroke, int even_odd);
+extern void pdf_update_brush(pdf_page *p);
+
 #endif

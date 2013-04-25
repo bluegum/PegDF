@@ -4,12 +4,14 @@
 #include "gsdraw.h"
 #include "pdffilter.h"
 #include "pdfdoc.h"
+#include "pdf_priv.h"
 
 #define pdf_to_name(o) (o).value.k
 pdf_err
 pdf_colorspace_set(pdf_cspace* cs, pdf_obj *o)
 {
       pdf_obj obj, *data = 0;
+      pdf_obj_resolve(o);
       if (!o)
 	    return pdf_ok;
       if (o->t == eArray)
@@ -22,7 +24,7 @@ pdf_colorspace_set(pdf_cspace* cs, pdf_obj *o)
       }
       else if (o->t == eRef)
       {
-	    pdf_obj *x = pdf_obj_deref(&o);
+	    pdf_obj *x = pdf_obj_deref(o);
 	    obj = *x;
       }
       else
@@ -81,7 +83,7 @@ pdf_colorspace_set(pdf_cspace* cs, pdf_obj *o)
 			pdf_obj *icc = pdf_obj_deref(data);
 			if (icc && icc->t == eDict)
 			{
-			      pdf_obj *a = dict_get(icc->value.d.dict, "N");
+			      pdf_obj *a = pdf_dict_get(icc, "N");
 			      if (a && a->t == eInt)
 				    cs->n = a->value.i;
 			}

@@ -26,9 +26,9 @@ pdf_group_load(pdf_obj *o)
     if (!g)
         return NULL;
     memset(g, 0, sizeof(pdf_group));
-    g->cs = (pdf_obj*)dict_get(o->value.d.dict, "CS");
-    g->i = pdf_to_int(dict_get(o->value.d.dict, "I"));
-    g->k = pdf_to_int(dict_get(o->value.d.dict, "K"));
+    g->cs = pdf_dict_get(o, "CS");
+    g->i = pdf_to_int(pdf_dict_get(o, "I"));
+    g->k = pdf_to_int(pdf_dict_get(o, "K"));
     return g;
 }
 pdf_err
@@ -42,27 +42,26 @@ pdf_err pdf_page_load(pdf_doc *doc, pdf_obj *o, pdf_page **page)
 {
     pdf_page *p;
     pdf_obj *mediabox;
-    dict *d = o->value.d.dict;
     pdf_obj *v;
 
     *page = pdf_malloc(sizeof(pdf_page));
     p = *page;
     memset(p, 0, sizeof(pdf_page));
     // parse tree dict
-    p->parent = dict_get(d, "Parent");
-    mediabox = dict_get(d, "MediaBox");
+    p->parent = pdf_dict_get(o, "Parent");
+    mediabox = pdf_dict_get(o, "MediaBox");
     if (mediabox)
-        p->mediabox = pdf_rect_resolve(mediabox);
+        p->mediabox = pdf_rect_get(mediabox);
     else
     {
         gs_rect *r = doc->get_mediabox(doc);
         if (r)
             p->mediabox = *r;
     }
-    p->resources = pdf_resources_load(dict_get(d, "Resources"));
+    p->resources = pdf_resources_load(pdf_dict_get(o, "Resources"));
     // optionals
-    p->contents = (pdf_obj*)dict_get(d, "Contents");
-    v = (pdf_obj*)dict_get(d, "Rotate");
+    p->contents = pdf_dict_get(o, "Contents");
+    v = (pdf_obj*)pdf_dict_get(o, "Rotate");
     if (v)
     {
         p->rotate = v->value.i;
@@ -80,7 +79,7 @@ pdf_err pdf_page_load(pdf_doc *doc, pdf_obj *o, pdf_page **page)
             p->mediabox.x1 = x;
         }
     }
-    p->group = pdf_group_load(dict_get(d, "Group"));
+    p->group = pdf_group_load(pdf_dict_get(o, "Group"));
     p->cropbox = pdf_dict_get(o, "CropBox");
     p->bleedbox = pdf_dict_get(o, "BleedBox");
     p->trimbox = pdf_dict_get(o, "TrimBox");
@@ -91,7 +90,7 @@ pdf_err pdf_page_load(pdf_doc *doc, pdf_obj *o, pdf_page **page)
     p->dur = pdf_to_float(pdf_dict_get(o, "Dur"));
     p->trans = pdf_dict_get(o, "Trans");
 
-    p->annots = pdf_annots_load(dict_get(d, "Annots"));
+    p->annots = pdf_annots_load(pdf_dict_get(o, "Annots"));
     p->aa = pdf_dict_get(o, "AA");
 
     p->metadata = pdf_dict_get(o, "Metadata");
@@ -106,7 +105,7 @@ pdf_err pdf_page_load(pdf_doc *doc, pdf_obj *o, pdf_page **page)
     p->userunit = pdf_to_float(pdf_dict_get(o, "UserUnit"));
     p->vp = pdf_dict_get(o, "VP");
     // required depends
-    p->lastmodified = (pdf_obj*)dict_get(d, "LastModified");
+    p->lastmodified = pdf_dict_get(o, "LastModified");
     return pdf_ok;
 }
 
@@ -137,15 +136,14 @@ pdf_err pdf_page_tree_load(pdf_doc *d, pdf_obj *o)
     pdf_obj *a, *kids = o;
     if (o->t == eRef)
     {
-        pdf_obj_resolve(o);
-        a = dict_get(o->value.d.dict, "Type");
+        a = pdf_dict_get(o, "Type");
         if (!a)
             return pdf_ok;
         if (obj_is_name(a) && a->value.k)
         {
             if (strcmp(a->value.k, "Pages") == 0)
             {
-                kids = dict_get(o->value.d.dict, "Kids");
+                kids = pdf_dict_get(o, "Kids");
                 if (!kids || ((kids->t != eArray) && (kids->t != eRef)))
                     return pdf_ok;
             }
@@ -165,8 +163,7 @@ pdf_err pdf_page_tree_load(pdf_doc *d, pdf_obj *o)
             return pdf_ok;
         }
     }
-    pdf_obj_resolve(kids);
-    if (kids->t == eDict)
+    if (kids->t == eDict || kids->t == eRef)
     {
         pdf_page_load(d, kids, &d->pages[d->pageidx]);
         d->pageidx += 1;
@@ -250,48 +247,38 @@ gs_rect* pdf_doc_get_mediabox(pdf_doc* doc)
 pdf_doc*
 pdf_doc_load(pdf_trailer *trailer)
 {
-    pdf_obj *rdoc;
     pdf_obj *a, *d, *c, *kids;
     pdf_doc *doc;
     pdf_doc_private *pdoc;
+    int count;
     if (!trailer)
         return NULL;
-    rdoc = trailer->root_obj;
-    pdf_obj_resolve(rdoc);
+    d = trailer->root_obj;
 
-    assert (rdoc);
-    assert (rdoc->t == eDict);
-
-    d = rdoc;
-
-    if (!d || d->t != eDict)
+    if (!d)
         return NULL;
-    a = dict_get(d->value.d.dict, "Pages");
-    if (!a || a->t != eRef)
+    a = pdf_dict_get(d, "Pages");
+    if (!a)
         return NULL;
-    pdf_obj_resolve(a);
-    if (!a || a->t != eDict)
-        return NULL;
-    c = dict_get(a->value.d.dict, "Count");
-    if (!c || c->t != eInt)
+    count = pdf_to_int(pdf_dict_get(a, "Count"));
+    if (!count)
         return NULL;
     pdoc = doc = pdf_malloc(sizeof(pdf_doc_private));
     if (!doc)
         return NULL;
     memset(doc, 0, sizeof(pdf_doc));
-    doc->count = c->value.i;
-    c = dict_get(a->value.d.dict, "MediaBox");
+    doc->count = count;
+    c = pdf_dict_get(a, "MediaBox");
     if (c)
     {
-        pdf_obj_resolve(c);
-        pdoc->mediabox = pdf_rect_resolve(c);
+        pdoc->mediabox = pdf_rect_get(c);
         doc->get_mediabox = pdf_doc_get_mediabox;
     }
     else
     {
         doc->get_mediabox = null_val;
     }
-    kids = dict_get(a->value.d.dict, "Kids");
+    kids = pdf_dict_get(a, "Kids");
     if (!kids || (kids->t != eArray && kids->t != eRef))
     {
         pdf_free(doc);
@@ -355,33 +342,26 @@ pdf_info_load(pdf_obj *o, pdf_info **info)
         return pdf_ok;
     if (!o)
         return pdf_ok;
-    memset(*info, 0, sizeof(pdf_info));
 
-    pdf_obj_resolve(o);
-    if (!o || o->t != eDict)
-    {
-        pdf_free(*info);
-        *info = NULL;
-        return pdf_ok;
-    }
     i = *info;
-    a = (pdf_obj*)dict_get(o->value.d.dict, "Title");
+    memset(*info, 0, sizeof(pdf_info));
+    a = pdf_dict_get(o, "Title");
     if (a) {i->title = pdf_malloc(a->value.s.len+1); memcpy(i->title, a->value.s.buf, a->value.s.len); i->title[a->value.s.len] = 0;}
-    a = (pdf_obj*)dict_get(o->value.d.dict, "Author");
+    a = pdf_dict_get(o, "Author");
     if (a) {i->author = pdf_malloc(a->value.s.len+1); memcpy(i->author, a->value.s.buf, a->value.s.len); i->author[a->value.s.len] = 0;}
-    a = (pdf_obj*)dict_get(o->value.d.dict, "Subject");
+    a = pdf_dict_get(o, "Subject");
     if (a) {i->subject = pdf_malloc(a->value.s.len+1); memcpy(i->subject, a->value.s.buf, a->value.s.len); i->subject[a->value.s.len] = 0;}
-    a = (pdf_obj*)dict_get(o->value.d.dict, "Keywords");
+    a =(pdf_obj*)pdf_dict_get(o, "Keywords");
     if (a) {i->keywords = pdf_malloc(a->value.s.len+1); memcpy(i->keywords, a->value.s.buf, a->value.s.len); i->keywords[a->value.s.len] = 0;}
-    a = (pdf_obj*)dict_get(o->value.d.dict, "Creator");
+    a = (pdf_obj*)pdf_dict_get(o, "Creator");
     if (a) {i->creator = pdf_malloc(a->value.s.len+1); memcpy(i->creator, a->value.s.buf, a->value.s.len); i->creator[a->value.s.len] = 0;}
-    a = (pdf_obj*)dict_get(o->value.d.dict, "Producer");
+    a = pdf_dict_get(o, "Producer");
     if (a) {i->producer = pdf_malloc(a->value.s.len+1); memcpy(i->producer, a->value.s.buf, a->value.s.len); i->producer[a->value.s.len] = 0;}
-    a = (pdf_obj*)dict_get(o->value.d.dict, "CreationDate");
+    a = pdf_dict_get(o, "CreationDate");
     if (a) {i->creationdate = pdf_malloc(a->value.s.len+1); memcpy(i->creationdate, a->value.s.buf, a->value.s.len); i->creationdate[a->value.s.len] = 0;}
-    a = (pdf_obj*)dict_get(o->value.d.dict, "ModDate");
+    a = pdf_dict_get(o, "ModDate");
     if (a) {i->moddate = pdf_malloc(a->value.s.len+1); memcpy(i->moddate, a->value.s.buf, a->value.s.len); i->moddate[a->value.s.len] = 0;}
-    a = (pdf_obj*)dict_get(o->value.d.dict, "Trapped");
+    a = pdf_dict_get(o, "Trapped");
     i->trapped = UNknown;
     if (a)
     {
@@ -422,7 +402,7 @@ pdf_cf_load(pdf_obj *o, pdf_cryptfilter **cf)
         return pdf_ok;
     if (obj_is_name(o))
         return pdf_ok;
-    a = dict_get(o->value.d.dict, "StdCF"); // Dont support private CF
+    a = pdf_dict_get(o, "StdCF"); // Dont support private CF
     if (!a)
         return pdf_ok;
     o = a;
@@ -435,7 +415,7 @@ pdf_cf_load(pdf_obj *o, pdf_cryptfilter **cf)
     if (!o)
         return pdf_ok;
     memset(*cf, 0, sizeof(pdf_cryptfilter));
-    a = dict_get(o->value.d.dict, "CFM");
+    a = pdf_dict_get(o, "CFM");
     if (a && obj_is_name(a))
     {
         if (strcmp(a->value.k, "V2") == 0)
@@ -455,7 +435,7 @@ pdf_cf_load(pdf_obj *o, pdf_cryptfilter **cf)
             (*cf)->cfm = eCryptNone; // better return error ?
         }
     }
-    a = dict_get(o->value.d.dict, "AuthEvent");
+    a = pdf_dict_get(o, "AuthEvent");
     if (a && obj_is_name(a))
     {
         if (strcmp(a->value.k, "EFOpen") == 0)
@@ -467,7 +447,7 @@ pdf_cf_load(pdf_obj *o, pdf_cryptfilter **cf)
             (*cf)->authevent = eDocOpen;
         }
     }
-    a = dict_get(o->value.d.dict, "Length");
+    a = pdf_dict_get(o, "Length");
     if (a && a->t == eInt)
     {
         (*cf)->length = a->value.i;
@@ -479,23 +459,20 @@ pdf_resources*
 pdf_resources_load(pdf_obj *o)
 {
     pdf_resources *r;
-    dict *d;
-    if (!o || (o->t != eDict && o->t != eRef))
+    if (!o)
         return NULL;
 
-    pdf_obj_resolve(o);
     r = pdf_malloc(sizeof(pdf_resources));
     if (!r)
         return NULL;
-    d = o->value.d.dict;
-    r->extgstate = dict_get(d, "ExtGState");
-    r->colorspace = dict_get(d, "ColorSpace");
-    r->pattern = dict_get(d, "Pattern");
-    r->shading = dict_get(d, "Shading");
-    r->xobject = dict_get(d, "XObject");
-    r->font = dict_get(d, "Font");
-    r->procset = dict_get(d, "ProcSet");
-    r->properties = dict_get(d, "Properties");
+    r->extgstate = pdf_dict_get(o, "ExtGState");
+    r->colorspace = pdf_dict_get(o, "ColorSpace");
+    r->pattern = pdf_dict_get(o, "Pattern");
+    r->shading = pdf_dict_get(o, "Shading");
+    r->xobject = pdf_dict_get(o, "XObject");
+    r->font = pdf_dict_get(o, "Font");
+    r->procset = pdf_dict_get(o, "ProcSet");
+    r->properties = pdf_dict_get(o, "Properties");
     return r;
 }
 
@@ -505,38 +482,39 @@ pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
     pdf_filter *last = NULL, *raw = NULL, *crypt = NULL;
     pdf_stream *s = 0;
     sub_stream *ss;
-    pdf_obj *x, *xx, *y;
+    pdf_obj *x, *xx;
     int m, mm;
 
-    if (o && o->t == eRef)
-    {
+    if (o && o->t == eRef) {
         numobj = o->value.r.num;
         numgen = o->value.r.gen;
     }
-    // fill stream info
+    else if (o->t != eDict) {
+        return NULL;
+    }
     pdf_obj_resolve(o);
-    y = o;
-    if (!y)
+    if (!o)
     {
         return NULL;
     }
+    // fill stream info
     if (o->t == eDict)
     {
-        x = dict_get(y->value.d.dict, "Length");
-        if (!x || (x->t != eInt && x->t != eRef))
+        int length;
+        length = pdf_to_int(pdf_dict_get(o, "Length"));
+        if (!length)
         {
             fprintf(stderr, "%s\n", "Invalid stream.");
             return NULL;
         }
-        pdf_obj_resolve(x);
         s = pdf_malloc(sizeof(pdf_stream));
         if (!s)
             goto fail;
         memset(s, 0, sizeof(pdf_stream));
-        s->length = x->value.i;
+        s->length = length;
         // make raw filter
         /// internal struct. raw stream object
-        ss = y->value.d.dict->stream;
+        ss = o->value.d.dict->stream;
         if (!ss)
             goto fail;
         ss->len = s->length;
@@ -553,17 +531,19 @@ pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
     }
     else
         goto fail;
-    if (0)//(ss->reset)(ss) != 0)
+#if 0
+    if (ss->reset)(ss) != 0)
     {
         pdf_free(ss);
         // a little haxie, because we SHOULD NOT call global "parser_inst"
-        ss = (parser_inst->create_stream)(NULL, y->value.d.stm_offset, s->length, 0, 0);
-        y->value.d.dict->stream = ss;
+        ss = (parser_inst->create_stream)(NULL, o->value.d.stm_offset, s->length, 0, 0);
+        o->value.d.dict->stream = ss;
         if (!ss)
         {
             goto fail;
         }
     }
+#endif
     raw = pdf_rawfilter_new(ss);
     // chain crypto filter
     if (crypto)
@@ -584,14 +564,14 @@ pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
             goto fail;
         crypt->next = raw;
     }
-    if (y->t == eString)
+    if (o->t == eString)
     {
         last = (crypt)?crypt:raw;
         goto done;
     }
 
     // chain the rest
-    x = dict_get(y->value.d.dict, "Filter");
+    x = pdf_dict_get(o, "Filter");
     last = (crypt)?crypt:raw;
     if (!x)
     {
@@ -709,34 +689,32 @@ pdf_extgstate*
 pdf_extgstate_load(pdf_obj *o)
 {
     pdf_extgstate *g;
-    dict *d;
 
     if (!o || (o->t != eDict && o->t != eRef))
         return NULL;
-    pdf_obj_resolve(o);
     g = pdf_malloc(sizeof(pdf_extgstate));
     if (!g)
         return NULL;
     memset(g, 0, sizeof(pdf_extgstate));
-    d = o->value.d.dict;
+
     // Todo: check default value
-    g->LW = pdf_to_float(dict_get(d, "LW"));
-    g->LC = pdf_to_int(dict_get(d, "LC"));
-    g->LJ = pdf_to_int(dict_get(d, "LJ"));
-    g->ML = pdf_to_float(dict_get(d, "ML"));
-    pdf_to_int_array(dict_get(d, "D"), g->D);
-    g->RI = pdf_to_string(dict_get(d, "RI"));
-    g->OP = pdf_to_int(dict_get(d, "OP"));
-    g->OPM = pdf_to_int(dict_get(d, "OPM"));
-    g->op = pdf_to_int(dict_get(d, "op"));
-    g->BM = dict_get(d, "BM");
-    g->SA = pdf_to_int(dict_get(d, "SA"));
+    g->LW = pdf_to_float(pdf_dict_get(o, "LW"));
+    g->LC = pdf_to_int(pdf_dict_get(o, "LC"));
+    g->LJ = pdf_to_int(pdf_dict_get(o, "LJ"));
+    g->ML = pdf_to_float(pdf_dict_get(o, "ML"));
+    pdf_to_int_array(pdf_dict_get(o, "D"), g->D);
+    g->RI = pdf_to_string(pdf_dict_get(o, "RI"));
+    g->OP = pdf_to_int(pdf_dict_get(o, "OP"));
+    g->OPM = pdf_to_int(pdf_dict_get(o, "OPM"));
+    g->op = pdf_to_int(pdf_dict_get(o, "op"));
+    g->BM = pdf_dict_get(o, "BM");
+    g->SA = pdf_to_int(pdf_dict_get(o, "SA"));
     // font
     // bg
-    g->CA = pdf_to_float(dict_get(d, "CA"));
-    g->ca = pdf_to_float(dict_get(d, "ca"));
-    g->AIS = pdf_to_int(dict_get(d, "AIS"));
-    g->TK = pdf_to_int(dict_get(d, "TK"));
+    g->CA = pdf_to_float(pdf_dict_get(o, "CA"));
+    g->ca = pdf_to_float(pdf_dict_get(o, "ca"));
+    g->AIS = pdf_to_int(pdf_dict_get(o, "AIS"));
+    g->TK = pdf_to_int(pdf_dict_get(o, "TK"));
     return g;
 }
 
@@ -760,26 +738,23 @@ pdf_annots*
 pdf_annots_load(pdf_obj* o)
 {
     pdf_annots *a=NULL, *first=NULL, *last = NULL;
-    dict *d;
     int i;
 
     if (!o || (o->t != eArray && o->t != eRef))
         return NULL;
 
-    pdf_obj_resolve(o);
-
     for (i = 0; i < o->value.a.len; i++)
     {
         pdf_obj *t = &o->value.a.items[i];
-        pdf_obj_resolve(t);
+        if (!t)
+            continue;
         a = pdf_malloc(sizeof(pdf_annots));
         if (!a)
             return NULL;
         memset(a, 0, sizeof(pdf_annots));
-        d = t->value.d.dict;
         // load annotation node
-        a->subtype = pdf_key_resolve(dict_get(d, "SubType"));
-        a->rect = pdf_rect_resolve(dict_get(d, "Rect"));
+        a->subtype = pdf_key_resolve(pdf_dict_get(o, "SubType"));
+        a->rect = pdf_rect_get(pdf_dict_get(o, "Rect"));
         // make linked list
         if (last)
             last->next = a;

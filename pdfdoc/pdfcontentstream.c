@@ -196,9 +196,6 @@ s_buffer_stream_open(pdf_obj *contents, pdfcrypto_priv * encrypt, pdf_stream *ss
         return 0;
     num = cs->value.r.num;
     gen = cs->value.r.gen;
-    pdf_obj_resolve(cs);
-    if (!cs)
-        return 0;
     s = pdf_malloc(sizeof(buffer_stream));
     if (!s)
         return 0;

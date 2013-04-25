@@ -1,15 +1,16 @@
 #ifndef PDF_PRIV_H
 #define PDF_PRIV_H
 
+#include "dict.h"
 #include "pdfindex.h"
 
 static inline gs_rect
-pdf_rect_resolve(pdf_obj *o)
+pdf_rect_get(pdf_obj *o)
 {
     gs_rect r={0,0,0,0};
+    pdf_obj_resolve(o);
     if (!o || (o->t != eArray && o->t != eRef))
         return r;
-    pdf_obj_resolve(o);
     // should handle floating point value as well.
     if (o->value.a.items[0].t == eInt)
 	    r.x0 = o->value.a.items[0].value.i;
@@ -84,7 +85,6 @@ pdf_dict_get(pdf_obj *o, char *s)
     if (!o || o->t != eDict)
         return 0;
     a = dict_get(o->value.d.dict, s);
-    pdf_obj_resolve(a);
     return a;
 }
 

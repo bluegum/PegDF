@@ -45,7 +45,7 @@ struct pdf_font_encoding_s
       pdf_font_encoding_type type;
       pdf_obj *baseencoding;
       const char **differences;
-      int (*get_cid)(unsigned char*s, unsigned int *code);
+      unsigned int (*get_cid)(unsigned char*s, unsigned int *code);
       const char * (*get_glyph_name)(pdf_font_encoding *e, unsigned int code);
 };
 
@@ -113,7 +113,7 @@ struct pdf_font_s
       // private
       int ref;
       pdf_font* next;
-      int (*unicode_get)(pdf_font *, unsigned int char_code, unsigned char *unicode); // return the number of unicodes, normally 1.
+      int (*unicode_get)(pdf_font *, unsigned int char_code, unsigned int *unicode); // return the number of unicodes, normally 1.
 };
 
 extern pdf_font *pdf_font_load(pdf_obj *o, int, pdfcrypto_priv* encrypt);
@@ -126,5 +126,6 @@ extern float pdf_font_widths_get(pdf_font* f, u32 cid);
 extern int pdf_font_flags_get(pdf_font *f);
 extern char *pdf_font_basefont_get(pdf_font *f);
 extern fontname_id pdf_font_basefont_id_get(pdf_font *f);
+extern pdf_font* pdf_font_find(pdf_font* f, int ref);
 
 #endif // PDFFONT_H
