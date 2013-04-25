@@ -51,6 +51,25 @@ pdf_to_string(pdf_obj *o)
         return 0;
     return o->value.s.buf;
 }
+
+static inline char*
+pdf_to_name(pdf_obj *o)
+{
+    pdf_obj_resolve(o);
+    if (!o || (o->t != eKey && o->t != eName))
+        return 0;
+    return o->value.k;
+}
+
+static inline pdf_obj*
+pdf_to_dict(pdf_obj *o)
+{
+    pdf_obj_resolve(o);
+    if (!o || o->t != eDict)
+        return 0;
+    return o;
+}
+
 static inline int
 pdf_to_int(pdf_obj *o)
 {
@@ -58,6 +77,15 @@ pdf_to_int(pdf_obj *o)
     if (!o || (o->t != eInt && o->t != eBool))
         return 0; // should be NAN
     return o->value.i;
+}
+
+static inline int
+pdf_to_arraylen(pdf_obj *o)
+{
+    pdf_obj_resolve(o);
+    if (!o || (o->t != eArray))
+        return 0; // should be NAN
+    return o->value.a.len;
 }
 
 // return number of array element
@@ -73,6 +101,25 @@ pdf_to_int_array(pdf_obj *o, int *a)
     {
         if (o->value.a.items[i].t == eInt)
             *a = o->value.a.items[i].value.i;
+    }
+    return n;
+}
+
+// return number of array element
+static inline int
+pdf_to_float_array(pdf_obj *o, float *a)
+{
+    int i, n;
+    pdf_obj_resolve(o);
+    if (!o || o->t != eArray)
+        return 0;
+    n = o->value.a.len;
+    for (i = 0; i < n; i++, a++)
+    {
+        if (o->value.a.items[i].t == eInt)
+            *a = o->value.a.items[i].value.i;
+        else if (o->value.a.items[i].t == eReal)
+            *a = o->value.a.items[i].value.f;
     }
     return n;
 }

@@ -113,7 +113,7 @@ struct pdf_font_s
       // private
       int ref;
       pdf_font* next;
-      int (*unicode_get)(pdf_font *, unsigned int char_code, unsigned int *unicode); // return the number of unicodes, normally 1.
+      int (*unicode_get)(pdf_font *, unsigned int char_code, unsigned char *unicode); // return the number of unicodes, normally 1.
 };
 
 extern pdf_font *pdf_font_load(pdf_obj *o, int, pdfcrypto_priv* encrypt);
