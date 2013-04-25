@@ -88,6 +88,15 @@ pdf_to_arraylen(pdf_obj *o)
     return o->value.a.len;
 }
 
+static inline pdf_obj*
+pdf_get_array_item(pdf_obj *o, int i)
+{
+    pdf_obj_resolve(o);
+    if (!o || (o->t != eArray))
+        return 0; // should be NAN
+    return &o->value.a.items[i];
+}
+
 // return number of array element
 static inline int
 pdf_to_int_array(pdf_obj *o, int *a)
@@ -134,5 +143,8 @@ pdf_dict_get(pdf_obj *o, char *s)
     a = dict_get(o->value.d.dict, s);
     return a;
 }
+
+extern unsigned int asciihex2int(unsigned char *c);
+extern unsigned char asciihex2byte(unsigned char *c);
 
 #endif

@@ -40,7 +40,7 @@ struct pdf_mask_s
 
 struct pdf_group_s
 {
-    void *cs;
+    pdf_obj *cs;
     int i;
     int k;
 };

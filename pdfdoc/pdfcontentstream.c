@@ -10,6 +10,7 @@
 #include "pdfdoc.h"
 #include "pdfcmds.h"
 #include "dict.h"
+#include "pdf_priv.h"
 
 extern const char * pdf_keyword_find (register const char *str, register unsigned int len);
 
@@ -167,29 +168,26 @@ s_buffer_stream_open(pdf_obj *contents, pdfcrypto_priv * encrypt, pdf_stream *ss
 {
     buffer_stream *s;
     pdf_obj *cs = contents;
-    int i, n;
+    int i, n = 0;
     int num, gen;
 
-  restart:
-    if (cs->t == eArray)
-    {
-        n = cs->value.a.len;
-        cs = &cs->value.a.items[0];
-    }
-    else if (cs->t == eRef)
-    {
+    if (cs->t == eRef) {
         pdf_obj *csa = pdf_obj_deref(cs);
-        if (csa->t == eArray)
-        {
+        if (csa->t == eArray) {
             cs = csa;
             contents = csa;
-            goto restart;
         }
-        n = 1;
-        cs = contents;
+        else {
+            n = 1;
+            cs = contents;
+        }
     }
-    else
-    {
+
+    if (cs->t == eArray) {
+        n = pdf_to_arraylen(cs);
+        cs = pdf_get_array_item(cs, 0);
+    }
+    else if (n== 0) {
         return 0;
     }
     if (cs->t != eRef)

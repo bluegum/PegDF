@@ -33,6 +33,14 @@ static const int ascii_to_int[] = {
     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 };
 
+unsigned char asciihex2byte(unsigned char *c)
+{
+    unsigned char i;
+    i = ((ascii_to_int[c[0]]<<4) +
+         (ascii_to_int[c[1]]));
+    return i;
+}
+
 unsigned int asciihex2int(unsigned char *c)
 {
     unsigned int i;

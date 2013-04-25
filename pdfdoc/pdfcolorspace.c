@@ -10,90 +10,79 @@
 pdf_err
 pdf_colorspace_set(pdf_cspace* cs, pdf_obj *o)
 {
-      pdf_obj obj, *data = 0;
-      pdf_obj_resolve(o);
-      if (!o)
-	    return pdf_ok;
-      if (o->t == eArray)
-      {
-	    obj = o->value.a.items[0];
-      }
-      else if (obj_is_name(o))
-      {
+    pdf_obj obj, *icc = 0;
+    pdf_obj_resolve(o);
+    if (!o)
+	    return pdf_op_err;
+    if (o->t == eArray)
+    {
+	    obj = *(pdf_get_array_item(o, 0));
+    }
+    else if (obj_is_name(o))
+    {
 	    obj = *o;
-      }
-      else if (o->t == eRef)
-      {
-	    pdf_obj *x = pdf_obj_deref(o);
-	    obj = *x;
-      }
-      else
-      {
+    }
+    else
+    {
 	    return pdf_op_err;
-      }
-      if (!strcmp(pdf_to_name(obj), "Pattern"))
+    }
+    if (!strcmp(pdf_to_name(obj), "Pattern"))
 	    cs->t = Pattern;
-      else if (!strcmp(pdf_to_name(obj), "G"))
+    else if (!strcmp(pdf_to_name(obj), "G"))
 	    cs->t = DeviceGray;
 
-      else if (!strcmp(pdf_to_name(obj), "RGB"))
+    else if (!strcmp(pdf_to_name(obj), "RGB"))
 	    cs->t = DeviceRGB;
 
-      else if (!strcmp(pdf_to_name(obj), "CMYK"))
+    else if (!strcmp(pdf_to_name(obj), "CMYK"))
 	    cs->t = DeviceCMYK;
 
-      else if (!strcmp(pdf_to_name(obj), "DeviceGray"))
+    else if (!strcmp(pdf_to_name(obj), "DeviceGray"))
 	    cs->t = DeviceGray;
 
-      else if (!strcmp(pdf_to_name(obj), "DeviceRGB"))
+    else if (!strcmp(pdf_to_name(obj), "DeviceRGB"))
 	    cs->t = DeviceRGB;
 
-      else if (!strcmp(pdf_to_name(obj), "DeviceCMYK"))
+    else if (!strcmp(pdf_to_name(obj), "DeviceCMYK"))
 	    cs->t = DeviceCMYK;
 
-      else if (!strcmp(pdf_to_name(obj), "Separation"))
+    else if (!strcmp(pdf_to_name(obj), "Separation"))
 	    cs->t = Separation;
-      else if (!strcmp(pdf_to_name(obj), "ICCBased"))
-      {
+    else if (!strcmp(pdf_to_name(obj), "ICCBased"))
+    {
 	    cs->t = ICCBased;
-	    if (o->value.a.len >= 2)
-		  data = &o->value.a.items[1];
-      }
-      else
-      {
+	    if (pdf_to_arraylen(o) >= 2)
+            icc = pdf_get_array_item(o, 1);
+    }
+    else
+    {
 	    return pdf_op_err;
-      }
+    }
 
-      switch (cs->t)
-      {
+    switch (cs->t)
+    {
 	    case DeviceGray: case Separation:
-		  cs->n = 1;
-		  break;
+            cs->n = 1;
+            break;
 	    case DeviceRGB:
-		  cs->n = 3;
-		  break;
+            cs->n = 3;
+            break;
 	    case DeviceCMYK:
-		  cs->n = 4;
-		  break;
+            cs->n = 4;
+            break;
 	    case ICCBased:
 	    {
-		  cs->n = 1;
-		  if (data)
-		  {
-			pdf_obj *icc = pdf_obj_deref(data);
-			if (icc && icc->t == eDict)
-			{
-			      pdf_obj *a = pdf_dict_get(icc, "N");
-			      if (a && a->t == eInt)
-				    cs->n = a->value.i;
-			}
-			cs->priv = data;
-		  }
-		  break;
-	    }
+            cs->n = 1;
+            if (icc)
+            {
+                cs->n = pdf_to_int(pdf_dict_get(icc, "N"));
+            }
+            cs->priv = icc;
+        }
+        break;
 	    default:
-		  cs->n = 1;
-		  break;
-      }
-      return pdf_ok;
+            cs->n = 1;
+            break;
+    }
+    return pdf_ok;
 }

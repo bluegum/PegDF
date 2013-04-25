@@ -60,15 +60,38 @@ int push(e_pdf_kind t, double n, char *s)
         case eKey:
 	    {
             const char *k;
-            if (k = pdf_keyword_find(s, strlen(s)))
+            char buf[1024];
+            int len;
+
+            if (strchr(s, '#')) {
+                char *p = s;
+                char *d = buf;
+                while (*p) {
+                    if (*p == '#' && isxdigit(p[1]) && isxdigit(p[2])) {
+                        *d++ = asciihex2byte(p+1);
+                        p += 3;
+                    }
+                    else {
+                        *d++ = *p++;
+                    }
+                }
+                *d = 0;
+                len = d - buf;
+            }
+            else {
+                strcpy(buf, s);
+                len = strlen(buf);
+            }
+
+            if (k = pdf_keyword_find(buf, len))
             {
-                parser_inst->stack[parser_inst->stackp].value.k = k;
+                parser_inst->stack[parser_inst->stackp].value.k = (char*)k;
             }
             else
             {
                 parser_inst->stack[parser_inst->stackp].t = eName;
-                parser_inst->stack[parser_inst->stackp].value.k = pdf_malloc(strlen(s)+1);
-                memcpy(parser_inst->stack[parser_inst->stackp].value.k, s, strlen(s)+1);
+                parser_inst->stack[parser_inst->stackp].value.k = pdf_malloc(len + 1);
+                memcpy(parser_inst->stack[parser_inst->stackp].value.k, buf, len + 1);
             }
             break;
 	    }

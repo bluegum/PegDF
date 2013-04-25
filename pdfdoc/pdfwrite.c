@@ -164,6 +164,12 @@ pdf_trailer_write(pdf_xref_internal *x, int startxref, FILE *o)
 }
 
 static void
+pdf_key_int_write(char *k, int i, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
+{
+    fprintf(f, "/%s %d\n", k, i);
+}
+
+static void
 pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
 {
     int i;
@@ -384,6 +390,14 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
     }
 }
 
+static void
+pdf_key_obj_write(char *k, pdf_obj *o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
+{
+    fprintf(f, "/%s ", k);
+    pdf_obj_write(o, x, f, crypto);
+
+}
+
 static
 int
 pdf_page_contents_write(pdf_obj *content, unsigned long write_flag, pdf_xref_internal *xref, FILE *out, pdfcrypto_priv *crypto)
@@ -446,6 +460,22 @@ pdf_page_contents_write(pdf_obj *content, unsigned long write_flag, pdf_xref_int
     xref->xref->offsets[xref->xref->cur] = off;
     xref->xref->cur ++;
     return content_ref;
+}
+
+static
+void
+pdf_group_write(pdf_group *g, pdf_xref_internal *x, FILE *o, pdfcrypto_priv *crypto)
+{
+    if (!g)
+        return;
+    fprintf(o, "/%s<<", "Group");
+    if (g->cs)
+    {
+	    pdf_key_obj_write("CS", g->cs, x, o, crypto);
+    }
+    pdf_key_int_write("I", g->i, x, o, crypto);
+    pdf_key_int_write("K", g->k, x, o, crypto);
+    fprintf(o, ">>\n");
 }
 
 static
@@ -539,7 +569,7 @@ pdf_resources_write(pdf_resources *r, pdf_xref_internal *x, FILE *o, pdfcrypto_p
         fprintf(o, "%s", "\n");
     }
     // end resources
-    fprintf(o, "%s",  ">> ");
+    fprintf(o, "%s",  ">>\n");
 }
 
 static
@@ -714,6 +744,7 @@ pdf_page_scan(pdf_page* pg, pdf_xref_internal* x)
     }
     if (pg->group)
     {
+        pdf_obj_scan(pg->group->cs, x);
     }
     //if (pg->contents) // conflicting with content writer
     // pdf_page_contents_write() resolves and write contents array
@@ -797,6 +828,10 @@ pdf_page_obj_write(pdf_page *page, int pgidx, unsigned long write_flag, pdf_xref
     if (page->resources)
     {
         pdf_resources_write(page->resources, xref, out, crypto);
+    }
+    if (page->group)
+    {
+        pdf_group_write(page->group, xref, out, crypto);
     }
     if (content_ref != -1)
     {

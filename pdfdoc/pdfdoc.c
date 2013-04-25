@@ -20,7 +20,7 @@ static inline pdf_group*
 pdf_group_load(pdf_obj *o)
 {
     pdf_group *g;
-    if (!o || o->t != eDict)
+    if (!o)
         return NULL;
     g = pdf_malloc(sizeof(pdf_group));
     if (!g)
@@ -406,14 +406,9 @@ pdf_cf_load(pdf_obj *o, pdf_cryptfilter **cf)
     if (!a)
         return pdf_ok;
     o = a;
-    pdf_obj_resolve(o);
-    if (o->t != eDict)
-        return pdf_ok;
     *cf = pdf_malloc(sizeof(pdf_cryptfilter));
     if (!*cf)
         return pdf_mem_err;
-    if (!o)
-        return pdf_ok;
     memset(*cf, 0, sizeof(pdf_cryptfilter));
     a = pdf_dict_get(o, "CFM");
     if (a && obj_is_name(a))
@@ -493,8 +488,7 @@ pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
         return NULL;
     }
     pdf_obj_resolve(o);
-    if (!o)
-    {
+    if (!o) {
         return NULL;
     }
     // fill stream info
@@ -726,14 +720,6 @@ pdf_err pdf_extgstate_free(pdf_extgstate*g)
     return pdf_ok;
 }
 
-static inline char*
-pdf_key_resolve(pdf_obj*o)
-{
-    if (!o || (!obj_is_name(o)))
-        return NULL;
-    return o->value.k;
-}
-
 pdf_annots*
 pdf_annots_load(pdf_obj* o)
 {
@@ -753,7 +739,7 @@ pdf_annots_load(pdf_obj* o)
             return NULL;
         memset(a, 0, sizeof(pdf_annots));
         // load annotation node
-        a->subtype = pdf_key_resolve(pdf_dict_get(o, "SubType"));
+        a->subtype = pdf_to_name(pdf_dict_get(o, "SubType"));
         a->rect = pdf_rect_get(pdf_dict_get(o, "Rect"));
         // make linked list
         if (last)
