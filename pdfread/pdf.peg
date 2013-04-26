@@ -84,6 +84,7 @@ OBJ	<- DELIM NUM  NUM  'obj' DELIM   { push(eObjMarker, 0, NULL); }
 	/ KEY
 	/ STRING
 	/ HEXSTR
+    / KWORD
 	)* DELIM
 	'endobj'  {pop_obj();} DELIM
 
