@@ -34,7 +34,13 @@ pdf_colorspace_set(pdf_cspace* cs, pdf_obj *o)
     else if (!strcmp(pdf_to_name(obj), "RGB"))
 	    cs->t = DeviceRGB;
 
+    else if (!strcmp(pdf_to_name(obj), "CalRGB"))
+	    cs->t = DeviceRGB;
+
     else if (!strcmp(pdf_to_name(obj), "CMYK"))
+	    cs->t = DeviceCMYK;
+
+    else if (!strcmp(pdf_to_name(obj), "CalCMYK"))
 	    cs->t = DeviceCMYK;
 
     else if (!strcmp(pdf_to_name(obj), "DeviceGray"))

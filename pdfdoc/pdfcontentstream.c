@@ -187,7 +187,7 @@ s_buffer_stream_open(pdf_obj *contents, pdfcrypto_priv * encrypt, pdf_stream *ss
         n = pdf_to_arraylen(cs);
         cs = pdf_get_array_item(cs, 0);
     }
-    else if (n== 0) {
+    if (n== 0) {
         return 0;
     }
     if (cs->t != eRef)
@@ -750,20 +750,26 @@ static int
 x_scn(pdf_page *p, pdf_obj *stk, int pen)
 {
     int n;
+    pdf_cspacetype t;
+
     stk--;
     if (pen)
     {
         n = pdf_pen_n(p);
+        t = p->s->pen.t;
     }
     else
     {
         n = pdf_brush_n(p);
+        t = p->s->brush.t;
     }
-    if (n == 1 && obj_is_name(stk))
+    if (t == Pattern && n == 1 && obj_is_name(stk))
     {
         pdf_obj_delete(stk);
+        return 1;
     }
-    return n;
+    else
+        return 0;
 }
 /////////////////////////////////////////////////////////////////////////////////
 // Content Stream Parser
@@ -1169,6 +1175,9 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                 break;
                                 case TWO_HASH('S', 'C'):
                                 {
+                                    int n = pdf_pen_n(p);
+                                    //x_sc(p);
+                                    POP_N(n);
                                     // x_SC();
                                 }
                                 break;

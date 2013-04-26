@@ -122,7 +122,7 @@ GARBAGE		<- . !('startxref' / 'xref'/
 POSITIVE       	<- < [0-9]+ > SPACE*
 NUM	       	<- < [-+]?[0-9]+ !['.'] > DELIM {push(eInt,atoi(yytext), NULL);}
 REAL	       	<- < [-+]?[0-9]* '.' [0-9]+ > DELIM {push(eReal,atof(yytext), NULL);}
-ALPHANUM       	<- [a-zA-Z0-9*#+_,.:~\-]
+ALPHANUM       	<- [a-zA-Z0-9*#+_,\'?@&\"\\.:;~\-|=!]
 COMMENT		<- < '%'+ (!EOL .)* EOL DELIM > {pop_comment(yytext);}
 SPACE		<- ' ' / '\t' / EOL
 EOL		<- '\r\n' / '\r' / '\n'
@@ -140,7 +140,8 @@ XREF_ENTRY_FLAG <- (
 		   ) {push(eInt, yytext[0], NULL);}
 KWORD		<- ( 'false' {push(eBool, 0, NULL);}
 		/ 'true'  { push (eBool, 1, NULL); }
-		/ 'null') DELIM
+		/ 'null'  { push (eNull, 0, 0); }
+        ) DELIM
 ID		<- (!SPACE !EOL .)* DELIM
 
 #OCT		<- '\\' [0-2] [0-7] [0-7]

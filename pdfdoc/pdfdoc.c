@@ -943,7 +943,7 @@ pdf_interpreter_free(pdf_interp_state *i)
 void
 pdf_interpreter_font_insert(pdf_interp_state *i, pdf_font *f)
 {
-    if (i)
+    if (i && f)
     {
         // insert into head
         f->next = i->font;
