@@ -11,3 +11,7 @@ pkgs/libjpeg-turbo/*.lo
 pkgs/openjpeg
 pkgs/openjpeg/src/bin/
 pkgs/openjpeg/thirdparty
+share
+bin
+man
+obj
