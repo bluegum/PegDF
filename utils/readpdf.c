@@ -180,11 +180,11 @@ int main(int argc, char **argv)
 
       if (!passwd || !pdf_doc_need_passwd(doc))
       {
-	    pdf_doc_process_all(doc, 0, outf, "");
+	    e = pdf_doc_process_all(doc, 0, outf, "");
       }
       else if (passwd && pdf_doc_need_passwd(doc))
       {
-	    pdf_doc_process_all(doc, 0, outf, passwd);
+	    e = pdf_doc_process_all(doc, 0, outf, passwd);
       }
       // writing out pdf using doc structure.
       if (out)
@@ -211,5 +211,7 @@ int main(int argc, char **argv)
       pdf_finish(doc);
       if (outf)
 	    fclose(outf);
+      if (e != pdf_ok)
+          return -1;
       return 0;
 }

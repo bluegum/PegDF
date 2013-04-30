@@ -13,23 +13,22 @@ if [ -f bin/readpdf ] ; then READPDF=bin/readpdf; fi
 
 for file in $1/*.pdf
 do
-    ff=${file// /\\ }
-#    echo $ff
-    if [ -f "$ff" ]
+    ff=${file}
+    if [[ -e "${ff}" ]]
     then
-	allfiles[$i]=\"$file\"
-	echo "Testing $file";
-	${READPDF} "$ff"
-	if [ $? != 0 ]
-	then
-	    allstat[$i]=1
-	    echo -e "\033[0;31m $file Failed!"
-	else
-	    allstat[$i]=0
-	    echo -e "\033[0;32m $file Passed!"
-	fi
-    echo -e "\033[0;37m"
-	i=`expr $i + 1`
+	    allfiles[$i]=\"$file\"
+	    echo "Testing $file";
+	    ${READPDF} "$ff"
+	    if [ $? != 0 ]
+	    then
+	        allstat[$i]=1
+	        echo -e "\033[0;31m $file Failed!"
+	    else
+	        allstat[$i]=0
+	        echo -e "\033[0;32m $file Passed!"
+	    fi
+        echo -e "\033[0;37m"
+	    i=`expr $i + 1`
     fi
 done
 #echo ${allstat[@]}
@@ -41,9 +40,9 @@ do
     echo -n ${allfiles[$x]} ':: '
     if [[ ${allstat[$x]} == '0' ]]
     then
-	echo -e "\033[1;32m PASSED!\033[0;37m"
+	    echo -e "\033[1;32m PASSED!\033[0;37m"
     else
-	echo -e "\033[1;31m FAILED!\033[0;37m"
+	    echo -e "\033[1;31m FAILED!\033[0;37m"
     fi
 done
 tput sgr0

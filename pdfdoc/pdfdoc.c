@@ -197,15 +197,14 @@ pdf_err pdf_exec_page_content(pdf_page *p, pdfcrypto_priv* encrypt)
     p->s = p->sstk;
     pdf_gstate_init(p);
     // run page contents
-    pdf_cs_parse(p, encrypt, 0);
-
-    return pdf_ok;
+    return pdf_cs_parse(p, encrypt, 0);
 }
 
 pdf_err pdf_page_tree_walk(pdf_doc *d, pdf_device *dev, pdfcrypto_priv* encrypt)
 {
     int i, c;
     pdf_interp_state *interp;
+    pdf_err e = pdf_ok;
 
     interp = pdf_interpreter_new(dev, encrypt);
     c = (d->pageidx < d->count) ? d->pageidx : d->count;
@@ -217,15 +216,17 @@ pdf_err pdf_page_tree_walk(pdf_doc *d, pdf_device *dev, pdfcrypto_priv* encrypt)
         d->pages[i]->i = interp;
         if (dev)
             (dev->page_begin)(dev, i, d->pages[i]->mediabox.x1, d->pages[i]->mediabox.y1);
-        pdf_exec_page_content(d->pages[i], encrypt);
+        e = pdf_exec_page_content(d->pages[i], encrypt);
         if (dev)
             (dev->page_end)(dev);
 #ifdef DEBUG
         printf("%s", "\n");
 #endif
+        if (e != pdf_ok)
+            break;
     }
     pdf_interpreter_free(interp);
-    return pdf_ok;
+    return e;
 }
 
 // The purpose of having private doc struct is to provide members to be referenced by other objects, however
@@ -495,17 +496,22 @@ pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
     if (o->t == eDict)
     {
         int length;
-        length = pdf_to_int(pdf_dict_get(o, "Length"));
-        if (!length)
+        pdf_obj *len_obj = pdf_dict_get(o, "Length");
+        if (!len_obj)
         {
             fprintf(stderr, "%s\n", "Invalid stream.");
             return NULL;
         }
+        length = pdf_to_int(len_obj);
         s = pdf_malloc(sizeof(pdf_stream));
         if (!s)
             goto fail;
         memset(s, 0, sizeof(pdf_stream));
         s->length = length;
+        if (length == 0)
+        { // zero lenght stream, just return
+            return s;
+        }
         // make raw filter
         /// internal struct. raw stream object
         ss = o->value.d.dict->stream;
@@ -772,8 +778,10 @@ pdf_stream_free(pdf_stream *s, int flag)
     pdf_filter *f;
     if (!s)
         return pdf_ok;
-    f = s->ffilter;
-    PDF_FILTER_CLOSE(f, flag);
+    if (s->length) {
+        f = s->ffilter;
+        PDF_FILTER_CLOSE(f, flag);
+    }
     pdf_free(s);
     return pdf_ok;
 }
@@ -833,6 +841,7 @@ pdf_doc_process_all(pdf_doc *doc, char *devtype, FILE *out, char *pw)
 {
     pdf_device *dev = NULL;
     pdfcrypto_priv *crypto = NULL;
+    pdf_err e = pdf_ok;
 
     //unsigned char u[32];
     if (doc->trailer->encrypt)
@@ -850,12 +859,12 @@ pdf_doc_process_all(pdf_doc *doc, char *devtype, FILE *out, char *pw)
             dev = pdf_dev_html_new(out);
     }
 
-    pdf_doc_process(doc, dev, crypto);
+    e = pdf_doc_process(doc, dev, crypto);
     if (crypto)
         pdf_crypto_destroy(crypto);
     if (dev)
         pdf_dev_destroy(dev);
-    return pdf_ok;
+    return e;
 }
 
 int

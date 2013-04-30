@@ -89,6 +89,12 @@ struct buffer_stream_s
 };
 
 static int
+s_eof(buffer_stream *s)
+{
+    return s->p == s->e;
+}
+
+static int
 s_get_char(buffer_stream *s)
 {
     assert(s);
@@ -112,6 +118,7 @@ s_get_char(buffer_stream *s)
         i = (s->f->read)(s->f, s->p, BUFFER_STREAM_BUF_SIZE);
         if (i == 0)
         {
+          next_filt:
             s->i ++;
             if (s->i == s->n)
             {
@@ -131,11 +138,13 @@ s_get_char(buffer_stream *s)
                         int gen = s->content->value.a.items[s->i].value.r.gen;
                         pdf_stream *ss;
                         ss = pdf_stream_load(&s->content->value.a.items[s->i], s->encrypt, num, gen);
+                        s->s = ss;
+                        if (ss->length == 0)
+                            goto next_filt;
                         s->f = ss->ffilter;
                         s->p = &s->buf[0];
                         s->e = s->p;
                         s->l = s->p + BUFFER_STREAM_BUF_SIZE + 2;
-                        s->s = ss;
                         goto filt_read;
                     }
                     else
