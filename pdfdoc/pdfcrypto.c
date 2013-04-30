@@ -362,6 +362,7 @@ pdf_filter_aes_read(pdf_filter *f, unsigned char *obuf, int request)
       if (l <= 16)
       {
 	    e = EVP_DecryptUpdate(ctx, buf->buf, &request, f->ptr, 16);
+        memcpy(obuf, buf->buf, request);
       }
       else
       {
