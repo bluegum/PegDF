@@ -998,7 +998,7 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                 case 'W':
                                     break;
                                 default:
-                                    goto syntax_err;
+                                    goto cmd_err;
                                     break;
                             }
                             break;
@@ -1197,7 +1197,7 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                 break;
                                 ///
                                 default:
-                                    goto syntax_err;
+                                    goto cmd_err;
                                     break;
                             }
                             break;
@@ -1230,18 +1230,23 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                             }
                             else
                             {
-                                goto syntax_err;
+                                goto cmd_err;
                             }
                             break;
                         case 4:
-                            if (strcmp(buf, "true") == 0)
+                            if (strncmp(buf, "true", 4) == 0)
                             {
                                 t.t = eBool;
                                 t.value.b = 1;
                                 PUSH_O(t);
                             }
+                            else if (strncmp(buf, "null", 4) == 0)
+                            {
+                                t.t = eNull;
+                                PUSH_O(t);
+                            }
                             else
-                                goto syntax_err;
+                                goto cmd_err;
                             break;
                         case 5:
                             if (strcmp(buf, "false") == 0)
@@ -1251,17 +1256,20 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                 PUSH_O(t);
                             }
                             else
-                                goto syntax_err;
+                                goto cmd_err;
                             break;
                         default:
-                            goto syntax_err;
+                        {
+                          cmd_err:
+                            fprintf(stderr, "Ignores invalid command: %s\n", buf);
+                        }
+                        break;
                     } // cmd switch
         } // lex switch
     } // loop
     s_buffer_stream_close(b);
     goto done;
   error:
-  syntax_err:
     if (b)
     {
         s_buffer_stream_close(b);

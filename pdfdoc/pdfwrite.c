@@ -430,22 +430,33 @@ pdf_page_contents_write(pdf_obj *content, unsigned long write_flag, pdf_xref_int
             int curx;
             int strmoff;
             int ll;
-            fprintf(out, "<<\n");
-            fprintf(out, "/Length %s\n", "           ");
-            ll = ftell(out) - 11;
-            fprintf(out, ">>");
-            fprintf(out, "stream\n");
+            int empty = (s->length)?0:1;
+
+            fputs("<<\n", out);
+            if (!empty) {
+                fputs("/Length            \n", out);
+                ll = ftell(out) - 11;
+            }
+            else
+                fprintf(out, "/Length %d\n", 0);
+
+            fputs(">>stream\n", out);
             strmoff = ftell(out);
             //
-            while ((c = pdf_stream_getchar(s)) != EOF)
-                fputc(c, out);
+            if (!empty)
+            {
+                while ((c = pdf_stream_getchar(s)) != EOF)
+                    fputc(c, out);
+            }
             pdf_stream_free(s, 1);
             //
-            curx = ftell(out);
-            fseek(out, ll, SEEK_SET);
-            fprintf(out, "%10d", curx - strmoff);
-            fseek(out, curx, SEEK_SET);
-            fprintf(out, "endstream\n");
+            if (!empty) {
+                curx = ftell(out);
+                fseek(out, ll, SEEK_SET);
+                fprintf(out, "%10d", curx - strmoff);
+                fseek(out, curx, SEEK_SET);
+            }
+            fputs("endstream\n", out);
 	    }
 	    else
 	    {
