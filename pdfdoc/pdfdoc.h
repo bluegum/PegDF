@@ -29,6 +29,7 @@ typedef struct pdf_stream_s pdf_stream;
 typedef struct pdf_trailer_s pdf_trailer;
 typedef struct pdf_extgstate_s pdf_extgstate;
 typedef struct pdf_prs_s pdf_prs;
+typedef enum pdf_annotation_type_e pdf_annotation_type;
 
 struct pdf_mask_s
 {
@@ -77,7 +78,7 @@ enum pdf_annotation_type_e
 
 struct pdf_annots_s
 {
-    void *subtype;
+    pdf_annotation_type subtype;
     gs_rect rect;
     char *contents;
     pdf_obj *p;
@@ -86,7 +87,7 @@ struct pdf_annots_s
     int f;
     pdf_obj *ap;
     void *as;
-    int *boarder;
+    float border[5];
     float *c;
     int structparent;
     pdf_obj *oc;

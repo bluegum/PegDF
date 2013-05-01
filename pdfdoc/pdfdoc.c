@@ -726,27 +726,77 @@ pdf_err pdf_extgstate_free(pdf_extgstate*g)
     return pdf_ok;
 }
 
+pdf_annotation_type
+pdf_annots_type(pdf_obj *o)
+{
+    pdf_annotation_type t = eText;
+    char *p = pdf_to_name(o);
+    if (!p) return t;
+
+    if (strcmp(p, "Text") == 0) return t;
+    else if (strcmp(p, "Link") == 0) return eLink;
+    else if (strcmp(p, "FreeText") == 0) return eFreeText;
+    else if (strcmp(p, "Line") == 0) return eLine;
+    else if (strcmp(p, "Square") == 0) return eSquare;
+    else if (strcmp(p, "Polygon") == 0) return ePolygon;
+    else if (strcmp(p, "PolyLine") == 0) return ePolyLine;
+    else if (strcmp(p, "Highlight") == 0) return eHighlight;
+    else if (strcmp(p, "Underline") == 0) return eUnderline;
+    else if (strcmp(p, "eSquiggly") == 0) return eSquiggly;
+    else if (strcmp(p, "eStrikeOut") == 0) return eStrikeOut;
+    else if (strcmp(p, "eStamp") == 0) return eStamp;
+    else if (strcmp(p, "eCaret") == 0) return eCaret;
+    else if (strcmp(p, "eInk") == 0) return eInk;
+    else if (strcmp(p, "ePopup") == 0) return ePopup;
+    else if (strcmp(p, "eFileAttachment") == 0) return eFileAttachment;
+    else if (strcmp(p, "eSound") == 0) return eSound;
+    else if (strcmp(p, "eMovie") == 0) return eMovie;
+    else if (strcmp(p, "eWidget") == 0) return eWidget;
+    else if (strcmp(p, "eScreen") == 0) return eScreen;
+    else if (strcmp(p, "ePrinterMark") == 0) return ePrinterMark;
+    else if (strcmp(p, "eTrapNet") == 0) return eTrapNet;
+    else if (strcmp(p, "eWatermark") == 0) return eWatermark;
+    else if (strcmp(p, "e3D") == 0) return e3D;
+    else if (strcmp(p, "eRedact") == 0) return eRedact;
+    else return t;
+}
+
 pdf_annots*
 pdf_annots_load(pdf_obj* o)
 {
     pdf_annots *a=NULL, *first=NULL, *last = NULL;
     int i;
+    pdf_obj *x, *t;
 
-    if (!o || (o->t != eArray && o->t != eRef))
+    o = pdf_array_get(o);
+    if (!o)
         return NULL;
 
-    for (i = 0; i < o->value.a.len; i++)
+    for (i = 0; i < pdf_to_arraylen(o); i++)
     {
-        pdf_obj *t = &o->value.a.items[i];
-        if (!t)
+        t = pdf_get_array_item(o, i);
+        pdf_obj_resolve(t);
+        if (!t || t->t != eDict)
             continue;
         a = pdf_malloc(sizeof(pdf_annots));
         if (!a)
             return NULL;
         memset(a, 0, sizeof(pdf_annots));
+        // default border
+        a->border[0] = 0, a->border[1] = 0, a->border[2] = 1;
         // load annotation node
-        a->subtype = pdf_to_name(pdf_dict_get(o, "SubType"));
-        a->rect = pdf_rect_get(pdf_dict_get(o, "Rect"));
+        a->subtype = pdf_annots_type(pdf_dict_get(t, "Subtype"));
+        a->rect = pdf_rect_get(pdf_dict_get(t, "Rect"));
+        if ((x = pdf_dict_get(t, "Border"))) {
+            a->border[0] = pdf_to_float(pdf_get_array_item(x, 0));
+            a->border[1] = pdf_to_float(pdf_get_array_item(x, 1));
+            a->border[2] = pdf_to_float(pdf_get_array_item(x, 2));
+            if (pdf_to_arraylen(x) > 3) {
+                pdf_obj *y = pdf_get_array_item(x, 3);
+                a->border[3] =  pdf_to_float(pdf_get_array_item(y, 0));
+                a->border[4] =  pdf_to_float(pdf_get_array_item(y, 1));
+            }
+        }
         // make linked list
         if (last)
             last->next = a;

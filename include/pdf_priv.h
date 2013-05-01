@@ -4,6 +4,15 @@
 #include "dict.h"
 #include "pdfindex.h"
 
+static inline pdf_obj*
+pdf_array_get(pdf_obj *o)
+{
+    pdf_obj_resolve(o);
+    if (!o || (o->t != eArray))
+        return 0;
+    return o;
+}
+
 static inline gs_rect
 pdf_rect_get(pdf_obj *o)
 {
@@ -93,7 +102,8 @@ pdf_get_array_item(pdf_obj *o, int i)
 {
     pdf_obj_resolve(o);
     if (!o || (o->t != eArray))
-        return 0; // should be NAN
+        return 0;
+    if (i >= o->value.a.len) return 0;
     return &o->value.a.items[i];
 }
 
