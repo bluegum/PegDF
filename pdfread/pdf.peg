@@ -70,7 +70,7 @@ STRE       <- (
 	      / '(' ')' {push_literal("()", 2);}
      	      )
 #string alphabet
-STRA       <- (ESCPAREN / (!STRBGN !STREND .))
+STRA       <- ((!STRBGN !STREND !'\\' .) / ESCPAREN / '\\' .)
 
 HEXSTR	   <- '<' < [0-9a-fA-F \t\f\n\r]* > '>' DELIM {push(eHexString, 0, yytext);}
 
