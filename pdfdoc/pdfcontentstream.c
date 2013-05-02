@@ -755,8 +755,9 @@ pdf_parse_dict(buffer_stream *s, pdf_obj *o, int inlineimg)
 #define PUSH_O(a) *op++ = (a); if (op>=op_max) op--
 #define POP_O (op <= o) ? (*o):(*(--op))
 
+// return non-zero for named object colorspace
 static int
-x_scn(pdf_page *p, pdf_obj *stk, int pen)
+x_scn(pdf_page *p, pdf_obj *stk, int *num, int pen)
 {
     int n;
     pdf_cspacetype t;
@@ -778,7 +779,10 @@ x_scn(pdf_page *p, pdf_obj *stk, int pen)
         return 1;
     }
     else
+    {
+        *num = n;
         return 0;
+    }
 }
 /////////////////////////////////////////////////////////////////////////////////
 // Content Stream Parser
@@ -1220,13 +1224,19 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                             }
                             else if (buf[0] == 'S' && buf[1] == 'C' && buf[2] == 'N')
                             {
-                                int n = x_scn(p, op, 1);
-                                POP_N(n);
+                                int n;
+                                if (x_scn(p, op, &n, 1))
+                                    POP_O;
+                                else
+                                    POP_N(n);
                             }
                             else if (buf[0] == 's' && buf[1] == 'c' && buf[2] == 'n')
                             {
-                                int n = x_scn(p, op, 0);
-                                POP_N(n);
+                                int n;
+                                if (x_scn(p, op, &n, 0))
+                                    POP_O;
+                                else
+                                    POP_N(n);
                             }
                             else
                             {
