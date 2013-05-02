@@ -29,4 +29,7 @@ extern pdf_err pdf_doc_process_all(pdf_doc *doc, char *dev, FILE *outf, char *pw
 }
 #endif
 
+// Configurations
+#define PARSER_STACK_MIN 8192
+
 #endif

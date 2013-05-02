@@ -35,6 +35,7 @@
 #include "pdfcrypto.h"
 #include "pdfread.h"
 #include "pdf_priv.h"
+#include "pdf.h"
 
 extern const char * pdf_keyword_find (register const char *str, register unsigned int len);
 
@@ -43,8 +44,18 @@ extern char *yytext;
 extern void parser_free();
 pdf_parser *parser_inst;
 
+static void
+stack_try_grow()
+{
+    if (parser_inst->stackp+1 >= parser_inst->stacklimit) {
+        parser_inst->stack = pdf_realloc(parser_inst->stack, sizeof(pdf_obj)*(parser_inst->stacklimit + PARSER_STACK_MIN));
+        parser_inst->stacklimit += PARSER_STACK_MIN - 1;
+    }
+}
+
 int push(e_pdf_kind t, double n, char *s)
 {
+    stack_try_grow();
     parser_inst->stack[++parser_inst->stackp].t =t;
     switch (t)
     {
@@ -243,6 +254,7 @@ pdf_obj push_literal(char *s, int slen)
         o.t = eString;
         o.value.s.len = 0;
         o.value.s.buf = NULL;
+        stack_try_grow();
         parser_inst->stack[++parser_inst->stackp] = o;
     }
     else
@@ -313,6 +325,7 @@ pdf_obj push_literal(char *s, int slen)
 
 int push_ref(e_pdf_kind t, int r, int gen)
 {
+    stack_try_grow();
     parser_inst->stack[++parser_inst->stackp].t =t;
     parser_inst->stack[parser_inst->stackp].value.r.gen = gen;
     parser_inst->stack[parser_inst->stackp].value.r.num = r;
@@ -871,7 +884,7 @@ objstream_read(pdf_obj *o, int num, int gen, pdfcrypto_priv *crypto)
         goto fail1;
     // construct parser
     oldparser = parser_inst;
-    parser_inst = parser_new(NULL, s_getchar, 1024*8); // 8K stack ought to be enough for all objs in obj_stream
+    parser_inst = parser_new(NULL, s_getchar); // 8K stack ought to be enough for all objs in obj_stream
     parser_inst->infile = oldparser->infile;
     // switch in the global obj map
     if (parser_inst->map)
@@ -985,8 +998,9 @@ objstream_read(pdf_obj *o, int num, int gen, pdfcrypto_priv *crypto)
 
 /// make a new parser
 pdf_parser*
-parser_new(FILE *in, parser_getchar getchar, int stack_size)
+parser_new(FILE *in, parser_getchar getchar)
 {
+    int stack_size = PARSER_STACK_MIN;
     pdf_parser *parser_inst;
     parser_inst = (pdf_parser*)pdf_malloc(sizeof(pdf_parser));
     if (!parser_inst)
@@ -997,6 +1011,7 @@ parser_new(FILE *in, parser_getchar getchar, int stack_size)
 	    pdf_free(parser_inst);
 	    return NULL;
     }
+    parser_inst->stacklimit = stack_size;
     parser_inst->parse_finished = 0;
     parser_inst->infile = in;
     parser_inst->getchar = getchar;
@@ -1280,7 +1295,7 @@ pdf_open(char *in, pdf_doc **doc)
     {
 	    return pdf_file_err;
     }
-    parser_inst = parser_new(inf, f_getchar, 1024*64); // large stack size for large array, ouch!
+    parser_inst = parser_new(inf, f_getchar); // large stack size for large array, ouch!
     if (!parser_inst)
         return -1;
     // configure parser

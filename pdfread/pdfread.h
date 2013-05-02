@@ -88,6 +88,7 @@ struct pdf_parser_s
       /// parser tmporary storage
       pdf_obj *stack;
       int stackp;
+      int stacklimit;
       char* comment_string;
       //
       xreftab *xref;
@@ -148,7 +149,7 @@ extern int xref_append(int off, int gen, pdf_obj x);
 extern void pop_comment(char *s);
 extern void pop_stream(int pos, int off);
 extern void xref_start(int);
-extern pdf_parser* parser_new(FILE *in, parser_getchar getchar, int stack_size);
+extern pdf_parser* parser_new(FILE *in, parser_getchar getchar);
 
 /// parser helpers
 extern int stream_seek(int s);
