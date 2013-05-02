@@ -301,7 +301,7 @@ name_free(pdf_obj *n)
 	    pdf_free(n->value.k);
 }
 
-#define obj_is_name(o)  ((o)->t == eKey || (o)->t == eName)
-#define obj_is_dict(o)  ((o)->t == eDict)
+#define obj_is_name(o)  ((o) && ((o)->t == eKey || (o)->t == eName))
+#define obj_is_dict(o)  ((o) && ((o)->t == eDict))
 
 #endif

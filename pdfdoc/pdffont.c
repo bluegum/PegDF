@@ -240,23 +240,24 @@ pdf_encoding_load(pdf_obj *a, pdf_font_encoding* e)
     if (obj_is_dict(a))
     {
 	    pdf_obj *o = pdf_dict_get(a, "Differences");
-	    if (o && pdf_to_arraylen(o))
+	    if (o && (pdf_to_arraylen(o) != 0))
 	    {
             int i;
             e->differences = pdf_malloc(sizeof(char*)*256);
             if (e->differences)
                 memcpy(e->differences, &tbl[0], sizeof(char*)*256);
             // parse differences array and merge with pre defined encodings
-            for (i = 0; i < o->value.a.len;)
+            for (i = 0; i < pdf_to_arraylen(o);)
             {
-                pdf_obj dd = o->value.a.items[i];
-                int j = dd.value.i;
+                pdf_obj *k, *dd = pdf_get_array_item(o, i);
+                int j = dd->value.i;
                 if (j < 256)
                 {
                     i++;
-                    while (obj_is_name(&o->value.a.items[i]))
+                    while (obj_is_name(k=(pdf_get_array_item(o, i))))
                     {
-                        const struct glyphlist *gl = glyph_name_to_uni(o->value.a.items[i].value.k, strlen(o->value.a.items[i].value.k));
+                        pdf_obj *kk = pdf_get_array_item(o, i);
+                        const struct glyphlist *gl = glyph_name_to_uni(kk->value.k, strlen(kk->value.k));
                         if (gl)
                             e->differences[j] = gl->name;
                         if (i++ >= o->value.a.len)
