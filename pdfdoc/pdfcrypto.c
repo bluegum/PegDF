@@ -205,7 +205,7 @@ pdf_crypto_calc_userpassword(pdfcrypto_priv* c, unsigned char id1[16], char *pw,
             EVP_MD_CTX ctx;
             const EVP_MD *md = EVP_md5();
             int n = c->len/8;
-            unsigned char digest[16], out[16], xor[16];
+            unsigned char digest[16], out[32], xor[16];
             int x, olen;
             unsigned int digest_len;
             /* Step 0 - init md5 */
