@@ -181,22 +181,21 @@ x_M(pdf_page *p, float miterlimit)
 }
 /// B group
 pdf_err
-x_B(pdf_page *p)
+x_B(pdf_page *p, int evenodd, int close_path)
 {
     pdf_extgstate *gs = &p->s->gs;
     byte *top = gs->path_top;
-    x_f(p, 0); // non_zero
-    gs->path_top = top;
+
+    if (close_path) {
+        pdf_path_add(gs, H, 0,0,0,0,0,0);
+        x_f(p, evenodd); // non_zero
+        // TODO: pop close_path
+    }
+    else {
+        x_f(p, evenodd); // non_zero
+    }
     x_s(p); // stroke
-    return pdf_ok;
-}
-pdf_err x_Bstar(pdf_page *p)
-{
-    pdf_extgstate *gs = &p->s->gs;
-    byte *top = gs->path_top;
-    x_f(p, 1); // even_odd
     gs->path_top = top;
-    x_s(p); // stroke
     return pdf_ok;
 }
 
@@ -209,6 +208,7 @@ pdf_err x_BI(pdf_page *p, pdf_obj o)
     }
     return pdf_ok;
 }
+
 pdf_err x_BT(pdf_page *p)
 {
     pdf_extgstate *gs = &p->s->gs;
@@ -217,9 +217,11 @@ pdf_err x_BT(pdf_page *p)
     mat_init(&gs->txt_lm, 1, 0, 0, 1, 0, 0);
     return pdf_ok;
 }
+
 pdf_err x_BX(pdf_page *p)
 {
     return pdf_ok;
+
 }
 pdf_err x_BDC(pdf_page *p, pdf_obj n, pdf_obj o)
 {
@@ -509,7 +511,10 @@ pdf_err x_ri(pdf_page *p, pdf_obj o)
 
 pdf_err x_sh(pdf_page *p, pdf_obj o)
 {
+    pdf_extgstate *gs = &p->s->gs;
+
     pdf_obj_delete(&o);
+    gs->path_top = gs->path_base;
     return pdf_ok;
 }
 
@@ -559,6 +564,7 @@ x_f(pdf_page *p, int even_odd)
     pdf_path_paint(p->i->dev, gs,
                    0, // to fill
                    even_odd);
+    gs->path_top = gs->path_base;
     return pdf_ok;
 }
 

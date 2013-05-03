@@ -403,6 +403,7 @@ bpt_search(bpt_tree *t, int i)
       }
       return bpt_search_node(t->root, i);
 }
+
 int bpt_upper(bpt_node *n)
 {
       if (n->leaf)
@@ -415,7 +416,10 @@ int bpt_upper(bpt_node *n)
       }
       else
       {
+          if (n->v[n->cnt].n)
             return bpt_upper(n->v[n->cnt].n);
+          else
+            return bpt_upper(n->v[n->cnt-1].n);
       }
 }
 

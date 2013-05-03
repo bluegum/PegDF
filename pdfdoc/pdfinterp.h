@@ -13,7 +13,7 @@ struct pdf_interp_state_s
     // font cache in linked list
     pdf_font *font, *cur_font;
     //
-    byte path_stk[256*1024];
+    byte path_stk[1024*1024];
 };
 
 extern pdf_interp_state *pdf_interpreter_new(pdf_device*, pdfcrypto_priv* encrypt);

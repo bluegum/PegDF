@@ -755,7 +755,7 @@ pdf_parse_dict(buffer_stream *s, pdf_obj *o, int inlineimg)
 #define PUSH_O(a) *op++ = (a); if (op>=op_max) op--
 #define POP_O (op <= o) ? (*o):(*(--op))
 
-// return non-zero for named object colorspace
+// param "num" zero for named object colorspace
 static int
 x_scn(pdf_page *p, pdf_obj *stk, int *num, int pen)
 {
@@ -776,13 +776,13 @@ x_scn(pdf_page *p, pdf_obj *stk, int *num, int pen)
     if (t == Pattern && n == 1 && obj_is_name(stk))
     {
         pdf_obj_delete(stk);
-        return 1;
+        *num = 0;
     }
     else
     {
         *num = n;
-        return 0;
     }
+    return 0;
 }
 /////////////////////////////////////////////////////////////////////////////////
 // Content Stream Parser
@@ -906,7 +906,7 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                     x_Tj(p, POP_O);
                                     break;
                                 case 'b':
-                                    x_B(p);
+                                    x_B(p, 0, 1); // non-zero, close-path
                                     break;
                                 case 'c':
                                     x_c(p, np[-6], np[-5], np[-4], np[-3], np[-2], np[-1]);
@@ -972,7 +972,7 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                     break;
                                     ///
                                 case 'B':
-                                    x_B(p);
+                                    x_B(p, 0, 1); // non-zero, close-path
                                     break;
                                 case 'F':
                                     x_f(p, 0);
@@ -1013,7 +1013,7 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                             switch (_2_hash)
                             {
                                 case TWO_HASH('b','*'):
-                                    x_Bstar(p);
+                                    x_B(p, 1, 1); // even-odd, close-path
                                     break;
                                 case (TWO_HASH('c','m')):
                                     x_cm(p, np[-6], np[-5], np[-4], np[-3], np[-2], np[-1]);
@@ -1074,7 +1074,7 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                 }
                                 break;
                                 case TWO_HASH('B', '*'):
-                                    x_Bstar(p);  // B*
+                                    x_B(p, 1, 0);  // evenodd, no-close-path
                                     break;
                                 case TWO_HASH('B', 'I'):  // BI
                                 {
@@ -1225,7 +1225,8 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                             else if (buf[0] == 'S' && buf[1] == 'C' && buf[2] == 'N')
                             {
                                 int n;
-                                if (x_scn(p, op, &n, 1))
+                                x_scn(p, op, &n, 1);
+                                if (!n)
                                     POP_O;
                                 else
                                     POP_N(n);
@@ -1233,7 +1234,8 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                             else if (buf[0] == 's' && buf[1] == 'c' && buf[2] == 'n')
                             {
                                 int n;
-                                if (x_scn(p, op, &n, 0))
+                                x_scn(p, op, &n, 0);
+                                if (!n)
                                     POP_O;
                                 else
                                     POP_N(n);
