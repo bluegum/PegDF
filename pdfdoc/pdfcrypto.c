@@ -116,6 +116,7 @@ pdf_crypto_init(pdf_encrypt* encrypt, unsigned char id1[16], char *pw)
       else if (encrypt->v == 1)
       {
             crypto->algo = e40bitsRC4;
+            crypto->len = 40;
       }
       else if (encrypt->v == 2)
       {
