@@ -41,5 +41,6 @@ struct pdf_filter_s
       while (f) { pdf_filter *t = (f)->next; (*(f)->close)(f, (flag)); (f) = t; }
 
 extern pdf_err pdf_flated_new(pdf_filter **f);
-extern pdf_filter* pdf_filter_new(pdf_filterkind t);
+extern pdf_filter* pdf_filter_new(pdf_filterkind t, pdf_filter *last);
+extern int pdf_filter_read(pdf_filter *f, unsigned char *buf, int len);
 #endif

@@ -644,7 +644,7 @@ pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
             t = Raw;
         }
         // make the filter
-        f = pdf_filter_new(t);
+        f = pdf_filter_new(t, last);
         if (!f)
         {
             if (s)

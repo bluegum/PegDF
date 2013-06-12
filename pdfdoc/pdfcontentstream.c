@@ -108,9 +108,17 @@ s_get_char(buffer_stream *s)
         //move last 2 byte to 1st in buffer, in case of unget
         if (s->p != s->buf)
         {
-            s->buf[0] = *(s->e-2);
-            s->buf[1] = *(s->e-1);
-            s->p = s->buf + 2;
+            if (s->e - s->buf >= 2)
+            {
+                s->buf[0] = *(s->e-2);
+                s->buf[1] = *(s->e-1);
+                s->p = s->buf + 2;
+            }
+            else
+            {
+                s->buf[0] = *(s->e-1);
+                s->p = s->buf + 1;
+            }
         }
       filt_read:
         if (s->closed)
