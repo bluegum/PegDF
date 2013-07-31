@@ -47,7 +47,7 @@ lzw_decompress* lzw_decomp_init(lzw_decomp_malloc _malloc, lzw_decomp_free _free
     lzw_decompress *d = _malloc(sizeof(lzw_decompress));
     if (!d)
         return d;
-    d->buf = _malloc(BUF_SIZE);
+    d->buf = _malloc(BUF_SIZE+1); // +1 to suppress bogus read in lzw_get_code()
     if (!d->buf)
     {
         _free(d);

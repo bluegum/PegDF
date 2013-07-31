@@ -29,6 +29,7 @@ typedef struct pdf_stream_s pdf_stream;
 typedef struct pdf_trailer_s pdf_trailer;
 typedef struct pdf_extgstate_s pdf_extgstate;
 typedef struct pdf_prs_s pdf_prs;
+typedef struct pdf_ocproperties_s pdf_ocproperties;
 typedef enum pdf_annotation_type_e pdf_annotation_type;
 
 struct pdf_mask_s
@@ -202,6 +203,10 @@ enum pdf_pagemode_e
     UseAttachments
 };
 
+struct pdf_ocproperties_s
+{
+};
+
 struct pdf_doc_s
 {
     // catalog
@@ -226,7 +231,7 @@ struct pdf_doc_s
     void *spiderinfo;
     void *outputintents;
     void *pieceinfo;
-    void *ocproperties;
+    pdf_ocproperties *ocproperties;
     void *perms;
     void *legal;
     void *requirements;

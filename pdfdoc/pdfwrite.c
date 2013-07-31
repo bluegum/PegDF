@@ -98,9 +98,14 @@ pdf_xref_internal_append(pdf_xref_internal *x, int n, int g)
     return x;
 }
 
+static void
+pdf_oc_write(pdf_ocproperties *oc, pdf_xref_internal *x, FILE *o)
+{
+}
+
 static
 void
-pdf_catalog_write(pdf_xref_internal *x, FILE *o)
+pdf_catalog_write(pdf_doc *doc, pdf_xref_internal *x, FILE *o)
 {
     x->xref->cur = 2;
     x->xref->offsets[x->xref->cur] = ftell(o);
@@ -108,6 +113,10 @@ pdf_catalog_write(pdf_xref_internal *x, FILE *o)
     fprintf(o, "%s\n", "<<");
     fprintf(o, "%s\n", "/Type /Catalog");
     fprintf(o, "/Pages %d %d R\n",1, 0);
+    if (doc->ocproperties)
+    {
+        pdf_oc_write(doc->ocproperties, x, o);
+    }
     fprintf(o, "%s\n", ">>");
     fprintf(o, "%s\n", "endobj");
     x->xref->cur ++;
@@ -880,7 +889,7 @@ pdf_page_write(pdf_doc *doc, int i/* pg# */, unsigned long write_flag, pdfcrypto
     xref = pdf_xref_internal_create(pdf_obj_count(), doc->count);
     if (!xref)
 	    goto done_0;
-    pdf_catalog_write(xref, out);
+    pdf_catalog_write(doc, xref, out);
     pdf_page_scan(doc->pages[i], xref);
     pdf_write_indirect_objs(xref, out, crypto);
     pdf_page_obj_write(doc->pages[i], i, write_flag, xref, crypto, out);
@@ -1014,7 +1023,7 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, unsigned long write_flag,
             xref = pdf_xref_internal_create(pdf_obj_count(), doc->count);
             if (!xref)
                 goto done_0;
-            pdf_catalog_write(xref, out);
+            pdf_catalog_write(doc, xref, out);
             pdf_page_scan(doc->pages[i], xref);
             pdf_write_indirect_objs(xref, out, crypto);
             pdf_page_obj_write(doc->pages[i], i, write_flag, xref, crypto, out);
@@ -1048,7 +1057,7 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, unsigned long write_flag,
 	    xref = pdf_xref_internal_create(pdf_obj_count(), doc->count);
 	    if (!xref)
             goto done;
-	    pdf_catalog_write(xref, out);
+	    pdf_catalog_write(doc, xref, out);
 	    for (i = pg1st; i <= pglast; i++)
 	    {
             pdf_page_scan(doc->pages[i], xref);

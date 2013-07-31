@@ -245,10 +245,16 @@ gs_rect* pdf_doc_get_mediabox(pdf_doc* doc)
     return &pdoc->mediabox;
 }
 
+pdf_ocproperties *
+pdf_ocproperties_load(pdf_obj *oc)
+{
+    return 0;
+}
+
 pdf_doc*
 pdf_doc_load(pdf_trailer *trailer)
 {
-    pdf_obj *a, *d, *c, *kids;
+    pdf_obj *a, *d, *c, *kids, *oc;
     pdf_doc *doc;
     pdf_doc_private *pdoc;
     int count;
@@ -288,6 +294,12 @@ pdf_doc_load(pdf_trailer *trailer)
     doc->pages = pdf_malloc(sizeof(pdf_page*) * doc->count);
     memset(doc->pages, 0, (sizeof(pdf_page*) * doc->count));
     doc->pageidx = 0;
+    // optional content
+    oc = pdf_dict_get(d, "OCProperties");
+    if (oc)
+    {
+        doc->ocproperties = pdf_ocproperties_load(oc);
+    }
     pdf_page_tree_load(doc, kids);
     /// shuffle in some auxillary info
     ///
