@@ -15,3 +15,6 @@ share
 bin
 man
 obj
+peg/leg
+peg/peg
+pdfread/keywords_hash.c

@@ -11,6 +11,8 @@
 #include "pdfdevice.h"
 #include "pdfinterp.h"
 #include "pdfhelper.h"
+#include "pdfoc.h"
+#include "pdfoc.h"
 
 typedef struct pdf_page_s pdf_page;
 //typedef struct pdf_doc_s pdf_doc;
@@ -29,7 +31,6 @@ typedef struct pdf_stream_s pdf_stream;
 typedef struct pdf_trailer_s pdf_trailer;
 typedef struct pdf_extgstate_s pdf_extgstate;
 typedef struct pdf_prs_s pdf_prs;
-typedef struct pdf_ocproperties_s pdf_ocproperties;
 typedef enum pdf_annotation_type_e pdf_annotation_type;
 
 struct pdf_mask_s
@@ -201,10 +202,6 @@ enum pdf_pagemode_e
     FullScreen,
     UseOC,
     UseAttachments
-};
-
-struct pdf_ocproperties_s
-{
 };
 
 struct pdf_doc_s

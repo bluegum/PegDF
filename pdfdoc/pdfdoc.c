@@ -245,12 +245,6 @@ gs_rect* pdf_doc_get_mediabox(pdf_doc* doc)
     return &pdoc->mediabox;
 }
 
-pdf_ocproperties *
-pdf_ocproperties_load(pdf_obj *oc)
-{
-    return 0;
-}
-
 pdf_doc*
 pdf_doc_load(pdf_trailer *trailer)
 {
@@ -341,6 +335,7 @@ void pdf_doc_done(pdf_doc *d)
     }
     pdf_doc_trailer_free(d->trailer);
     pdf_free(d->pages);
+    pdf_ocproperties_free(d->ocproperties);
     pdf_free(d);
 }
 
