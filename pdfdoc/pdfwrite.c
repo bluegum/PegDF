@@ -46,6 +46,31 @@ static void pdf_key_obj_write(const char *, pdf_obj* o, pdf_xref_internal *x, FI
 static void pdf_obj_scan(pdf_obj *o, pdf_xref_internal *x);
 static void pdf_write_indirect_objs(pdf_xref_internal *xref, FILE *out, pdfcrypto_priv *crypto);
 
+static const char escape_chart[256] =
+{
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+};
+
+static inline int
+is_escapable(unsigned int c)
+{
+    return escape_chart[c];
+}
 static
 pdf_xref_internal*
 pdf_xref_internal_create(int n, int npages)
@@ -222,9 +247,30 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
             fprintf(f, "%f ", o->value.f);
             break;
         case eKey:
-        case eName:
             fprintf(f, "/%s ", o->value.k);
             break;
+        case eName:
+        {
+            unsigned char *p = o->value.k;
+            fputc('/', f);
+            while (*p)
+            {
+                if (is_escapable(*p))
+                {
+                    char buf[3];
+                    sprintf(buf, "%02X", *p);
+                    fputc('#', f);
+                    fputc(buf[0], f);
+                    fputc(buf[1], f);
+                }
+                else
+                {
+                    fputc(*p, f);
+                }
+                p++;
+            }
+            break;
+        }
         case eString:
             fprintf(f, "%s", "(");
             if (crypto)
