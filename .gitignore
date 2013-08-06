@@ -18,3 +18,4 @@ obj
 peg/leg
 peg/peg
 pdfread/keywords_hash.c
+openssl/test

@@ -96,7 +96,7 @@ STREAM   <- DELIM NUM  NUM  'obj' DELIM   { push(eObjMarker, 0, NULL); }
 	    / 'stream' (CR/LF) (.) {pop_stream( parser_inst->file_position, -1);}
 	)
 
-REF	 <- NUM NUM 'R' DELIM { push_ref(eRef, pop().value.i, pop().value.i);}
+REF	 <- NUM NUM 'R' DELIM { int n, g; g = pop().value.i, n = pop().value.i; push_ref(eRef, n, g);}
 XREF	 <- 'xref' DELIM
 	 (
 	 POSITIVE {push(eInt,atoi(yytext), NULL);}
