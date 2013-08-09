@@ -325,7 +325,7 @@ dict_to_array(dict *d)
       if (!a)
 	    return a;
       a->cur = 0;
-      a->items = pdf_malloc((sizeof(char*) + sizeof(pdf_obj))* d->n);
+      a->items = pdf_malloc((sizeof(struct dict_item))* (d->n));
       if (!a->items)
 	    return NULL;
       if (d && d->dict)

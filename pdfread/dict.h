@@ -41,7 +41,7 @@ struct dict_list_s
 struct dict_array_s
 {
       int cur;
-      struct {
+      struct dict_item {
 	    char *key;
 	    pdf_obj val;
       } *items;
