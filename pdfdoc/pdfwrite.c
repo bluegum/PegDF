@@ -128,18 +128,30 @@ pdf_xref_internal_append(pdf_xref_internal *x, int n, int g)
     return x;
 }
 
+static
+void
+pdf_xref_insert_indirect(pdf_xref_internal *x, pdf_obj *obj)
+{
+    if (!obj || obj->t != eRef)
+        return;
+    pdf_obj_scan(obj, x);
+    pdf_xref_internal_append(x, obj->value.r.num, obj->value.r.gen);
+    x->page_obj_buf[x->page_obj_idx] = obj->value.r.num;
+    x->page_obj_idx ++;
+}
+
 static void
 pdf_oc_write(pdf_ocproperties *oc, pdf_xref_internal *x, FILE *o, pdfcrypto_priv *crypto)
 {
     if (!oc)
         return;
-    fprintf(o, "%s\n", "/OCProperties <<");
+    fputs("/OCProperties <<", o);
     pdf_key_obj_write("OCGs", oc->ocgs, x, o, crypto);
     pdf_key_obj_write("D", oc->d, x, o, crypto);
     if (oc->configs)
         pdf_key_obj_write("Configs", oc->configs, x, o, crypto);
 
-    fprintf(o, "%s\n", ">> ");
+    fputs(">> ", o);
 }
 
 static
@@ -153,19 +165,29 @@ pdf_catalog_write(pdf_doc *doc, pdf_xref_internal *x, FILE *o, pdfcrypto_priv *c
         pdf_obj_scan(doc->ocproperties->ocgs, x);
         pdf_write_indirect_objs(x, o, crypto);
     }
+    if (doc->metadata && doc->metadata->t == eRef)
+    {
+        pdf_xref_insert_indirect(x, doc->metadata);
+        pdf_write_indirect_objs(x, o, crypto);
+    }
     new_idx = x->xref->cur;
     x->xref->cur = 2;
     x->xref->offsets[x->xref->cur] = ftell(o);
     fprintf(o, "%d %d obj\n", 2, 0);
-    fprintf(o, "%s\n", "<<");
-    fprintf(o, "%s\n", "/Type /Catalog");
+    fputs("<</Type /Catalog", o);
     fprintf(o, "/Pages %d %d R\n",1, 0);
+
+    if (doc->metadata && doc->metadata->t == eRef)
+    {
+        fputs("/Metadata ", o);
+        pdf_obj_write(doc->metadata, x, o, crypto);
+    }
+
     if (doc->ocproperties)
     {
         pdf_oc_write(doc->ocproperties, x, o, crypto);
     }
-    fprintf(o, "%s", ">> ");
-    fprintf(o, "%s\n", "endobj");
+    fputs(">>\nendobj\n", o);
     x->xref->cur ++;
     if (doc->ocproperties)
     {
@@ -180,17 +202,15 @@ pdf_pages_obj_write(pdf_xref_internal *x, int pg1st, int num, FILE *o)
     int i;
     x->xref->offsets[1] = ftell(o);
     fprintf(o, "%d %d obj\n", 1, 0);
-    fprintf(o, "%s\n", "<<");
-    fprintf(o, "%s\n", "/Type /Pages");
+    fputs("<</Type /Pages", o);
     fprintf(o, "/Count %d\n", num);
-    fprintf(o, "/Kids [\n");
+    fputs("/Kids [", o);
     for (i = 0; i < num; i++)
     {
 	    fprintf(o, "%d %d R\n", x->page_ref_buf[i+pg1st], 0);
     }
-    fprintf(o, "]\n");
-    fprintf(o, "%s", ">> ");
-    fprintf(o, "%s\n", "endobj");
+    fputs("]", o);
+    fputs(">>\nendobj\n", o);
 }
 
 static
@@ -199,7 +219,7 @@ pdf_xref_write(pdf_xref_internal *x, FILE *o)
 {
     int i, startxref;
     startxref = ftell(o);
-    fprintf(o, "%s\n", "xref");
+    fputs("xref\n", o);
     fprintf(o, "%d %d\n", 0, x->xref->cur);
     fprintf(o, "%010d %05d f \n", 0, 65535);
     for (i = 1; i < x->xref->cur; i++)
@@ -213,14 +233,14 @@ static
 void
 pdf_trailer_write(pdf_xref_internal *x, int startxref, FILE *o)
 {
-    fprintf(o, "%s\n", "trailer");
-    fprintf(o, "%s\n", "<<");
+    fputs("trailer\n", o);
+    fputs("<<", o);
     fprintf(o, "/Size %d\n", x->xref->cur);
     fprintf(o, "/Root %d %d R\n", 2, 0);
-    fprintf(o, "%s", ">> ");
+    fputs(">> ", o);
     fprintf(o, "%s\n", "startxref");
     fprintf(o, "%d\n", startxref);
-    fprintf(o, "%s\n", "%%EOF");
+    fputs("%%EOF", o);
 }
 
 static void
@@ -238,7 +258,7 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
     switch (o->t)
     {
         case eBool:
-            fprintf(f, "%s ", o->value.b?"true":"false");
+            fputs(o->value.b?"true":"false", f);
             break;
         case eInt:
             fprintf(f, "%d ", o->value.i);
@@ -272,7 +292,7 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
             break;
         }
         case eString:
-            fprintf(f, "%s", "(");
+            fputs("(", f);
             if (crypto)
             {
                 pdf_stream *s = pdf_stream_load(o, crypto, x->page_obj_buf[x->cur_idx], 0);
@@ -303,10 +323,10 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
                     }
                 }
             }
-            fprintf(f, "%s", ")");
+            fputc(')', f);
             break;
 	    case eHexString:
-            fprintf(f, "\n%s", "<");
+            fputs("\n<", f);
             if (crypto)
             {
                 pdf_stream *s = pdf_stream_load(o, crypto, x->page_obj_buf[x->cur_idx], 0);
@@ -328,7 +348,7 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
                     if ((i+1)%32==0) fputc('\n', f);
                 }
             }
-            fprintf(f, "%s", ">");
+            fputc('>', f);
             break;
         case eDict:
         {
@@ -337,7 +357,7 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
             int strmlen = 0;
             int last_off = 0;
             ll = l;
-            fprintf(f, "%s", "<<");
+            fputs("<<", f);
             while (l && l->key)
             {
                 if (strcmp(l->key, "Length")==0)
@@ -380,7 +400,7 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
                 pdf_obj_write(&l->val, x, f, crypto);
                 l = l->next;
             }
-            fprintf(f, "%s", ">> ");
+            fputs(">> ", f);
             if (strm && crypto)
             {
                 int obj, gen;
@@ -400,7 +420,7 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
                     int curx;
                     int strmoff;
                     int ll;
-                    fprintf(f, "%s\n", "stream");
+                    fputs("stream\n", f);
                     strmoff = ftell(out);
                     //
                     while ((c = pdf_stream_getchar(s)) != EOF)
@@ -411,7 +431,7 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
                     fseek(out, last_off, SEEK_SET);
                     fprintf(out, "%10d", curx - strmoff);
                     fseek(out, curx, SEEK_SET);
-                    fprintf(out, "endstream\n");
+                    fputs("\nendstream", out);
                 }
                 else
                 {
@@ -423,12 +443,12 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
             {
                 unsigned char c;
               write_rawstream:
-                fprintf(f, "%s\n", "stream");
+                fputs("stream\n", f);
                 strm->len = strmlen;
                 while (strm->read(strm, &c, 1))
                     fputc(c, f);
                 strm->close(strm, 1);
-                fprintf(f, "\n%s\n", "endstream");
+                fputs("\nendstream", f);
             }
             dict_list_free(ll);
         }
@@ -436,12 +456,12 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
         case eArray:
         {
             int i;
-            fprintf(f, "%s", "[");
+            fputs("[", f);
             for (i = 0; i < o->value.a.len; i++)
             {
                 pdf_obj_write(&o->value.a.items[i], x, f, crypto);
             }
-            fprintf(f, "%s", "]");
+            fputs("]", f);
         }
         break;
         case eRef:
@@ -474,7 +494,8 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
 static void
 pdf_key_obj_write(const char *k, pdf_obj *o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
 {
-    fprintf(f, "/%s ", k);
+    fputc('/', f);
+    fputs(k, f);
     pdf_obj_write(o, x, f, crypto);
 }
 
@@ -536,7 +557,7 @@ pdf_page_contents_write(pdf_obj *content, unsigned long write_flag, pdf_xref_int
                 fprintf(out, "%10d", curx - strmoff);
                 fseek(out, curx, SEEK_SET);
             }
-            fputs("endstream\n", out);
+            fputs("\nendstream", out);
 	    }
 	    else
 	    {
@@ -547,7 +568,7 @@ pdf_page_contents_write(pdf_obj *content, unsigned long write_flag, pdf_xref_int
     {
 	    pdf_obj_write(cobj, xref, out, crypto);
     }
-    fprintf(out, "%s\n", "endobj");
+    fputs("\nendobj\n", out);
     xref->xref->offsets[xref->xref->cur] = off;
     xref->xref->cur ++;
     return content_ref;
@@ -559,21 +580,21 @@ pdf_group_write(pdf_group *g, pdf_xref_internal *x, FILE *o, pdfcrypto_priv *cry
 {
     if (!g)
         return;
-    fprintf(o, "/%s<<", "Group");
+    fputs("/Group", o);
     if (g->cs)
     {
 	    pdf_key_obj_write("CS", g->cs, x, o, crypto);
     }
     pdf_key_int_write("I", g->i, x, o, crypto);
     pdf_key_int_write("K", g->k, x, o, crypto);
-    fprintf(o, ">> ");
+    fputs(">> ", o);
 }
 
 static
 void
 pdf_resources_write(pdf_resources *r, pdf_xref_internal *x, FILE *o, pdfcrypto_priv *crypto)
 {
-    fprintf(o, "%s <<", "/Resources");
+    fputs("/Resources <<", o);
     if (r->extgstate)
     {
         dict_list *ll, *l;
@@ -583,7 +604,7 @@ pdf_resources_write(pdf_resources *r, pdf_xref_internal *x, FILE *o, pdfcrypto_p
 	    {
             l = dict_to_list(extg->value.d.dict);
             ll = l;
-            fprintf(o, "%s <<", "/ExtGState");
+            fputs("/ExtGState <<", o);
             while (l && l->key)
             {
                 pdf_obj *t = &l->val;
@@ -615,59 +636,59 @@ pdf_resources_write(pdf_resources *r, pdf_xref_internal *x, FILE *o, pdfcrypto_p
                     }
                     pdf_free(a);
                 }
-                fprintf(o, "%s", ">> ");
+                fputs(">> ", o);
                 l = l->next;
             }
             // free dict_list
             dict_list_free(ll);
-            fprintf(o, "%s",  ">> ");
+            fputs(">> ", o);
 	    }
     } // extgstate
     if (r->font)
     {
         pdf_obj *font = r->font;
         pdf_obj_resolve(font);
-        fprintf(o, "%s", "/Font");
+        fputs("/Font", o);
         pdf_obj_write(font, x, o, crypto);
-        fprintf(o, "%s", "\n");
+        fputs("\n", o);
     }
     if (r->xobject)
     {
         pdf_obj_resolve(r->xobject);
-        fprintf(o, "%s", "/XObject");
+        fputs("/XObject", o);
         pdf_obj_write(r->xobject, x, o, crypto);
-        fprintf(o, "%s", "\n");
+        fputs("\n", o);
     }
     if (r->colorspace)
     {
         pdf_obj_resolve(r->colorspace);
-        fprintf(o, "%s", "/ColorSpace");
+        fputs("/ColorSpace", o);
         pdf_obj_write(r->colorspace, x, o, crypto);
-        fprintf(o, "%s", "\n");
+        fputs("\n", o);
     }
     if (r->shading)
     {
         pdf_obj_resolve(r->shading);
-        fprintf(o, "%s", "/Shading");
+        fputs("/Shading", o);
         pdf_obj_write(r->shading, x, o, crypto);
-        fprintf(o, "%s", "\n");
+        fputs("\n", o);
     }
     if (r->pattern)
     {
         pdf_obj_resolve(r->pattern);
-        fprintf(o, "%s", "/Pattern");
+        fputs("/Pattern", o);
         pdf_obj_write(r->pattern, x, o, crypto);
-        fprintf(o, "%s", "\n");
+        fputs("\n", o);
     }
     if (r->properties)
     {
         pdf_obj_resolve(r->properties);
-        fprintf(o, "%s", "/Properties");
+        fputs("/Properties", o);
         pdf_obj_write(r->properties, x, o, crypto);
-        fprintf(o, "%s", "\n");
+        fputs("\n", o);
     }
     // end resources
-    fprintf(o, "%s",  ">> ");
+    fputs(">> ", o);
 }
 
 static
@@ -699,10 +720,7 @@ pdf_obj_scan(pdf_obj *o, pdf_xref_internal *x)
                 if (l->val.t == eRef)
                 {
                     // recursively scan this obj for more refs
-                    pdf_obj_scan(&l->val, x);
-                    pdf_xref_internal_append(x, l->val.value.r.num, l->val.value.r.gen);
-                    x->page_obj_buf[x->page_obj_idx] = l->val.value.r.num;
-                    x->page_obj_idx ++;
+                    pdf_xref_insert_indirect(x, &l->val);
                 }
                 else if (l->val.t == eArray)
                 {
@@ -738,10 +756,7 @@ pdf_obj_scan(pdf_obj *o, pdf_xref_internal *x)
                         if (m < x->page_obj_idx && (oo->value.r.num == x->page_obj_buf[m]))
                             continue;
                     }
-                    pdf_obj_scan(oo, x);
-                    pdf_xref_internal_append(x, oo->value.r.num, oo->value.r.gen); // insert a dummy
-                    x->page_obj_buf[x->page_obj_idx] = oo->value.r.num;
-                    x->page_obj_idx ++;
+                    pdf_xref_insert_indirect(x, oo);
                 }
                 else if (oo->t == eDict || oo->t == eArray)
                 {
@@ -796,10 +811,7 @@ pdf_resources_scan(pdf_resources *r, pdf_xref_internal* x)
                 if (l->val.t == eRef)
                 {
                     // recursively scan this obj for more refs
-                    pdf_obj_scan(&l->val, x);
-                    pdf_xref_internal_append(x, l->val.value.r.num, l->val.value.r.gen);
-                    x->page_obj_buf[x->page_obj_idx] = l->val.value.r.num;
-                    x->page_obj_idx ++;
+                    pdf_xref_insert_indirect(x, &l->val);
                 }
                 else if (l->val.t == eDict || l->val.t == eArray)
                 {
@@ -879,7 +891,7 @@ pdf_write_indirect_objs(pdf_xref_internal *xref, FILE *out, pdfcrypto_priv *cryp
                 xref->xref->offsets[xref->xref->cur] = ftell(out);
                 fprintf(out, "%d 0 obj\n", xref->xref->cur);
                 pdf_obj_write(o, xref, out, crypto);
-                fprintf(out, "\n%s\n", "endobj");
+                fputs("\nendobj\n", out);
                 // update entry
                 bpt_insert(xref->entry, xref->page_obj_buf[i], (void*)xref->xref->cur);
                 // inc new xref counter
@@ -942,15 +954,15 @@ pdf_page_obj_write(pdf_page *page, int pgidx, unsigned long write_flag, pdf_xref
     else
     {
 	    int i;
-	    fprintf(out, "/Contents [");
+	    fputs("/Contents [", out);
 	    for (i = 0; i < content_num; i++)
 	    {
             fprintf(out, "%d %d R ", content_ref_arr[i], 0);
 	    }
-	    fprintf(out, "]");
+	    fputc(']', out);
     }
-    fprintf(out, "%s\n", ">> ");
-    fprintf(out, "%s\n", "endobj");
+    fputs(">>", out);
+    fputs("\nendobj\n", out);
 }
 
 pdf_err

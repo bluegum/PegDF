@@ -294,6 +294,36 @@ pdf_doc_load(pdf_trailer *trailer)
     {
         doc->ocproperties = pdf_ocproperties_load(oc);
     }
+    doc->version = pdf_dict_get(d, "Version");
+    doc->extentions = pdf_dict_get(d, "Extentions");
+    doc->pagelabels = pdf_dict_get(d, "PageLabels");
+    doc->names = pdf_dict_get(d, "Names");
+    doc->dests = pdf_dict_get(d, "Dests");
+    doc->viewerpreferences = pdf_dict_get(d, "ViewerPreferences");
+    doc->pagelayout = pdf_dict_get(d, "PageLayout");
+    doc->pagemode = pdf_dict_get(d, "PageMode");
+    doc->outlines = pdf_dict_get(d, "Outlines");
+    doc->threads = pdf_dict_get(d, "Threads");
+    doc->openaction = pdf_dict_get(d, "OpenAction");
+    doc->aa = pdf_dict_get(d, "AA");
+    doc->uri = pdf_dict_get(d, "URI");
+    doc->acroform = pdf_dict_get(d, "AcroForm");
+    doc->metadata = pdf_dict_get(d, "Metadata");
+    doc->structtreeroot = pdf_dict_get(d, "StructTreeRoot");
+    doc->markinfo = pdf_dict_get(d, "MarkInfo");
+    doc->lang = pdf_dict_get(d, "Lang");
+    doc->spiderinfo = pdf_dict_get(d, "SpiderInfo");
+    doc->outputintents = pdf_dict_get(d, "OutputIntents");
+    doc->pieceinfo = pdf_dict_get(d, "PieceInfo");
+    doc->perms = pdf_dict_get(d, "Perms");
+    doc->legal = pdf_dict_get(d, "Legal");
+    doc->requirements = pdf_dict_get(d, "Requirements");
+    doc->collection = pdf_dict_get(d, "Collection");
+    a = pdf_dict_get(d, "NeedsRendering");
+    if (a) {
+        doc->needsrendering = pdf_to_int(pdf_dict_get(d, "NeedsRendering"));
+    }
+    //
     pdf_page_tree_load(doc, kids);
     /// shuffle in some auxillary info
     ///

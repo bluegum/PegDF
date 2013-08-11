@@ -207,32 +207,32 @@ enum pdf_pagemode_e
 struct pdf_doc_s
 {
     // catalog
-    int version;
-    void *extentions;
-    void *pagelabels;
-    void *names;
-    void *dests;
-    void *viewerpreferences;
-    void *pagelayout;
-    pdf_pagemode pagemode;
-    void *outlines;
-    void *threads;
-    void *openaction;
-    void *aa;
-    void *uri;
-    void *acroform;
-    void *metadata;
-    void *structtreeroot;
-    void *markinfo;
+    pdf_obj* version;
+    pdf_obj *extentions;
+    pdf_obj *pagelabels;
+    pdf_obj *names;
+    pdf_obj *dests;
+    pdf_obj *viewerpreferences;
+    pdf_obj *pagelayout;
+    pdf_obj *pagemode;
+    pdf_obj *outlines;
+    pdf_obj *threads;
+    pdf_obj *openaction;
+    pdf_obj *aa;
+    pdf_obj *uri;
+    pdf_obj *acroform;
+    pdf_obj *metadata;
+    pdf_obj *structtreeroot;
+    pdf_obj *markinfo;
     char *lang;
-    void *spiderinfo;
-    void *outputintents;
-    void *pieceinfo;
+    pdf_obj *spiderinfo;
+    pdf_obj *outputintents;
+    pdf_obj *pieceinfo;
     pdf_ocproperties *ocproperties;
-    void *perms;
-    void *legal;
-    void *requirements;
-    void *collection;
+    pdf_obj *perms;
+    pdf_obj *legal;
+    pdf_obj *requirements;
+    pdf_obj *collection;
     int needsrendering; // boolean
     // page tree
     pdf_page **pages;

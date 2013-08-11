@@ -31,4 +31,5 @@ pdf_ocproperties_free(pdf_ocproperties* oc)
 {
     if (!oc)
         return;
+    pdf_free(oc);
 }
