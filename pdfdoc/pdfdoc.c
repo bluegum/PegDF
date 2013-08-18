@@ -255,9 +255,9 @@ pdf_doc_load(pdf_trailer *trailer)
     if (!trailer)
         return NULL;
     d = trailer->root_obj;
-
-    if (!d)
+    if (!d || d->t != eRef)
         return NULL;
+
     a = pdf_dict_get(d, "Pages");
     if (!a)
         return NULL;
@@ -268,6 +268,9 @@ pdf_doc_load(pdf_trailer *trailer)
     if (!doc)
         return NULL;
     memset(doc, 0, sizeof(pdf_doc));
+    doc->root_ref = d->value.r.num;
+    if (a->t == eRef)
+        doc->pages_ref = a->value.r.num;
     doc->count = count;
     c = pdf_dict_get(a, "MediaBox");
     if (c)

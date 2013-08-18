@@ -14,6 +14,8 @@
 #include "pdfdoc.h"
 #include "pdfread.h"
 
+#define MARK_BLACK -1
+#define MARK_GRAY  -2
 // We borrow the term "Mark&Sweep" as 2 stages
 // in #1.scanning pdf object for writing, stored in a tree structure and
 // #2. Sweep the tree, and re-generate ref-ids and stream offsets.
@@ -115,28 +117,34 @@ pdf_xref_internal_free(pdf_xref_internal *x)
 
 static
 pdf_xref_internal *
-pdf_xref_internal_append(pdf_xref_internal *x, int n, int g)
+pdf_xref_internal_append(pdf_xref_internal *x, int n, int g, int color)
 {
     // ignore generation number for now.
     int a;
     a = (int)bpt_search(x->entry, n);
-    if (a == 0)
+    if (a == 0 || a == MARK_GRAY || a == MARK_BLACK)
     {
-	    bpt_insert(x->entry, n, (void*)-1);
-	    x->n += 1;
+	    bpt_insert(x->entry, n, (void*)color);
+        if (color == MARK_BLACK)
+            x->n += 1;
     }
     return x;
 }
 
 static
 void
-pdf_xref_insert_indirect(pdf_xref_internal *x, pdf_obj *obj)
+pdf_xref_insert_indirect(pdf_xref_internal *x, pdf_obj *o)
 {
-    if (!obj || obj->t != eRef)
+    pdf_obj *d;
+    if (!o || o->t != eRef)
         return;
-    pdf_obj_scan(obj, x);
-    pdf_xref_internal_append(x, obj->value.r.num, obj->value.r.gen);
-    x->page_obj_buf[x->page_obj_idx] = obj->value.r.num;
+    d = pdf_obj_deref(o);
+    if (!d)
+        return;
+    pdf_xref_internal_append(x, o->value.r.num, o->value.r.gen, MARK_GRAY);
+    pdf_obj_scan(d, x);
+    pdf_xref_internal_append(x, o->value.r.num, o->value.r.gen, MARK_BLACK);
+    x->page_obj_buf[x->page_obj_idx] = o->value.r.num;
     x->page_obj_idx ++;
 }
 
@@ -160,16 +168,45 @@ pdf_catalog_write(pdf_doc *doc, pdf_xref_internal *x, FILE *o, pdfcrypto_priv *c
 {
     int new_idx;
     x->xref->cur = 3;
+
+    bpt_insert(x->entry, doc->root_ref, 2);
+    if (doc->pages_ref)
+        bpt_insert(x->entry, doc->pages_ref, 1);
+
     if (doc->ocproperties)
     {
         pdf_obj_scan(doc->ocproperties->ocgs, x);
-        pdf_write_indirect_objs(x, o, crypto);
     }
     if (doc->metadata && doc->metadata->t == eRef)
     {
-        pdf_xref_insert_indirect(x, doc->metadata);
-        pdf_write_indirect_objs(x, o, crypto);
+        pdf_obj_scan(doc->metadata, x);
     }
+    if (doc->markinfo)
+    {
+        pdf_obj_scan(doc->markinfo, x);
+    }
+    if (doc->names)
+    {
+        pdf_obj_scan(doc->names, x);
+    }
+    if (doc->outlines)
+    {
+        pdf_obj_scan(doc->outlines, x);
+    }
+    if (doc->pagelabels)
+    {
+        pdf_obj_scan(doc->pagelabels, x);
+    }
+    if (doc->pieceinfo)
+    {
+        pdf_obj_scan(doc->pieceinfo, x);
+    }
+    if (doc->structtreeroot)
+    {
+        pdf_obj_scan(doc->structtreeroot, x);
+    }
+    pdf_write_indirect_objs(x, o, crypto);
+    // new catalog dictionary
     new_idx = x->xref->cur;
     x->xref->cur = 2;
     x->xref->offsets[x->xref->cur] = ftell(o);
@@ -177,6 +214,47 @@ pdf_catalog_write(pdf_doc *doc, pdf_xref_internal *x, FILE *o, pdfcrypto_priv *c
     fputs("<</Type /Catalog", o);
     fprintf(o, "/Pages %d %d R\n",1, 0);
 
+    if (doc->pagemode)
+    {
+        fputs("/PageMode ", o);
+        pdf_obj_write(doc->pagemode, x, o, crypto);
+    }
+    if (doc->pagelayout)
+    {
+        fputs("/PageLayout ", o);
+        pdf_obj_write(doc->pagelayout, x, o, crypto);
+    }
+    if (doc->structtreeroot)
+    {
+        fputs("/StructTreeRoot ", o);
+        pdf_obj_write(doc->structtreeroot, x, o, crypto);
+    }
+    if (doc->pieceinfo)
+    {
+        fputs("/PieceInfo ", o);
+        pdf_obj_write(doc->pieceinfo, x, o, crypto);
+    }
+    if (doc->pagelabels)
+    {
+        fputs("/PageLabels ", o);
+        pdf_obj_write(doc->pagelabels, x, o, crypto);
+    }
+
+    if (doc->outlines)
+    {
+        fputs("/Outlines ", o);
+        pdf_obj_write(doc->outlines, x, o, crypto);
+    }
+    if (doc->names)
+    {
+        fputs("/Names ", o);
+        pdf_obj_write(doc->names, x, o, crypto);
+    }
+    if (doc->markinfo)
+    {
+        fputs("/MarkInfo ", o);
+        pdf_obj_write(doc->markinfo, x, o, crypto);
+    }
     if (doc->metadata && doc->metadata->t == eRef)
     {
         fputs("/Metadata ", o);
@@ -219,7 +297,7 @@ pdf_xref_write(pdf_xref_internal *x, FILE *o)
 {
     int i, startxref;
     startxref = ftell(o);
-    fputs("xref\n", o);
+    fputs("\nxref\n", o);
     fprintf(o, "%d %d\n", 0, x->xref->cur);
     fprintf(o, "%010d %05d f \n", 0, 65535);
     for (i = 1; i < x->xref->cur; i++)
@@ -473,16 +551,7 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
             }
             else
             {
-                // write direct object
-                pdf_obj *d = pdf_obj_deref(o);
-                if (d)
-                {
-                    pdf_obj_write(d, x, f, crypto);
-                }
-                else
-                { // Now we are screw'd, the reader will complain ref out of range
-                    fprintf(f, "%d %d R ", o->value.r.num, o->value.r.gen);
-                }
+                fprintf(f, "%d %d R ", -a, 0);
             }
         }
         break;
@@ -580,7 +649,7 @@ pdf_group_write(pdf_group *g, pdf_xref_internal *x, FILE *o, pdfcrypto_priv *cry
 {
     if (!g)
         return;
-    fputs("/Group", o);
+    fputs("/Group<<", o);
     if (g->cs)
     {
 	    pdf_key_obj_write("CS", g->cs, x, o, crypto);
@@ -702,8 +771,16 @@ pdf_obj_scan(pdf_obj *o, pdf_xref_internal *x)
     {
         case eRef:
 	    {
-            pdf_obj *d = pdf_obj_deref(o);
-            pdf_obj_scan(d, x);
+            pdf_xref_insert_indirect(x, o);
+            /*
+            int a;
+            a = (int)bpt_search(x->entry, o->value.r.num);
+            if (a == 0)
+            {
+                pdf_obj *d = pdf_obj_deref(o);
+                pdf_obj_scan(d, x);
+            }
+            */
             break;
 	    }
         case eDict:
@@ -719,8 +796,11 @@ pdf_obj_scan(pdf_obj *o, pdf_xref_internal *x)
                 }
                 if (l->val.t == eRef)
                 {
+                    int aa = (int)bpt_search(x->entry, l->val.value.r.num);
                     // recursively scan this obj for more refs
-                    pdf_xref_insert_indirect(x, &l->val);
+                    if (aa == 0) {
+                        pdf_xref_insert_indirect(x, &l->val);
+                    }
                 }
                 else if (l->val.t == eArray)
                 {
@@ -745,6 +825,7 @@ pdf_obj_scan(pdf_obj *o, pdf_xref_internal *x)
                 oo = &obj->value.a.items[i];
                 if (oo->t == eRef)
                 {
+#if 0
                     if (x->page_obj_idx)
                     {
                         int m;
@@ -756,6 +837,7 @@ pdf_obj_scan(pdf_obj *o, pdf_xref_internal *x)
                         if (m < x->page_obj_idx && (oo->value.r.num == x->page_obj_buf[m]))
                             continue;
                     }
+#endif
                     pdf_xref_insert_indirect(x, oo);
                 }
                 else if (oo->t == eDict || oo->t == eArray)
@@ -808,15 +890,7 @@ pdf_resources_scan(pdf_resources *r, pdf_xref_internal* x)
             ll = l;
             while (l && l->key)
             {
-                if (l->val.t == eRef)
-                {
-                    // recursively scan this obj for more refs
-                    pdf_xref_insert_indirect(x, &l->val);
-                }
-                else if (l->val.t == eDict || l->val.t == eArray)
-                {
-                    pdf_obj_scan(&l->val, x);
-                }
+                pdf_obj_scan(&l->val, x);
                 l = l->next;
             }
             // free list
@@ -884,11 +958,13 @@ pdf_write_indirect_objs(pdf_xref_internal *xref, FILE *out, pdfcrypto_priv *cryp
         for (i = 0; i < xref->page_obj_idx; i++)
         {
             int a = (int)bpt_search(xref->entry, xref->page_obj_buf[i]);
-            if (a == -1) // -1 means new item in the output tree, need to be flushed out.
+            if (a == MARK_BLACK) // MARK_BLACK means new item in the output tree, need to be flushed out.
             {
                 pdf_obj *o = pdf_obj_find(xref->page_obj_buf[i], 0);
                 xref->cur_idx = i;
                 xref->xref->offsets[xref->xref->cur] = ftell(out);
+                // insert negative ref-number to mark back-edge
+                bpt_insert(xref->entry, xref->page_obj_buf[i], (void*)-xref->xref->cur);
                 fprintf(out, "%d 0 obj\n", xref->xref->cur);
                 pdf_obj_write(o, xref, out, crypto);
                 fputs("\nendobj\n", out);

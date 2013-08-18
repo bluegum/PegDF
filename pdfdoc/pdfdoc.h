@@ -239,6 +239,8 @@ struct pdf_doc_s
     int count;
     // internal parking spot
     int pageidx;
+    int root_ref; // The original ref number, for writer re-referencing
+    int pages_ref; // The original ref number, for writer re-referencing
     //pdf_info *info;
     //pdf_encrypt *encrypt;
     pdf_trailer *trailer;
