@@ -31,7 +31,7 @@ struct pdf_xref_internal_s
     bpt_tree *entry; // storing scanned objects
     pdf_xref_table *xref;
     int page_obj_idx;
-    int page_obj_buf[10240*2];
+    int *page_obj_buf;
     int *page_ref_buf;
 };
 
@@ -89,6 +89,7 @@ pdf_xref_internal_create(int n, int npages)
     x->xref = pdf_malloc(sizeof(pdf_xref_table));
     x->xref->n = n;
     x->xref->cur = 1;
+    x->page_obj_buf = pdf_malloc(sizeof(int)*(n));
     x->xref->offsets = pdf_malloc(sizeof(int)*n);
     x->page_ref_buf = pdf_malloc(sizeof(int)*npages);
     return x;
@@ -112,6 +113,9 @@ pdf_xref_internal_free(pdf_xref_internal *x)
     }
     if (x->page_ref_buf)
 	    pdf_free(x->page_ref_buf);
+    if (x->page_obj_buf)
+	    pdf_free(x->page_obj_buf);
+
     pdf_free(x);
 }
 
@@ -124,9 +128,16 @@ pdf_xref_internal_append(pdf_xref_internal *x, int n, int g, int color)
     a = (int)bpt_search(x->entry, n);
     if (a == 0 || a == MARK_GRAY || a == MARK_BLACK)
     {
-	    bpt_insert(x->entry, n, (void*)color);
-        if (color == MARK_BLACK)
+        if (a == 0 || a == MARK_GRAY)
+            bpt_insert(x->entry, n, (void*)color);
+        if (a == MARK_GRAY && color == MARK_BLACK)
+        {
             x->n += 1;
+            x->page_obj_buf[x->page_obj_idx] = n;
+            x->page_obj_idx ++;
+            printf("%d, ", n);
+        }
+
     }
     return x;
 }
@@ -144,8 +155,6 @@ pdf_xref_insert_indirect(pdf_xref_internal *x, pdf_obj *o)
     pdf_xref_internal_append(x, o->value.r.num, o->value.r.gen, MARK_GRAY);
     pdf_obj_scan(d, x);
     pdf_xref_internal_append(x, o->value.r.num, o->value.r.gen, MARK_BLACK);
-    x->page_obj_buf[x->page_obj_idx] = o->value.r.num;
-    x->page_obj_idx ++;
 }
 
 static void
@@ -771,16 +780,12 @@ pdf_obj_scan(pdf_obj *o, pdf_xref_internal *x)
     {
         case eRef:
 	    {
-            pdf_xref_insert_indirect(x, o);
-            /*
-            int a;
-            a = (int)bpt_search(x->entry, o->value.r.num);
+            int a = (int)bpt_search(x->entry, o->value.r.num);
             if (a == 0)
             {
                 pdf_obj *d = pdf_obj_deref(o);
-                pdf_obj_scan(d, x);
+                pdf_xref_insert_indirect(x, d);
             }
-            */
             break;
 	    }
         case eDict:
@@ -882,20 +887,7 @@ pdf_resources_scan(pdf_resources *r, pdf_xref_internal* x)
     }
     if (r->font)
     {
-        pdf_obj *font = r->font;
-        pdf_obj_resolve(font);
-        if (font->t == eDict)
-        {
-            dict_list *ll, *l = dict_to_list(font->value.d.dict);
-            ll = l;
-            while (l && l->key)
-            {
-                pdf_obj_scan(&l->val, x);
-                l = l->next;
-            }
-            // free list
-            dict_list_free(ll);
-        }
+        pdf_obj_scan(r->font, x);
     }
     if (r->xobject)
     {
@@ -921,7 +913,7 @@ pdf_resources_scan(pdf_resources *r, pdf_xref_internal* x)
 
 static
 void
-pdf_page_scan(pdf_page* pg, pdf_xref_internal* x)
+pdf_page_scan(pdf_page* pg, pdf_xref_internal* x, FILE *o, pdfcrypto_priv *crypto)
 {
     if (!pg)
         return;
@@ -934,6 +926,7 @@ pdf_page_scan(pdf_page* pg, pdf_xref_internal* x)
     {
         pdf_obj_scan(pg->group->cs, x);
     }
+    pdf_write_indirect_objs(x, o, crypto);
     //if (pg->contents) // conflicting with content writer
     // pdf_page_contents_write() resolves and write contents array
     if (0)
@@ -1060,7 +1053,7 @@ pdf_page_write(pdf_doc *doc, int i/* pg# */, unsigned long write_flag, pdfcrypto
     if (!xref)
 	    goto done_0;
     pdf_catalog_write(doc, xref, out, crypto);
-    pdf_page_scan(doc->pages[i], xref);
+    pdf_page_scan(doc->pages[i], xref, out, crypto);
     pdf_write_indirect_objs(xref, out, crypto);
     pdf_page_obj_write(doc->pages[i], i, write_flag, xref, crypto, out);
 
@@ -1194,7 +1187,7 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, unsigned long write_flag,
             if (!xref)
                 goto done_0;
             pdf_catalog_write(doc, xref, out, crypto);
-            pdf_page_scan(doc->pages[i], xref);
+            pdf_page_scan(doc->pages[i], xref, out, crypto);
             pdf_write_indirect_objs(xref, out, crypto);
             pdf_page_obj_write(doc->pages[i], i, write_flag, xref, crypto, out);
 
@@ -1230,7 +1223,7 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, unsigned long write_flag,
 	    pdf_catalog_write(doc, xref, out, crypto);
 	    for (i = pg1st; i <= pglast; i++)
 	    {
-            pdf_page_scan(doc->pages[i], xref);
+            pdf_page_scan(doc->pages[i], xref, out, crypto);
             pdf_write_indirect_objs(xref, out, crypto);
             pdf_page_obj_write(doc->pages[i], i, write_flag, xref, crypto, out);
 	    }
