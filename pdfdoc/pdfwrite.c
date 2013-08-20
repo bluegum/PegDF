@@ -90,7 +90,7 @@ pdf_xref_internal_create(int n, int npages)
     x->xref->n = n;
     x->xref->cur = 1;
     x->page_obj_buf = pdf_malloc(sizeof(int)*(n));
-    x->xref->offsets = pdf_malloc(sizeof(int)*n);
+    x->xref->offsets = pdf_malloc(sizeof(int)*(n+2));
     x->page_ref_buf = pdf_malloc(sizeof(int)*npages);
     return x;
 }
@@ -135,7 +135,6 @@ pdf_xref_internal_append(pdf_xref_internal *x, int n, int g, int color)
             x->n += 1;
             x->page_obj_buf[x->page_obj_idx] = n;
             x->page_obj_idx ++;
-            printf("%d, ", n);
         }
 
     }
@@ -175,7 +174,6 @@ static
 void
 pdf_catalog_write(pdf_doc *doc, pdf_xref_internal *x, FILE *o, pdfcrypto_priv *crypto)
 {
-    int new_idx;
     x->xref->cur = 3;
 
     bpt_insert(x->entry, doc->root_ref, 2);
@@ -216,12 +214,10 @@ pdf_catalog_write(pdf_doc *doc, pdf_xref_internal *x, FILE *o, pdfcrypto_priv *c
     }
     pdf_write_indirect_objs(x, o, crypto);
     // new catalog dictionary
-    new_idx = x->xref->cur;
-    x->xref->cur = 2;
-    x->xref->offsets[x->xref->cur] = ftell(o);
-    fprintf(o, "%d %d obj\n", 2, 0);
+    x->xref->offsets[2] = ftell(o);
+    fputs("2 0 obj\n", o);
     fputs("<</Type /Catalog", o);
-    fprintf(o, "/Pages %d %d R\n",1, 0);
+    fputs("/Pages 1 0 R\n", o);
 
     if (doc->pagemode)
     {
@@ -275,11 +271,6 @@ pdf_catalog_write(pdf_doc *doc, pdf_xref_internal *x, FILE *o, pdfcrypto_priv *c
         pdf_oc_write(doc->ocproperties, x, o, crypto);
     }
     fputs(">>\nendobj\n", o);
-    x->xref->cur ++;
-    if (doc->ocproperties)
-    {
-        x->xref->cur = new_idx;
-    }
 }
 
 static
@@ -294,7 +285,7 @@ pdf_pages_obj_write(pdf_xref_internal *x, int pg1st, int num, FILE *o)
     fputs("/Kids [", o);
     for (i = 0; i < num; i++)
     {
-	    fprintf(o, "%d %d R\n", x->page_ref_buf[i+pg1st], 0);
+	    fprintf(o, " %d %d R", x->page_ref_buf[i+pg1st], 0);
     }
     fputs("]", o);
     fputs(">>\nendobj\n", o);
@@ -783,8 +774,7 @@ pdf_obj_scan(pdf_obj *o, pdf_xref_internal *x)
             int a = (int)bpt_search(x->entry, o->value.r.num);
             if (a == 0)
             {
-                pdf_obj *d = pdf_obj_deref(o);
-                pdf_xref_insert_indirect(x, d);
+                pdf_xref_insert_indirect(x, o);
             }
             break;
 	    }
