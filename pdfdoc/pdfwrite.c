@@ -567,6 +567,7 @@ pdf_key_obj_write(const char *k, pdf_obj *o, pdf_xref_internal *x, FILE *f, pdfc
 {
     fputc('/', f);
     fputs(k, f);
+    fputc(' ', f);
     pdf_obj_write(o, x, f, crypto);
 }
 
