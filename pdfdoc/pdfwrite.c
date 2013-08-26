@@ -90,7 +90,9 @@ pdf_xref_internal_create(int n, int npages)
     x->xref->n = n;
     x->xref->cur = 1;
     x->page_obj_buf = pdf_malloc(sizeof(int)*(n));
-    x->xref->offsets = pdf_malloc(sizeof(int)*(n+2));
+    // +2 for /catalog and /trailer
+    // npage*2 for new page objs and page content objs
+    x->xref->offsets = pdf_malloc(sizeof(int)*(n+2+npages*2));
     x->page_ref_buf = pdf_malloc(sizeof(int)*npages);
     return x;
 }
@@ -478,7 +480,7 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
                 pdf_obj_write(&l->val, x, f, crypto);
                 l = l->next;
             }
-            fputs(">> ", f);
+            fputs(" >> ", f);
             if (strm && crypto)
             {
                 int obj, gen;
@@ -639,7 +641,7 @@ pdf_page_contents_write(pdf_obj *content, unsigned long write_flag, pdf_xref_int
     }
     fputs("\nendobj\n", out);
     xref->xref->offsets[xref->xref->cur] = off;
-    xref->xref->cur ++;
+    xref->xref->cur++;
     return content_ref;
 }
 
@@ -954,7 +956,7 @@ pdf_write_indirect_objs(pdf_xref_internal *xref, FILE *out, pdfcrypto_priv *cryp
                 // update entry
                 bpt_insert(xref->entry, xref->page_obj_buf[i], (void*)xref->xref->cur);
                 // inc new xref counter
-                xref->xref->cur ++;
+                xref->xref->cur++;
             }
         }
     }
@@ -994,7 +996,7 @@ pdf_page_obj_write(pdf_page *page, int pgidx, unsigned long write_flag, pdf_xref
     xref->xref->offsets[xref->xref->cur] = ftell(out);
     fprintf(out, "%d 0 obj\n", xref->xref->cur);
     xref->page_ref_buf[pgidx] = xref->xref->cur;
-    xref->xref->cur ++;
+    xref->xref->cur++;
     fprintf(out, "%s\n", "<<");
     fprintf(out, "%s\n", "/Type /Page");
     fprintf(out, "%s [%f %f %f %f]\n", "/MediaBox", page->mediabox.x0, page->mediabox.y0,  page->mediabox.x1, page->mediabox.y1);

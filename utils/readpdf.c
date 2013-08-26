@@ -191,7 +191,7 @@ int main(int argc, char **argv)
       {
 	    if (inflate)
 		  write_flag |= WRITE_PDF_CONTENT_INFLATE;
-	    if (doc->trailer && doc->trailer->encrypt)
+	    if (doc->encrypt)
 		  write_flag |= WRITE_PDF_CONTENT_INFLATE;
 	    if (separation)
 		  write_flag |= WRITE_PDF_PAGE_SEPARATION;

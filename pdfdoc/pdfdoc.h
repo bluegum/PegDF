@@ -242,7 +242,7 @@ struct pdf_doc_s
     int root_ref; // The original ref number, for writer re-referencing
     int pages_ref; // The original ref number, for writer re-referencing
     //pdf_info *info;
-    //pdf_encrypt *encrypt;
+    pdf_encrypt *encrypt;
     pdf_trailer *trailer;
     // member functions
     gs_rect *(*get_mediabox)(pdf_doc*);

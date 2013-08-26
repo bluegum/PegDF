@@ -331,6 +331,7 @@ pdf_doc_load(pdf_trailer *trailer)
     /// shuffle in some auxillary info
     ///
     doc->trailer = trailer;
+    doc->encrypt = trailer->encrypt;
     //doc->info = trailer->info; // pass info as member of doc
     //doc->encrypt = trailer->encrypt; // pass encrypt
     //trailer->encrypt = NULL; // TODO: move it out
