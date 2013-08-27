@@ -174,7 +174,7 @@ pdf_oc_write(pdf_ocproperties *oc, pdf_xref_internal *x, FILE *o, pdfcrypto_priv
 
 static
 void
-pdf_catalog_write(pdf_doc *doc, pdf_xref_internal *x, FILE *o, pdfcrypto_priv *crypto)
+pdf_catalog_write(pdf_doc *doc, pdf_xref_internal *x, FILE *o, pdfcrypto_priv *crypto, unsigned long flags)
 {
     x->xref->cur = 3;
 
@@ -182,35 +182,35 @@ pdf_catalog_write(pdf_doc *doc, pdf_xref_internal *x, FILE *o, pdfcrypto_priv *c
     if (doc->pages_ref)
         bpt_insert(x->entry, doc->pages_ref, 1);
 
-    if (doc->ocproperties)
+    if (doc->ocproperties && (flags & WRITE_CATALOG_OCPROPERTIES))
     {
         pdf_obj_scan(doc->ocproperties->ocgs, x);
     }
-    if (doc->metadata && doc->metadata->t == eRef)
+    if (doc->metadata && doc->metadata->t == eRef && (flags & WRITE_CATALOG_METADATA))
     {
         pdf_obj_scan(doc->metadata, x);
     }
-    if (doc->markinfo)
+    if (doc->markinfo && (flags & WRITE_CATALOG_MARKINFO))
     {
         pdf_obj_scan(doc->markinfo, x);
     }
-    if (doc->names)
+    if (doc->names && (flags & WRITE_CATALOG_NAMES))
     {
         pdf_obj_scan(doc->names, x);
     }
-    if (doc->outlines)
+    if (doc->outlines && (flags & WRITE_CATALOG_OUTLINES))
     {
         pdf_obj_scan(doc->outlines, x);
     }
-    if (doc->pagelabels)
+    if (doc->pagelabels && (flags & WRITE_CATALOG_PAGELABELS))
     {
         pdf_obj_scan(doc->pagelabels, x);
     }
-    if (doc->pieceinfo)
+    if (doc->pieceinfo && (flags & WRITE_CATALOG_PIECEINFO))
     {
         pdf_obj_scan(doc->pieceinfo, x);
     }
-    if (doc->structtreeroot)
+    if (doc->structtreeroot && (flags & WRITE_CATALOG_STRUCTTREEROOT))
     {
         pdf_obj_scan(doc->structtreeroot, x);
     }
@@ -231,44 +231,44 @@ pdf_catalog_write(pdf_doc *doc, pdf_xref_internal *x, FILE *o, pdfcrypto_priv *c
         fputs("/PageLayout ", o);
         pdf_obj_write(doc->pagelayout, x, o, crypto);
     }
-    if (doc->structtreeroot)
+    if (doc->structtreeroot && (flags & WRITE_CATALOG_STRUCTTREEROOT))
     {
         fputs("/StructTreeRoot ", o);
         pdf_obj_write(doc->structtreeroot, x, o, crypto);
     }
-    if (doc->pieceinfo)
+    if (doc->pieceinfo && (flags & WRITE_CATALOG_PIECEINFO))
     {
         fputs("/PieceInfo ", o);
         pdf_obj_write(doc->pieceinfo, x, o, crypto);
     }
-    if (doc->pagelabels)
+    if (doc->pagelabels && (flags & WRITE_CATALOG_PAGELABELS))
     {
         fputs("/PageLabels ", o);
         pdf_obj_write(doc->pagelabels, x, o, crypto);
     }
 
-    if (doc->outlines)
+    if (doc->outlines && (flags & WRITE_CATALOG_OUTLINES))
     {
         fputs("/Outlines ", o);
         pdf_obj_write(doc->outlines, x, o, crypto);
     }
-    if (doc->names)
+    if (doc->names && (flags & WRITE_CATALOG_NAMES))
     {
         fputs("/Names ", o);
         pdf_obj_write(doc->names, x, o, crypto);
     }
-    if (doc->markinfo)
+    if (doc->markinfo && (flags & WRITE_CATALOG_MARKINFO))
     {
         fputs("/MarkInfo ", o);
         pdf_obj_write(doc->markinfo, x, o, crypto);
     }
-    if (doc->metadata && doc->metadata->t == eRef)
+    if (doc->metadata && doc->metadata->t == eRef && (flags & WRITE_CATALOG_METADATA))
     {
         fputs("/Metadata ", o);
         pdf_obj_write(doc->metadata, x, o, crypto);
     }
 
-    if (doc->ocproperties)
+    if (doc->ocproperties && (flags & WRITE_CATALOG_OCPROPERTIES))
     {
         pdf_oc_write(doc->ocproperties, x, o, crypto);
     }
@@ -1045,7 +1045,7 @@ pdf_page_write(pdf_doc *doc, int i/* pg# */, unsigned long write_flag, pdfcrypto
     xref = pdf_xref_internal_create(pdf_obj_count(), doc->count);
     if (!xref)
 	    goto done_0;
-    pdf_catalog_write(doc, xref, out, crypto);
+    pdf_catalog_write(doc, xref, out, crypto, WRITE_CATALOG_DEFAULTS);
     pdf_page_scan(doc->pages[i], xref, out, crypto);
     pdf_write_indirect_objs(xref, out, crypto);
     pdf_page_obj_write(doc->pages[i], i, write_flag, xref, crypto, out);
@@ -1166,34 +1166,7 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, unsigned long write_flag,
                 sprintf(linebuf, "%s/%s-%d.%s", odir, b, i+1, "pdf");
             }
             printf("Writing %s..\n", linebuf);
-#if 1
             pdf_page_write(doc, i, write_flag, crypto, version, linebuf);
-#else
-            out = fopen(linebuf, "wb");
-            if (!out)
-                return pdf_ok;
-            sprintf(linebuf, "%%PDF-%d.%d\n", version/10, version%10);
-            fputs(linebuf, out);
-            fputs("%\333\332\331\330\n", out);
-            // scan pages
-            xref = pdf_xref_internal_create(pdf_obj_count(), doc->count);
-            if (!xref)
-                goto done_0;
-            pdf_catalog_write(doc, xref, out, crypto);
-            pdf_page_scan(doc->pages[i], xref, out, crypto);
-            pdf_write_indirect_objs(xref, out, crypto);
-            pdf_page_obj_write(doc->pages[i], i, write_flag, xref, crypto, out);
-
-            pdf_pages_obj_write(xref, i, 1, out);
-            // write xref table
-            startxref = pdf_xref_write(xref, out);
-            pdf_trailer_write(xref, startxref, out);
-            // done
-	      done_0:
-            if (xref)
-                pdf_xref_internal_free(xref);
-            fclose(out);
-#endif
 	    }
 	    if (crypto)
             pdf_crypto_destroy(crypto);
@@ -1213,7 +1186,7 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, unsigned long write_flag,
 	    xref = pdf_xref_internal_create(pdf_obj_count(), doc->count);
 	    if (!xref)
             goto done;
-	    pdf_catalog_write(doc, xref, out, crypto);
+	    pdf_catalog_write(doc, xref, out, crypto, WRITE_CATALOG_DEFAULTS);
 	    for (i = pg1st; i <= pglast; i++)
 	    {
             pdf_page_scan(doc->pages[i], xref, out, crypto);

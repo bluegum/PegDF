@@ -11,6 +11,18 @@ extern "C" {
 #define WRITE_PDF_DECIPHER             0x20
 #define WRITE_PDF_PAGE_SEPARATION      0x40
 
+#define WRITE_CATALOG_ANNONTATION      0x01
+#define WRITE_CATALOG_STRUCTTREEROOT   0x02
+#define WRITE_CATALOG_OUTLINES         0x04
+#define WRITE_CATALOG_OCPROPERTIES     0x08
+#define WRITE_CATALOG_METADATA         0x10
+#define WRITE_CATALOG_NAMES            0x20
+#define WRITE_CATALOG_MARKINFO         0x40
+#define WRITE_CATALOG_PIECEINFO        0x80
+#define WRITE_CATALOG_PAGELABELS       0x100
+
+#define WRITE_CATALOG_DEFAULTS         (WRITE_CATALOG_METADATA | WRITE_CATALOG_OCPROPERTIES)
+
 typedef struct pdfcrypto_priv_s pdfcrypto;
 typedef struct pdf_doc_s pdf_doc;
 
