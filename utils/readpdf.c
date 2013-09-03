@@ -24,194 +24,183 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <getopt.h>
 #include "pdf.h"
 #include "pdfdoc.h"
 ////////////////////////////////////////////////////
 // example application
 ////////////////////////////////////////////////////
 
+static int show_help;
+
+static struct option const long_options[] =
+{
+    {"help", no_argument, &show_help, 1},
+    {0, 0, 0, 0}
+};
+
 static void
-print_help()
+usage(int status)
 {
       printf("%s\n",
 "\n\"readpdf\" reads a pdf file and iterate through pages using stub functions for pdf stream operators.\n\
 Usage:\n\
     readpdf [-p passwd] [-x pagenum] [-i] [--help] infile [outfile] [-o outfile]\n\
-    Options:\n\
-           -p : user password\n\
-           -x : extract a single at pagenum, start from 1\n\
-           -s : separate page\n\
-           -i : inflate content streams\n\
-           -I : print catalog\n\
-           --help : print this\n\
+Options:\n\
+ -p : user password\n\
+ -x : extract a single at pagenum, start from 1\n\
+ -s : separate page\n\
+ -i : inflate content streams\n\
+ -I : print catalog\n\
+ --help : print this\n\
 \n\
-    Example#1: to extract each and every page and write into a sequence of pdf files with inflated content stream,\n\
-         and the output are with format as: out%d.pdf:\n\
-         ./readpdf -x0 -s -i in.pdf out.pdf\n\
-         To inflate all page contents and write to a new pdf file:\n\
-         ./readpdf -i in.pdf out.pdf\n\
-         To extract from page#3 to lastpage write to a new pdf file:\n\
-         ./readpdf -x 3 in.pdf out.pdf\n\
+Example#1: to extract each and every page and write into a sequence of pdf files with inflated content stream,\n\
+ and the output are with format as: out%d.pdf:\n\
+ ./readpdf -x 0 -s -i in.pdf out.pdf\n\
+ To inflate all page contents and write to a new pdf file:\n\
+ ./readpdf -i in.pdf out.pdf\n\
+ To extract from page#3 to lastpage write to a new pdf file:\n\
+ ./readpdf -x 3 in.pdf out.pdf\n\
  \n"
-	    );
+          );
+    exit (status);
 }
 
 int main(int argc, char **argv)
 {
-      int i = 1;
-      char *in = NULL;
-      char *out = NULL;
-      pdf_doc *doc;
-      char *passwd = NULL;
-      int firstpage = 1;
-      int lastpage = -1;
-      int inflate = 0;
-      char write_flag = 0;
-      int separation = 0;
-      int info = 0;
-      FILE *outf = 0;
-      pdf_err e;
+    int c, option_index;
+    char in[1024];
+    char out[1024];
+    char passwd[1024];
+    int firstpage = 1;
+    int lastpage = -1;
+    int inflate = 0;
+    char write_flag = 0;
+    int separation = 0;
+    int info = 0;
+    FILE *outf = 0;
+    pdf_err e;
+    pdf_doc *doc;
 
-      if (argc > 1)
-      {
-            while (i < argc)
-            {
-                  if (argv[i][0] == '-' && argv[i][1] == '-')
-		  {
-			if (strncmp(argv[i], "--help", sizeof("--help")-1) == 0)
-			{
-			      print_help();
-			      return 0;
-			}
-		  }
-		  else if (argv[i][0] == '-')
-                  {
-                        char opt = argv[i][1];
-                        switch (opt)
-                        {
-			      case 's':
-				    separation = 1;
-				    break;
-                              case 'o':
-                              {
-                                    if (isspace(argv[i][2]))
-                                    {
-                                          argv += 1;
-                                    }
-                                    out = *argv;
-                              }
-                              break;
-                              case 'p':
-				    passwd = argv[i];
-                                    break;
-			      case 'x':
-                              {
-                                    if (isspace(argv[i][2]) || strlen(argv[i])==2)
-                                    {
-					  int n = strspn(argv[i+1], "0123456789");
-					  if (n == strlen(argv[i+1]))
-					  {
-						i++;
-						firstpage = atoi(argv[i]);
-					  }
-					  else
-					  {
-						firstpage = 1;
-					  }
-                                    }
-				    else
-				    {
-					  firstpage = atoi(argv[i]+2);
-				    }
-				    //lastpage = firstpage;
-			      }
-			      break;
-			      case 'i':
-				    inflate = 1;
-				    break;
-			      case 'I':
-				    info = 1;
-				    break;
-                              default:
-                                    break;
-                        }
-                  }
-                  else
-                  {
-			if (i == 1 || argc - i == 2)
-			      in = argv[i];
-			else if (i == 2 || argc - i == 1)
-			      out = argv[i];
-                  }
-                  i += 1;
-            }
-      }
-      if (!in && out)
-      {
-	    in = out;
-	    out = 0;
-      }
-      if (!out)
+    if (argc <= 1)
+        usage(EXIT_SUCCESS);
+
+    in[0] = 0;
+    out[0] = 0;
+    passwd[0] = 0;
+
+    while (1)
+    {
+        c = getopt_long(argc, argv, "Iisp:x:",
+                        long_options, &option_index);
+        if (c == -1)
+            break;
+        switch (c)
+        {
+            case 0:
+                // long option
+                break;
+            case 's':
+                separation = 1;
+                break;
+            case 'o':
+                strncpy(out, optarg, 1023);
+                break;
+            case 'p':
+                strncpy(passwd, optarg, 1023);
+                break;
+            case 'x':
+                if (strlen(optarg) == strspn(optarg, "0123456789"))
+                    firstpage = atoi(optarg);
+                else
+                    usage(EXIT_SUCCESS);
+                break;
+            case 'i':
+                inflate = 1;
+                break;
+            case 'I':
+                info = 1;
+                break;
+            default:
+                usage(EXIT_SUCCESS);
+                break;
+        }
+    }
+
+    if (optind < argc)
+    {
+        strncpy(in, argv[optind], 1023);
+        optind++;
+    }
+    else
+    {
+        usage(EXIT_SUCCESS);
+        return EXIT_SUCCESS;
+    }
+
+    if (optind < argc)
+    {
+        strncpy(out, argv[optind], 1023);
+    }
+
+    if (!out[0])
 	    printf("\n%s%s\n\n", "Dry run on ", in);
-      //pdf_open(in, separation?NULL:out, &doc);
-      e = pdf_open(in, &doc);
-      if (!doc || e != pdf_ok)
+    //pdf_open(in, separation?NULL:out, &doc);
+    e = pdf_open(in, &doc);
+    if (!doc || e != pdf_ok)
 	    goto done;
-      if (info)
+    if (info)
 	    pdf_doc_print_info(doc);
-      if (!passwd && pdf_doc_need_passwd(doc) && pdf_doc_authenticate_user_password(doc, "") != 0)
-      {
+    if (!passwd[0] && pdf_doc_need_passwd(doc) && pdf_doc_authenticate_user_password(doc, "") != 0)
+    {
 	    printf("%s\n", "Need user password, use -p option");
 	    goto done;
-      }
+    }
 
-      if (out && inflate)
-      {
+    if (out[0] && inflate)
+    {
 #ifdef DEBUG
-            printf("writing = %s\n", out);
+        printf("writing = %s\n", out);
 #endif
-            outf = fopen(out, "wb");
-            if (!outf)
-            {
-                  fprintf(stderr, "Can not open %s.\n", out);
-                  return pdf_io_err;
-            }
-      }
+        outf = fopen(out, "wb");
+        if (!outf)
+        {
+            fprintf(stderr, "Can not open %s.\n", out);
+            return pdf_io_err;
+        }
+    }
 
-      if (!passwd || !pdf_doc_need_passwd(doc))
-      {
+    if (!passwd[0] || !pdf_doc_need_passwd(doc))
+    {
 	    e = pdf_doc_process_all(doc, 0, outf, "");
-      }
-      else if (passwd && pdf_doc_need_passwd(doc))
-      {
+    }
+    else if (passwd[0] && pdf_doc_need_passwd(doc))
+    {
 	    e = pdf_doc_process_all(doc, 0, outf, passwd);
-      }
-      // writing out pdf using doc structure.
-      if (out)
-      {
+    }
+    // writing out pdf using doc structure.
+    if (out[0])
+    {
 	    if (inflate)
-		  write_flag |= WRITE_PDF_CONTENT_INFLATE;
+            write_flag |= WRITE_PDF_CONTENT_INFLATE;
 	    if (doc->encrypt)
-		  write_flag |= WRITE_PDF_CONTENT_INFLATE;
+            write_flag |= WRITE_PDF_CONTENT_INFLATE;
 	    if (separation)
-		  write_flag |= WRITE_PDF_PAGE_SEPARATION;
+            write_flag |= WRITE_PDF_PAGE_SEPARATION;
 	    if (outf)
 	    {
-		  fclose(outf);
-		  outf = 0;
+            fclose(outf);
+            outf = 0;
 	    }
 	    pdf_write_pdf(doc, in, out, write_flag, 17, firstpage-1, lastpage-1, NULL, NULL);
-      }
-      if (!out)
-      {
-	    printf("Need to specify output file/directory!\n");
-      }
+    }
+
   done:
-      pdf_doc_done(doc);
-      pdf_finish(doc);
-      if (outf)
+    pdf_doc_done(doc);
+    pdf_finish(doc);
+    if (outf)
 	    fclose(outf);
-      if (e != pdf_ok)
-          return -1;
-      return 0;
+    if (e != pdf_ok)
+        return -1;
+    return 0;
 }

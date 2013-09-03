@@ -5,27 +5,37 @@
 #include <stdlib.h>
 #include <string.h>
 #include <libgen.h>
+#include <getopt.h>
 #include "pdf.h"
 
+static int show_help;
+
+static struct option const long_options[] =
+{
+    {"help", no_argument, &show_help, 1},
+    {0, 0, 0, 0}
+};
+
 static void
-usage()
+usage(int status)
 {
     const char *msg = "\
 Usage: picker [OPTIONS] -o ouput_dir inputfile\n\
 OPTIONS:\n\
-        -x : page numbers to be extracted\n\
-             [0-9]+ | [0-9]+, | [0-9]+-[0-9]+\n\
-        -i : to inflate page contents\n\
-        -p : user password\n\
-        -o : output directory\n\
-        --help : print this message\n\
+ -x : page numbers to be extracted\n\
+ [0-9]+ | [0-9]+, | [0-9]+-[0-9]+\n\
+ -i : to inflate page contents\n\
+ -p : user password\n\
+ -o : output directory\n\
+ --help : print this message\n\
 \n\
-example: \n\
+example:\n\
 \n\
-       picker -io DIR in.pdf \n\
-       extracts every single page into directory \"DIR\" \n\
+ picker -io DIR in.pdf \n\
+ extracts every single page into directory \"DIR\" \n\
 ";
     printf("%s", msg);
+    exit (status);
 }
 
 typedef struct num_range_s
@@ -107,10 +117,9 @@ parse_num_range(char *s, num_range *nr)
 int
 main(int argc, char* argv[])
 {
-    int i = 0, p;
-    int v = 1;
+    int i = 0, p, c, option_index;
     int inflate = 0;
-    char *in = 0, *out = 0, *passwd = 0;
+    char in[1024], out[1024], passwd[1024];
     num_range nr[1024];
     char *range;
     char base_name[1024];
@@ -122,107 +131,76 @@ main(int argc, char* argv[])
     int version = 17; // for output files
     int write_flag = 0;
 
+    in[0] = 0;
+    out[0] = 0;
+    passwd[0] = 0;
     nr[0].bgn = 1;
     nr[0].end = 100000;
+
     if (argc < 2)
+	    usage(EXIT_SUCCESS);
+
+    while (1)
     {
-	    usage();
-	    return 1;
-    }
-    while (v < argc)
-    {
-	    if (argv[v][0] == '-')
-	    {
-            int arg = argv[v][1];
-            switch (arg)
-            {
-                case '-':
-                    if (strncmp(&argv[v][2], "help", 4) == 0)
-                    {
-                        usage();
-                        return 0;
-                    }
-                    break;
-                case 'i':
-                {
-                    inflate = 1;
-                    if (argv[v][2] == 0)
-                    {
-                        v++;
-                        break;
-                    }
-                    else
-                    {
-                        // fall thru
-                        argv[v][1] = argv[v][2];
-                    }
-                }
-                case 'o':
-                {
-                    v++;
-                    out = argv[v];
-                    v++;
-                }
-                break;
-                case 'x':
-                {
-                    int r = argv[v][2];
-                    if (r != 0 && r >= '0' && r <= '9')
-                    {
-                        range = &argv[v][2];
-                    }
-                    else
-                    {
-                        v++;
-                        range = argv[v];
-                    }
-                    while (*range)
-                    {
-                        range = parse_num_range(range, &nr[i]);
-                        if (nr[i].bgn == -1)
-                            break;
-                        i++;
-                        if (i >= 1024)
-                            break;
-                    }
-                    v++;
-                }
-                break;
-                case 'p':
-                {
-                    // password
-                    v++;
-                    passwd = argv[v];
-                }
-                break;
-                default:
-                {
-                    printf("%s", "\nInvalid parameters!\n\n");
-                    usage();
-                    return 1;
-                }
-            }
-        }
-	    else
-	    {
-            in = argv[v];
+        c = getopt_long(argc, argv, "io:p:x:",
+                        long_options, &option_index);
+        if (c == -1)
             break;
-	    }
+        switch (c)
+        {
+            case 'i':
+                inflate = 1;
+                break;
+            case 'o':
+                strncpy(out, optarg, 1023);
+                break;
+            case 'x':
+                range = optarg;
+                if (range[0] < '0' || range[0] > '9')
+                {
+                    usage(EXIT_SUCCESS);
+                    break;
+                }
+                while (range)
+                {
+                    range = parse_num_range(range, &nr[i]);
+                    if (nr[i].bgn == -1)
+                        break;
+                    i++;
+                    if (i >= 1024)
+                        break;
+                }
+                break;
+            case 'p':
+                // password
+                strncpy(passwd, optarg, 1023);
+                break;
+            case 0:
+                // long option
+                break;
+            default:
+                usage(EXIT_SUCCESS);
+                break;
+        }
     } // while
+
+    if (show_help)
+        usage (EXIT_SUCCESS);
+
+    if (optind < argc)
+    {
+        strncpy(in, argv[optind], 1023);
+    }
+
+    if (!in[0])
+        usage (EXIT_SUCCESS);
+
+    if (!out[0])
+        usage (EXIT_SUCCESS);
 
     if (i == 0)
     {
         i = 1;
-    }
-    if (!in)
-    {
-	    printf("%s\n", "need input file");
-	    return 1;
-    }
-    if (!out)
-    {
-	    printf("%s\n", "need output file");
-	    return 1;
     }
     //
     e = pdf_open(in, &doc);
@@ -231,12 +209,12 @@ main(int argc, char* argv[])
 	    printf("failed to open %s\n", in);
 	    goto err;
     }
-    if (!passwd && pdf_doc_need_passwd(doc) && pdf_doc_authenticate_user_password(doc, "") != 0)
+    if (!passwd[0] && pdf_doc_need_passwd(doc) && pdf_doc_authenticate_user_password(doc, "") != 0)
     {
 	    printf("%s\n", "Need user password, use -p option");
 	    goto err1;
     }
-    if (passwd && pdf_doc_need_passwd(doc) && pdf_doc_authenticate_user_password(doc, passwd) != 0)
+    if (passwd[0] && pdf_doc_need_passwd(doc) && pdf_doc_authenticate_user_password(doc, passwd) != 0)
     {
 	    printf("%s\n", "Wrong user password!");
 	    goto err1;
