@@ -1063,7 +1063,7 @@ pdf_page_write(pdf_doc *doc, int i/* pg# */, unsigned long write_flag, pdfcrypto
 }
 
 pdf_err
-pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, unsigned long write_flag, int version, int pg1st, int pglast, char *upw, char *opw)
+pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, unsigned long write_flag, int version, int pg1st, int pglast, pdfcrypto_algorithm enc, char *upw, char *opw)
 {
     pdf_err e = pdf_ok;
     FILE* out = 0;

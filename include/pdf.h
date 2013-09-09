@@ -5,6 +5,8 @@ extern "C" {
 #endif
 #include "pdftypes.h"
 
+typedef enum pdfcrypto_algorithm_e pdfcrypto_algorithm;
+
 #define WRITE_PDF_LINEARIZED           0x01
 #define WRITE_PDF_INCREMENT            0x02
 #define WRITE_PDF_CONTENT_INFLATE      0x10
@@ -36,6 +38,15 @@ extern pdf_err pdf_finish(pdf_doc *doc);
 extern pdf_err pdf_page_write(pdf_doc *doc, int i/* pg# */, unsigned long write_flag, pdfcrypto *crypto, int version, char *outf);
 extern int pdf_doc_authenticate_user_password(pdf_doc *doc, char *pw);
 extern pdf_err pdf_doc_process_all(pdf_doc *doc, char *dev, FILE *outf, char *pw);
+
+enum pdfcrypto_algorithm_e
+{
+    eNotBeUsed,
+    eRC4,
+    eAESV2,
+    eAESV3,
+    eUnpublished,
+};
 
 #ifdef __cplusplus
 }

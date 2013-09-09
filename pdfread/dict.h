@@ -52,6 +52,7 @@ extern dict*   dict_insert(dict*, char *key, void *val);
 extern void*   dict_get(dict*, char *key);
 extern void    dict_free(dict*);
 extern void    dict_dump(dict* d);
+extern int     dict_entries(dict* d);
 
 static inline void
 dict_list_free(dict_list *l)

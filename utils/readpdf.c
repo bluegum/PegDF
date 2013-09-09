@@ -50,8 +50,11 @@ Options:\n\
  -p : user password\n\
  -x : extract a single at pagenum, start from 1\n\
  -s : separate page\n\
- -i : inflate content streams\n\
- -I : print catalog\n\
+ -d : decompress content streams\n\
+ -e : encrypt output file\n\
+ -O : new owner password\n\
+ -U : new user password\n\
+ -i : print file information\n\
  --help : print this\n\
 \n\
 Example#1: to extract each and every page and write into a sequence of pdf files with inflated content stream,\n\
@@ -66,18 +69,21 @@ Example#1: to extract each and every page and write into a sequence of pdf files
     exit (status);
 }
 
+#define PASSWORD_MAX_LEN 128
+
 int main(int argc, char **argv)
 {
     int c, option_index;
     char in[1024];
     char out[1024];
-    char passwd[1024];
+    char passwd[PASSWORD_MAX_LEN], upasswd[PASSWORD_MAX_LEN], opasswd[PASSWORD_MAX_LEN];
     int firstpage = 1;
     int lastpage = -1;
     int inflate = 0;
     char write_flag = 0;
     int separation = 0;
     int info = 0;
+    pdfcrypto_algorithm encrypt = eNotBeUsed;
     FILE *outf = 0;
     pdf_err e;
     pdf_doc *doc;
@@ -88,10 +94,12 @@ int main(int argc, char **argv)
     in[0] = 0;
     out[0] = 0;
     passwd[0] = 0;
+    upasswd[0] = 0;
+    opasswd[0] = 0;
 
     while (1)
     {
-        c = getopt_long(argc, argv, "Iisp:x:",
+        c = getopt_long(argc, argv, "idse:p:x:O:U:",
                         long_options, &option_index);
         if (c == -1)
             break;
@@ -107,7 +115,7 @@ int main(int argc, char **argv)
                 strncpy(out, optarg, 1023);
                 break;
             case 'p':
-                strncpy(passwd, optarg, 1023);
+                strncpy(passwd, optarg, PASSWORD_MAX_LEN);
                 break;
             case 'x':
                 if (strlen(optarg) == strspn(optarg, "0123456789"))
@@ -115,10 +123,28 @@ int main(int argc, char **argv)
                 else
                     usage(EXIT_SUCCESS);
                 break;
-            case 'i':
+            case 'e':
+                if (strcmp(optarg, "r") == 0)
+                    encrypt = eRC4;
+                else if (strcmp(optarg, "a") == 0)
+                    encrypt = eAESV2;
+                break;
+            case 'U':
+                if (optarg)
+                    strncpy(upasswd, optarg, PASSWORD_MAX_LEN);
+                else
+                    upasswd[0] = 0;
+                break;
+            case 'O':
+                if (optarg)
+                    strncpy(opasswd, optarg, PASSWORD_MAX_LEN);
+                else
+                    opasswd[0] = 0;
+                break;
+            case 'd':
                 inflate = 1;
                 break;
-            case 'I':
+            case 'i':
                 info = 1;
                 break;
             default:
@@ -145,7 +171,7 @@ int main(int argc, char **argv)
 
     if (!out[0])
 	    printf("\n%s%s\n\n", "Dry run on ", in);
-    //pdf_open(in, separation?NULL:out, &doc);
+
     e = pdf_open(in, &doc);
     if (!doc || e != pdf_ok)
 	    goto done;
@@ -192,7 +218,7 @@ int main(int argc, char **argv)
             fclose(outf);
             outf = 0;
 	    }
-	    pdf_write_pdf(doc, in, out, write_flag, 17, firstpage-1, lastpage-1, NULL, NULL);
+	    pdf_write_pdf(doc, in, out, write_flag, 17, firstpage-1, lastpage-1, encrypt, upasswd, opasswd);
     }
 
   done:

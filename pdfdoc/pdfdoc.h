@@ -311,24 +311,6 @@ struct pdf_bead_s
     pdf_page *p; // page it belongs to
     gs_rect r;
 };
-typedef enum pdf_encrypt_kind_e pdf_encrypt_kind;
-
-enum pdf_encrypt_kind_e
-{
-    eCryptNone,
-    eCryptRC4,
-    eCryptAES,
-};
-
-struct pdf_cryptfilter_s
-{
-    pdf_encrypt_kind cfm;
-    enum {eDocOpen, eEFOpen} authevent;
-    int length;
-    // additional entries for public-key
-    void *recipients;
-    int encryptmetadata; // boolean
-};
 
 struct pdf_encrypt_s
 {
@@ -337,9 +319,9 @@ struct pdf_encrypt_s
     int v;
     int length;
     pdf_cryptfilter *cf;
-    char *stmf;
-    char *strf;
-    char *eff;
+    pdfcrypto_priv *stmf;
+    pdfcrypto_priv *strf;
+    pdfcrypto_priv *eff;
     // standard filter
     int r;
     unsigned char o[32];
@@ -381,7 +363,7 @@ extern pdf_err pdf_annots_free(pdf_annots *a);
 extern pdf_err pdf_resources_free(pdf_resources*);
 extern pdf_err pdf_extgstate_free(pdf_extgstate*);
 extern pdf_err pdf_cs_parse(pdf_page *, pdfcrypto_priv*, pdf_stream *s);
-extern pdf_err pdf_cf_load(pdf_obj *o, pdf_cryptfilter **cryptfilter);
+extern pdf_err pdf_cf_load(pdf_encrypt *e, pdf_obj *o, char *name, pdfcrypto_priv **cryptfilter);
 extern pdf_err pdf_info_load(pdf_obj *o, pdf_info **info);
 extern pdf_doc* pdf_doc_load(pdf_trailer*);
 extern void pdf_doc_done(pdf_doc *d);
@@ -391,7 +373,7 @@ extern pdf_err pdf_open(char *in,  pdf_doc **doc);
 extern pdf_err pdf_finish(pdf_doc *doc);
 extern int pdf_doc_authenticate_user_password(pdf_doc *doc, char *pw);
 extern int pdf_doc_need_passwd(pdf_doc *doc);
-extern pdf_err pdf_write_pdf(pdf_doc *doc, char *infile, char *ofile, unsigned long write_flag, int version, int pg1st, int pglast, char *upw, char *opw);
+extern pdf_err pdf_write_pdf(pdf_doc *doc, char *infile, char *ofile, unsigned long write_flag, int version, int pg1st, int pglast, pdfcrypto_algorithm encrypt, char *upw, char *opw);
 extern void pdf_doc_trailer_free(pdf_trailer * tr);
 extern int pdf_character_show(pdf_device* dev, pdf_prs *s, pdf_font *f, gs_matrix *ctm, unsigned char *c, u32 *cid);
 extern pdfcrypto_priv *pdf_crypto_init(pdf_encrypt* encrypt, unsigned char id1[16], char *pw);

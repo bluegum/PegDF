@@ -340,3 +340,11 @@ dict_to_array(dict *d)
       }
       return a;
 }
+
+int
+dict_entries(dict *d)
+{
+    if (!d)
+        return 0;
+    return d->n;
+}

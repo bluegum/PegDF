@@ -431,10 +431,11 @@ pdf_err pdf_info_print(pdf_info *info)
 
 // Load crypt_filter
 pdf_err
-pdf_cf_load(pdf_obj *o, pdf_cryptfilter **cf)
+pdf_cf_load(pdf_encrypt* e, pdf_obj *o, char *name, pdfcrypto_priv **cf)
 {
     pdf_obj *a;
 
+    *cf = 0;
     if (!o)
         return pdf_ok;
     if (!obj_is_name(o) && o->t != eDict)
@@ -444,32 +445,37 @@ pdf_cf_load(pdf_obj *o, pdf_cryptfilter **cf)
         return pdf_ok;
     if (obj_is_name(o))
         return pdf_ok;
-    a = pdf_dict_get(o, "StdCF"); // Dont support private CF
+    a = pdf_dict_get(o, name);
     if (!a)
         return pdf_ok;
     o = a;
-    *cf = pdf_malloc(sizeof(pdf_cryptfilter));
+    *cf = pdf_malloc(sizeof(pdfcrypto_priv));
     if (!*cf)
         return pdf_mem_err;
-    memset(*cf, 0, sizeof(pdf_cryptfilter));
+    memset(*cf, 0, sizeof(pdfcrypto_priv));
     a = pdf_dict_get(o, "CFM");
+    (*cf)->algo = eRC4;
     if (a && obj_is_name(a))
     {
         if (strcmp(a->value.k, "V2") == 0)
         {
-            (*cf)->cfm = eCryptRC4;
+            (*cf)->algo = eRC4;
         }
         else if (strcmp(a->value.k, "None") == 0)
         {
-            (*cf)->cfm = eCryptNone;
+            (*cf)->algo = eNotBeUsed;
         }
         else if (strcmp(a->value.k, "AESV2") == 0)
         {
-            (*cf)->cfm = eCryptAES;
+            (*cf)->algo = eAESV2;
+        }
+        else if (strcmp(a->value.k, "AESV3") == 0)
+        {
+            (*cf)->algo = eAESV3;
         }
         else
         {
-            (*cf)->cfm = eCryptNone; // better return error ?
+            (*cf)->algo = eUnpublished;
         }
     }
     a = pdf_dict_get(o, "AuthEvent");
@@ -477,18 +483,124 @@ pdf_cf_load(pdf_obj *o, pdf_cryptfilter **cf)
     {
         if (strcmp(a->value.k, "EFOpen") == 0)
         {
-            (*cf)->authevent = eEFOpen;
+            (*cf)->event = eEFOpen;
         }
         else if (strcmp(a->value.k, "DocOpen") == 0)
         {
-            (*cf)->authevent = eDocOpen;
+            (*cf)->event = eDocOpen;
         }
     }
+    (*cf)->len = e->length;
     a = pdf_dict_get(o, "Length");
     if (a && a->t == eInt)
     {
-        (*cf)->length = a->value.i;
+        (*cf)->len = a->value.i*8;
     }
+    return pdf_ok;
+}
+
+
+pdf_err
+pdf_encrypt_load(pdf_obj *o, pdf_encrypt **encrypt)
+{
+    pdf_obj *a;
+    pdf_encrypt *e;
+    if (!o)
+        return pdf_ok;
+    pdf_obj_resolve(o);
+    if (!o)
+        return pdf_ok;
+    *encrypt = pdf_malloc(sizeof(pdf_encrypt));
+    if (!*encrypt)
+        return pdf_mem_err;
+    memset(*encrypt, 0, sizeof(pdf_encrypt));
+    e = *encrypt;
+    e->v = 0;
+    a = pdf_dict_get(o, "Filter");
+    if (a)
+    {
+        pdf_obj_resolve(a);
+        (*encrypt)->filter = pdf_malloc(strlen(a->value.k)+1);
+        memcpy((*encrypt)->filter, a->value.k, strlen(a->value.k));
+        (*encrypt)->filter[strlen(a->value.k)] = 0;
+    }
+    a = pdf_dict_get(o, "SubFilter");
+    if (a)
+    {
+        pdf_obj_resolve(a);
+        (*encrypt)->subfilter = pdf_malloc(strlen(a->value.k)+1);
+        memcpy((*encrypt)->subfilter, a->value.k, strlen(a->value.k));
+        (*encrypt)->subfilter[strlen(a->value.k)] = 0;
+    }
+    a = pdf_dict_get(o, "V");
+    if (a)
+    {
+        (*encrypt)->v = pdf_to_int(a);
+    }
+    e->length = 40;
+    a = pdf_dict_get(o, "Length");
+    if (a)
+    {
+        (*encrypt)->length = pdf_to_int(a);
+    }
+    if (e->v == 4)
+    {
+        pdf_obj *cf = pdf_dict_get(o, "CF");
+        if (cf)
+        {
+            a = pdf_dict_get(o, "StmF");
+            if (a)
+            {
+                pdf_obj_resolve(a);
+                pdf_cf_load(e, cf, a->value.k, &e->stmf);
+            }
+            a = pdf_dict_get(o, "StrF");
+            if (a)
+            {
+                pdf_obj_resolve(a);
+                pdf_cf_load(e, cf, a->value.k, &e->strf);
+            }
+            a = pdf_dict_get(o, "EFF");
+            if (a)
+            {
+                pdf_obj_resolve(a);
+                pdf_cf_load(e, cf, a->value.k, &e->eff);
+            }
+        }
+    }
+
+    // standard encryption dictionary (items)
+    a = pdf_dict_get(o, "R");
+    if (a)
+    {
+        (*encrypt)->r = pdf_to_int(a);
+    }
+    a = pdf_dict_get(o, "O"); // owner password
+    if (a)
+    {
+        // should verify length to 32 bytes
+        pdf_obj_resolve(a);
+        memcpy((*encrypt)->o, a->value.s.buf, a->value.s.len);
+    }
+    a = pdf_dict_get(o, "U"); // user password
+    if (a)
+    {
+        // should verify length to 32 bytes
+        pdf_obj_resolve(a);
+        memcpy((*encrypt)->u, a->value.s.buf, a->value.s.len);
+    }
+    a = pdf_dict_get(o, "P"); // permission flags
+    if (a)
+    {
+        (*encrypt)->p = pdf_to_int(a);
+    }
+    a = pdf_dict_get(o, "EncryptMetadata");
+    if (a)
+    {
+        pdf_obj_resolve(a);
+        (*encrypt)->encrypt_metadata = a->value.b;
+    }
+
     return pdf_ok;
 }
 
@@ -589,7 +701,7 @@ pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
     // chain crypto filter
     if (crypto)
     {
-        if (crypto->algo == e40plusbitsAES || crypto->algo == e40bitsAES)
+        if (crypto->algo == eAESV2)
         {
             // need initial_vector
             unsigned char iv[16];
@@ -951,8 +1063,10 @@ pdf_doc_process_all(pdf_doc *doc, char *devtype, FILE *out, char *pw)
     }
 
     e = pdf_doc_process(doc, dev, crypto);
+
     if (crypto)
         pdf_crypto_destroy(crypto);
+
     if (dev)
         pdf_dev_destroy(dev);
     return e;
