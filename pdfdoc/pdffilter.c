@@ -148,6 +148,41 @@ pdf_rawfilter_new(sub_stream* ss)
     return f;
 }
 
+static int
+pdf_rawfilter_write(pdf_filter *f, unsigned char *obuf, int request)
+{
+    FILE *of;
+    if (!f)
+        return 0;
+    of = (FILE*) f->state;
+    return fwrite(obuf, 1, request, of);
+}
+
+static pdf_err
+pdf_outrawfilter_close(pdf_outfilter *f, int flag)
+{
+    FILE *of;
+    if (!f)
+        return 0;
+    of = (FILE*) f->state;
+    fclose(of);
+    pdf_free(f);
+    return pdf_ok;
+}
+
+pdf_outfilter*
+pdf_outrawfilter_new(FILE *of)
+{
+    pdf_outfilter *f = pdf_malloc(sizeof(pdf_outfilter));
+    if (!f)
+        return NULL;
+    memset(f, 0, sizeof(pdf_filter));
+    f->close = pdf_outrawfilter_close;
+    f->write = pdf_rawfilter_write;
+    f->state = (void*) of;
+    return f;
+}
+
 /////////////////////////////////////////// ASCII85Decode
 struct pdf_a85d_s
 {
