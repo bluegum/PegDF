@@ -38,12 +38,6 @@ example:\n\
     exit (status);
 }
 
-typedef struct num_range_s
-{
-    int bgn;
-    int end;
-} num_range;
-
 static int
 parse_num(char *bgn, char *end)
 {

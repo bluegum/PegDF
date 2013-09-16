@@ -311,14 +311,13 @@ pdf_filter_aes_read(pdf_filter *f, unsigned char *obuf, int request)
     int tmplen = 0, l;
     int max_request = PDF_FILTER_BUF_SIZE - 16; // seems buffer overflows(16 byte) from vpaes_cbc_encrypt
     struct aes_priv_s *buf = (struct aes_priv_s*)(f->data);
-    int e;
+    int e, req = request;
 
     if (!f)
         return 0;
-    if (buf && buf->p < buf->buf+16)
+  read_next:
+    if (buf && buf->p < buf->e)
     {
-	    if (request == 1)
-	    {
             *obuf = *buf->p;
             if (buf->p >= buf->e)
             {
@@ -329,13 +328,13 @@ pdf_filter_aes_read(pdf_filter *f, unsigned char *obuf, int request)
                 buf->p++;
                 return 1;
             }
-	    }
     }
     ctx = (EVP_CIPHER_CTX*)f->state;
     if (!ctx)
         return 0;
     up = f->next; // upstream
     // read upstream
+  update_next:
     if (request <= 16)
     {
 	    l = (up->read)(up, f->ptr, 16);
@@ -346,20 +345,39 @@ pdf_filter_aes_read(pdf_filter *f, unsigned char *obuf, int request)
     }
     if (l == 0)
     {
-        if (!EVP_DecryptFinal(ctx, obuf, &tmplen))
+        if (!EVP_DecryptFinal(ctx, buf->buf, &tmplen))
             return 0;
         else
         {
             EVP_CIPHER_CTX_cleanup(ctx);
             pdf_free(ctx);
             f->state = NULL;
-            return tmplen;
+            if (tmplen < req)
+            {
+                memcpy(obuf, buf->buf, tmplen);
+                return tmplen;
+            }
+            else
+            {
+                buf->p = buf->buf;
+                buf->e = buf->buf + tmplen;
+                goto read_next;
+            }
         }
     }
     if (l <= 16)
     {
 	    e = EVP_DecryptUpdate(ctx, buf->buf, &request, f->ptr, 16);
-        memcpy(obuf, buf->buf, request);
+        if (request < req)
+        {
+            if (request)
+                memcpy(obuf, buf->buf, request);
+        }
+        else
+        {
+            buf->p = buf->buf;
+            buf->e = buf->buf + request;
+        }
     }
     else
     {
@@ -372,26 +390,43 @@ pdf_filter_aes_read(pdf_filter *f, unsigned char *obuf, int request)
     }
     if (request == 0)
     {
-	    unsigned char tmp[16];
-        if (!EVP_DecryptFinal(ctx, tmp, &tmplen))
-            return 0;
-        else
+#if 1
+        if (req != 0 && l != 0)
         {
-            EVP_CIPHER_CTX_cleanup(ctx);
-            pdf_free(ctx);
-            f->state = NULL;
-            if (tmplen > 0 && tmplen < (buf->p-buf->buf))
-            {
-                memcpy(buf->buf, tmp, tmplen);
-                *obuf = buf->buf[0];
-                buf->p = buf->buf+1;
-                buf->e = buf->buf+tmplen;
-                return 1;
-            }
-            else
+            request = req;
+            goto update_next;
+        }
+        else
+#endif
+        {
+            unsigned char tmp[16];
+            if (!EVP_DecryptFinal(ctx, tmp, &tmplen))
                 return 0;
+            else
+            {
+                EVP_CIPHER_CTX_cleanup(ctx);
+                pdf_free(ctx);
+                f->state = NULL;
+                if (tmplen > 0 && tmplen < (buf->p-buf->buf))
+                {
+                    memcpy(buf->buf, tmp, tmplen);
+                    *obuf = buf->buf[0];
+                    buf->p = buf->buf+1;
+                    buf->e = buf->buf+tmplen;
+                    return 1;
+                }
+                else
+                    return 0;
+            }
         }
     }
+#if 1
+    if (req < request)
+    {
+        request = req;
+        goto read_next;
+    }
+#endif
     return request;
 }
 
@@ -475,6 +510,7 @@ pdf_cryptofilter_new(pdfcrypto_priv *crypto, int num, int gen, unsigned char *iv
         f->read = pdf_filter_aes_read;
         f->ptr = f->buf;
 	    buf->p = buf->buf+16;
+        buf->e = buf->buf+16;
 	    f->data = (void*)buf;
     }
     else

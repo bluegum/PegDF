@@ -27,6 +27,8 @@ typedef enum pdfcrypto_algorithm_e pdfcrypto_algorithm;
 
 typedef struct pdfcrypto_priv_s pdfcrypto;
 typedef struct pdf_doc_s pdf_doc;
+typedef struct pdf_writer_options_s pdf_writer_options;
+typedef enum   pdf_compression_e pdf_compression;
 
 extern pdfcrypto* pdf_crypto_load(pdf_doc *doc, char *pw);
 extern int pdf_doc_page_count(pdf_doc *doc);
@@ -35,7 +37,8 @@ extern pdf_err pdf_open(char *in,  pdf_doc **doc);
 extern void pdf_doc_done(pdf_doc *d);
 extern void pdf_crypto_destroy(pdfcrypto *crypto);
 extern pdf_err pdf_finish(pdf_doc *doc);
-extern pdf_err pdf_page_write(pdf_doc *doc, int i/* pg# */, unsigned long write_flag, pdfcrypto *crypto, int version, char *outf);
+extern pdf_err pdf_write_pdf(pdf_doc *doc, char *infile, char *ofile, pdf_writer_options *options);
+extern pdf_err pdf_page_write(pdf_doc *doc, int i/* pg# */, pdfcrypto *crypto, char *outf, pdf_writer_options*);
 extern int pdf_doc_authenticate_user_password(pdf_doc *doc, char *pw);
 extern pdf_err pdf_doc_process_all(pdf_doc *doc, char *dev, FILE *outf, char *pw);
 
@@ -46,6 +49,33 @@ enum pdfcrypto_algorithm_e
     eAESV2,
     eAESV3,
     eUnpublished,
+};
+
+enum pdf_compression_e
+{
+    eNoCompression,
+    eFlate,
+    eLZW,
+};
+
+typedef struct num_range_s
+{
+    int bgn;
+    int end;
+} num_range;
+
+
+struct pdf_writer_options_s
+{
+    int  version;
+    long flags;
+    long catalog_flags;
+    num_range *page_ranges;
+    int nr;
+    pdf_compression compression;
+    pdfcrypto_algorithm encrypt;
+    char upass[32];
+    char opass[32];
 };
 
 #ifdef __cplusplus
