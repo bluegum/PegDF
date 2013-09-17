@@ -5,7 +5,6 @@
 
 typedef enum pdf_filterkind_e pdf_filterkind;
 typedef struct pdf_filter_s pdf_filter;
-typedef struct pdf_outfilter_s pdf_outfilter;
 
 enum pdf_filterkind_e
 {
@@ -31,20 +30,6 @@ struct pdf_filter_s
       ///
       pdf_err (*close)(pdf_filter*, int flag);
       int (*read)(pdf_filter*, unsigned char *, int);
-      ///
-      unsigned char buf[PDF_FILTER_BUF_SIZE]; // holds input buffer for upstream output
-      unsigned char *ptr, *end; // end is at one byte beyond buffer
-      // private
-      void *data;
-};
-
-struct pdf_outfilter_s
-{
-      ///
-      void *state;
-      pdf_filter *next;
-      ///
-      pdf_err (*close)(pdf_filter*, int flag);
       int (*write)(pdf_filter*, unsigned char *, int);
       ///
       unsigned char buf[PDF_FILTER_BUF_SIZE]; // holds input buffer for upstream output
@@ -58,6 +43,5 @@ struct pdf_outfilter_s
 extern pdf_err pdf_flated_new(pdf_filter **f);
 extern pdf_filter* pdf_filter_new(pdf_filterkind t, pdf_filter *last);
 extern int pdf_filter_read(pdf_filter *f, unsigned char *buf, int len);
-extern pdf_outfilter* pdf_outrawfilter_new(FILE *of);
 
 #endif

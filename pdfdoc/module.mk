@@ -12,7 +12,7 @@ LOCAL_LIB	:= $(OBJ_DIR)/libpdfdoc.a
 
 SRCS_$(d)	:= pdfdoc.c pdfpage.c pdfcatalog.c pdffilter.c pdfcontentstream.c pdfcmds.c pdfcrypto.c \
 		pdfcolorspace.c pdfwrite.c pdffont.c pdfencodingtable.c pdfcmap.c pdfdevice.c pdfdevicetxt.c \
-		pdfoc.c \
+		pdfoc.c pdfstream.c \
 		lzw_decomp.c \
 		pdfdevicehtml.c pdfpaint.c gxdraw.c $(GLYPH_NAME_TO_UNI)
 

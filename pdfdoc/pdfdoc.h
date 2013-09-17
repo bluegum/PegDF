@@ -12,7 +12,7 @@
 #include "pdfinterp.h"
 #include "pdfhelper.h"
 #include "pdfoc.h"
-#include "pdfoc.h"
+#include "pdfstream.h"
 
 typedef struct pdf_page_s pdf_page;
 //typedef struct pdf_doc_s pdf_doc;
@@ -27,7 +27,6 @@ typedef struct pdf_thread_s pdf_thread;
 typedef struct pdf_bead_s pdf_bead;
 typedef struct pdf_encrypt_s pdf_encrypt;
 typedef struct pdf_cryptfilter_s pdf_cryptfilter;
-typedef struct pdf_stream_s pdf_stream;
 typedef struct pdf_trailer_s pdf_trailer;
 typedef struct pdf_extgstate_s pdf_extgstate;
 typedef struct pdf_prs_s pdf_prs;
@@ -248,22 +247,9 @@ struct pdf_doc_s
     gs_rect *(*get_mediabox)(pdf_doc*);
 };
 
-struct pdf_stream_s
-{
-    int length;
-    void *decodeparms;
-    void *f;
-    pdf_filter *ffilter; // filter train
-    void *fdecodeparms;
-    int dl;
-    // private
-    pdf_stream *next;
-};
-
 /*
  * XObject
  */
-
 typedef struct pdf_xobject_s pdf_xobject;
 
 struct pdf_xobject_s

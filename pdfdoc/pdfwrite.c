@@ -47,7 +47,7 @@ static void pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_p
 static void pdf_key_write(const char *k, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto);
 static void pdf_key_obj_write(const char *, pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto);
 static void pdf_obj_scan(pdf_obj *o, pdf_xref_internal *x);
-static void pdf_write_indirect_objs(pdf_xref_internal *xref, FILE *out, pdfcrypto_priv *crypto);
+static void pdf_indirect_objs_write(pdf_xref_internal *xref, FILE *out, pdfcrypto_priv *crypto);
 
 static const char escape_chart[256] =
 {
@@ -215,7 +215,7 @@ pdf_catalog_write(pdf_doc *doc, pdf_xref_internal *x, FILE *o, pdfcrypto_priv *d
     {
         pdf_obj_scan(doc->structtreeroot, x);
     }
-    pdf_write_indirect_objs(x, o, decrypto);
+    pdf_indirect_objs_write(x, o, decrypto);
     // new catalog dictionary
     x->xref->offsets[2] = ftell(o);
     fputs("2 0 obj\n", o);
@@ -948,7 +948,7 @@ pdf_page_scan(pdf_page* pg, pdf_xref_internal* x, FILE *o, pdfcrypto_priv *crypt
     {
         pdf_obj_scan(pg->group->cs, x);
     }
-    pdf_write_indirect_objs(x, o, crypto);
+    pdf_indirect_objs_write(x, o, crypto);
     //if (pg->contents) // conflicting with content writer
     // pdf_page_contents_write() resolves and write contents array
     if (0)
@@ -964,7 +964,7 @@ pdf_page_scan(pdf_page* pg, pdf_xref_internal* x, FILE *o, pdfcrypto_priv *crypt
 // Writing out page content which is an array of references.
 static
 void
-pdf_write_indirect_objs(pdf_xref_internal *xref, FILE *out, pdfcrypto_priv *crypto)
+pdf_indirect_objs_write(pdf_xref_internal *xref, FILE *out, pdfcrypto_priv *crypto)
 {
     if (xref->page_obj_idx)
     {
@@ -1089,7 +1089,7 @@ pdf_page_write(pdf_doc *doc, int i/* pg# */, pdfcrypto_priv *crypto, char *outf,
 	    goto done_0;
     pdf_catalog_write(doc, xref, out, crypto, WRITE_CATALOG_DEFAULTS);
     pdf_page_scan(doc->pages[i], xref, out, crypto);
-    pdf_write_indirect_objs(xref, out, crypto);
+    pdf_indirect_objs_write(xref, out, crypto);
     pdf_page_obj_write(doc->pages[i], i, options->flags, xref, crypto, out);
 
     range.bgn = i;
@@ -1265,7 +1265,7 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, pdf_writer_options *optio
                     break;
                 }
                 pdf_page_scan(doc->pages[i], xref, out, crypto);
-                pdf_write_indirect_objs(xref, out, crypto);
+                pdf_indirect_objs_write(xref, out, crypto);
                 pdf_page_obj_write(doc->pages[i], i, options->flags, xref, crypto, out);
                 n_pages++;
             }
