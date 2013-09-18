@@ -797,25 +797,34 @@ pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
             t = Raw;
         }
         // make the filter
-        f = pdf_filter_new(t, last);
-        if (!f)
+        switch (t)
         {
-            if (s)
-                pdf_free(s);
-            if (crypt)
-                PDF_FILTER_CLOSE(crypt, 0); // do not free in_mem stream
-            return NULL;
-        }
-        // train them
-        if (!last)
-        {
-            last = f;
-            s->ffilter = f;
-        }
-        else
-        {
-            f->next = last;
-            last = f;
+            case FlateDecode:
+            case ASCII85Decode:
+            case LZWDecode:
+                f = pdf_filter_new(t, last);
+                if (!f)
+                {
+                    if (s)
+                        pdf_free(s);
+                    if (crypt)
+                        PDF_FILTER_CLOSE(crypt, 0); // do not free in_mem stream
+                    return NULL;
+                }
+                // train them
+                if (!last)
+                {
+                    last = f;
+                    s->ffilter = f;
+                }
+                else
+                {
+                    f->next = last;
+                    last = f;
+                }
+                break;
+            default:
+                break;
         }
     }
   done:

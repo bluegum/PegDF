@@ -12,7 +12,7 @@
 #include "pdfinterp.h"
 #include "pdfhelper.h"
 #include "pdfoc.h"
-#include "pdfoc.h"
+#include "pdfstream.h"
 
 typedef struct pdf_page_s pdf_page;
 //typedef struct pdf_doc_s pdf_doc;
@@ -27,7 +27,6 @@ typedef struct pdf_thread_s pdf_thread;
 typedef struct pdf_bead_s pdf_bead;
 typedef struct pdf_encrypt_s pdf_encrypt;
 typedef struct pdf_cryptfilter_s pdf_cryptfilter;
-typedef struct pdf_stream_s pdf_stream;
 typedef struct pdf_trailer_s pdf_trailer;
 typedef struct pdf_extgstate_s pdf_extgstate;
 typedef struct pdf_prs_s pdf_prs;
@@ -248,22 +247,9 @@ struct pdf_doc_s
     gs_rect *(*get_mediabox)(pdf_doc*);
 };
 
-struct pdf_stream_s
-{
-    int length;
-    void *decodeparms;
-    void *f;
-    pdf_filter *ffilter; // filter train
-    void *fdecodeparms;
-    int dl;
-    // private
-    pdf_stream *next;
-};
-
 /*
  * XObject
  */
-
 typedef struct pdf_xobject_s pdf_xobject;
 
 struct pdf_xobject_s
@@ -373,13 +359,11 @@ extern pdf_err pdf_open(char *in,  pdf_doc **doc);
 extern pdf_err pdf_finish(pdf_doc *doc);
 extern int pdf_doc_authenticate_user_password(pdf_doc *doc, char *pw);
 extern int pdf_doc_need_passwd(pdf_doc *doc);
-extern pdf_err pdf_write_pdf(pdf_doc *doc, char *infile, char *ofile, unsigned long write_flag, int version, int pg1st, int pglast, pdfcrypto_algorithm encrypt, char *upw, char *opw);
 extern void pdf_doc_trailer_free(pdf_trailer * tr);
 extern int pdf_character_show(pdf_device* dev, pdf_prs *s, pdf_font *f, gs_matrix *ctm, unsigned char *c, u32 *cid);
 extern pdfcrypto_priv *pdf_crypto_init(pdf_encrypt* encrypt, unsigned char id1[16], char *pw);
 extern void pdf_device_char_show(pdf_device *dev, pdf_font *f, float scale, gs_matrix *ctm, unsigned int cid);
 extern void pdf_device_color_set(pdf_device *d, float *c, pdf_cspacetype cs, int n, int pen);
-extern pdf_err pdf_page_write(pdf_doc *doc, int i/* pg# */, unsigned long write_flag, pdfcrypto_priv *crypto, int version, char *outf);
 extern void pdf_path_add(pdf_extgstate *gs, e_path_kind t, float a, float b, float c, float d, float e, float f);
 extern pdf_err pdf_path_paint(pdf_device *dev, pdf_extgstate *gs, int stroke, int even_odd);
 extern void pdf_update_brush(pdf_page *p);

@@ -31,6 +31,7 @@ struct pdf_filter_s
       ///
       pdf_err (*close)(pdf_filter*, int flag);
       int (*read)(pdf_filter*, unsigned char *, int);
+      int (*write)(pdf_filter*, unsigned char *, int);
       ///
       unsigned char buf[PDF_FILTER_BUF_SIZE]; // holds input buffer for upstream output
       unsigned char *ptr, *end; // end is at one byte beyond buffer
@@ -58,6 +59,9 @@ struct pdf_outfilter_s
 extern pdf_err pdf_flated_new(pdf_filter **f);
 extern pdf_filter* pdf_filter_new(pdf_filterkind t, pdf_filter *last);
 extern int pdf_filter_read(pdf_filter *f, unsigned char *buf, int len);
+<<<<<<< HEAD
 extern pdf_outfilter* pdf_outrawfilter_new(FILE *of);
+=======
+>>>>>>> b6ee3ec9a9c594e9bdc769c5d5e1e7b4a201e095
 
 #endif

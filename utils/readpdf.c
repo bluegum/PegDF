@@ -50,6 +50,7 @@ Options:\n\
  -p : user password\n\
  -x : extract a single at pagenum, start from 1\n\
  -s : separate page\n\
+ -c : compression method\n\
  -d : decompress content streams\n\
  -e : encrypt output file\n\
  -O : new owner password\n\
@@ -69,6 +70,76 @@ Example#1: to extract each and every page and write into a sequence of pdf files
     exit (status);
 }
 
+static int
+parse_num(char *bgn, char *end)
+{
+    int i = 0;
+    while (bgn <= end)
+    {
+	    i *= 10;
+	    i += (*bgn++) - '0';
+    }
+    return i;
+}
+
+static char *
+parse_num_range(char *s, num_range *nr)
+{
+    char *beg = s;
+    int bgn = -1, end = -1;
+
+    while (*s)
+    {
+	    if (*s && (*s >= '0' && *s <= '9'))
+	    {
+            s++;
+	    }
+	    else if (*s == '-')
+	    {
+            bgn = parse_num(beg, s-1);
+            beg = ++s;
+            while (*s)
+            {
+                if (*s == ',')
+                {
+                    end = parse_num(beg, s-1);
+                    break;
+                }
+                else
+                {
+                    s++;
+                }
+            }
+            if (!(*s) || (*s == ','))
+            {
+                end = parse_num(beg, s-1);
+                nr->bgn = bgn;
+                nr->end = end;
+                if (*s == ',')
+                    s++;
+                return s;
+            }
+            else
+                return 0;
+	    }
+	    else if (*s == ',')
+	    {
+            bgn = end = parse_num(beg, s-1);
+            s++;
+            break;
+	    }
+	    else
+            break;
+    }
+    if (*s == 0 && s > beg)
+    {
+	    bgn = end = parse_num(beg, s-1);
+    }
+    nr->bgn = bgn;
+    nr->end = end;
+    return s;
+}
+
 #define PASSWORD_MAX_LEN 128
 
 int main(int argc, char **argv)
@@ -77,16 +148,18 @@ int main(int argc, char **argv)
     char in[1024];
     char out[1024];
     char passwd[PASSWORD_MAX_LEN], upasswd[PASSWORD_MAX_LEN], opasswd[PASSWORD_MAX_LEN];
-    int firstpage = 1;
-    int lastpage = -1;
     int inflate = 0;
-    char write_flag = 0;
     int separation = 0;
     int info = 0;
     pdfcrypto_algorithm encrypt = eNotBeUsed;
     FILE *outf = 0;
     pdf_err e;
     pdf_doc *doc;
+    pdf_compression compression;
+    num_range nr[1024];
+    char *range;
+    int i = 0;
+    pdf_writer_options wo;
 
     if (argc <= 1)
         usage(EXIT_SUCCESS);
@@ -96,10 +169,12 @@ int main(int argc, char **argv)
     passwd[0] = 0;
     upasswd[0] = 0;
     opasswd[0] = 0;
+    nr[0].bgn = 1;
+    nr[0].end = 100000;
 
     while (1)
     {
-        c = getopt_long(argc, argv, "idse:p:x:O:U:",
+        c = getopt_long(argc, argv, "idsc:e:p:x:O:U:",
                         long_options, &option_index);
         if (c == -1)
             break;
@@ -118,10 +193,21 @@ int main(int argc, char **argv)
                 strncpy(passwd, optarg, PASSWORD_MAX_LEN);
                 break;
             case 'x':
-                if (strlen(optarg) == strspn(optarg, "0123456789"))
-                    firstpage = atoi(optarg);
-                else
+                range = optarg;
+                if (range[0] < '0' || range[0] > '9')
+                {
                     usage(EXIT_SUCCESS);
+                    break;
+                }
+                while (range)
+                {
+                    range = parse_num_range(range, &nr[i]);
+                    if (nr[i].bgn == -1)
+                        break;
+                    i++;
+                    if (i >= 1024)
+                        break;
+                }
                 break;
             case 'e':
                 if (strcmp(optarg, "r") == 0)
@@ -147,6 +233,28 @@ int main(int argc, char **argv)
             case 'i':
                 info = 1;
                 break;
+            case 'c':
+                if (optarg)
+                {
+                    switch (*optarg)
+                    {
+                        case '0':
+                            compression = eNoCompression;
+                            break;
+                        case '1':
+                            compression = eFlate;
+                            break;
+                        case '2':
+                            compression = eLZW;
+                            break;
+                        default:
+                            compression = eNoCompression;
+                            break;
+                    }
+                }
+                else
+                    compression = eNoCompression;
+                break;
             default:
                 usage(EXIT_SUCCESS);
                 break;
@@ -170,8 +278,19 @@ int main(int argc, char **argv)
     }
 
     if (!out[0])
+    {
 	    printf("\n%s%s\n\n", "Dry run on ", in);
-
+    }
+    else
+    {
+        wo.version = 17;
+        wo.page_ranges = nr;
+        wo.nr = i;
+        wo.compression = compression;
+        wo.encrypt = encrypt;
+        strncpy(wo.upass, upasswd, 32);
+        strncpy(wo.opass, opasswd, 32);
+    }
     e = pdf_open(in, &doc);
     if (!doc || e != pdf_ok)
 	    goto done;
@@ -207,18 +326,19 @@ int main(int argc, char **argv)
     // writing out pdf using doc structure.
     if (out[0])
     {
+        wo.flags = 0;
 	    if (inflate)
-            write_flag |= WRITE_PDF_CONTENT_INFLATE;
+            wo.flags |= WRITE_PDF_CONTENT_INFLATE;
 	    if (doc->encrypt)
-            write_flag |= WRITE_PDF_CONTENT_INFLATE;
+            wo.flags |= WRITE_PDF_CONTENT_INFLATE;
 	    if (separation)
-            write_flag |= WRITE_PDF_PAGE_SEPARATION;
+            wo.flags |= WRITE_PDF_PAGE_SEPARATION;
 	    if (outf)
 	    {
             fclose(outf);
             outf = 0;
 	    }
-	    pdf_write_pdf(doc, in, out, write_flag, 17, firstpage-1, lastpage-1, encrypt, upasswd, opasswd);
+	    pdf_write_pdf(doc, in, out, &wo);
     }
 
   done:

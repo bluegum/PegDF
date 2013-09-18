@@ -158,6 +158,7 @@ pdf_rawfilter_write(pdf_filter *f, unsigned char *obuf, int request)
     return fwrite(obuf, 1, request, of);
 }
 
+<<<<<<< HEAD
 static pdf_err
 pdf_outrawfilter_close(pdf_outfilter *f, int flag)
 {
@@ -183,6 +184,8 @@ pdf_outrawfilter_new(FILE *of)
     return f;
 }
 
+=======
+>>>>>>> b6ee3ec9a9c594e9bdc769c5d5e1e7b4a201e095
 /////////////////////////////////////////// ASCII85Decode
 struct pdf_a85d_s
 {

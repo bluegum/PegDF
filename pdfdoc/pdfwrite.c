@@ -47,7 +47,7 @@ static void pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_p
 static void pdf_key_write(const char *k, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto);
 static void pdf_key_obj_write(const char *, pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto);
 static void pdf_obj_scan(pdf_obj *o, pdf_xref_internal *x);
-static void pdf_write_indirect_objs(pdf_xref_internal *xref, FILE *out, pdfcrypto_priv *crypto);
+static void pdf_indirect_objs_write(pdf_xref_internal *xref, FILE *out, pdfcrypto_priv *crypto);
 
 static const char escape_chart[256] =
 {
@@ -215,7 +215,11 @@ pdf_catalog_write(pdf_doc *doc, pdf_xref_internal *x, FILE *o, pdfcrypto_priv *d
     {
         pdf_obj_scan(doc->structtreeroot, x);
     }
+<<<<<<< HEAD
     pdf_write_indirect_objs(x, o, decrypto);
+=======
+    pdf_indirect_objs_write(x, o, decrypto);
+>>>>>>> b6ee3ec9a9c594e9bdc769c5d5e1e7b4a201e095
     // new catalog dictionary
     x->xref->offsets[2] = ftell(o);
     fputs("2 0 obj\n", o);
@@ -278,19 +282,29 @@ pdf_catalog_write(pdf_doc *doc, pdf_xref_internal *x, FILE *o, pdfcrypto_priv *d
 
 static
 void
-pdf_pages_obj_write(pdf_xref_internal *x, int pg1st, int num, FILE *o)
+pdf_pages_obj_write(pdf_xref_internal *x, num_range *page_ranges, int nr, FILE *o)
 {
-    int i;
+    int i, j, n = 0;
     x->xref->offsets[1] = ftell(o);
     fprintf(o, "%d %d obj\n", 1, 0);
     fputs("<</Type /Pages", o);
-    fprintf(o, "/Count %d\n", num);
     fputs("/Kids [", o);
-    for (i = 0; i < num; i++)
+    for (j = 0; j < nr; j++)
     {
-	    fprintf(o, " %d %d R", x->page_ref_buf[i+pg1st], 0);
+        int pg1st = page_ranges[j].bgn;
+        int pglast = page_ranges[j].end;
+        if (pg1st < 0)
+            break;
+        if (pg1st == 0)
+            pg1st = 1;
+        for (i = pg1st - 1; i < pglast; i++)
+        {
+            fprintf(o, " %d %d R", x->page_ref_buf[i], 0);
+            n++;
+        }
     }
     fputs("]", o);
+    fprintf(o, "/Count %d\n", n);
     fputs(">>\nendobj\n", o);
 }
 
@@ -473,11 +487,24 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *decrypt
                 }
                 else if (strcmp(l->key, "Filter")==0)
                 {
+<<<<<<< HEAD
                     // For NOW, we write plain stream whenever crypto is present
                     if (decrypto)
+=======
+                    if (l->val.t == eKey && strcmp(l->val.value.k, "DCTDecode") == 0)
+>>>>>>> b6ee3ec9a9c594e9bdc769c5d5e1e7b4a201e095
                     {
-                        l = l->next;
-                        continue;
+                        // not to decode DCT filter
+                    }
+                    else
+                    {
+                        // Otherwise, we write plain stream whenever crypto
+                        // is present
+                        if (decrypto)
+                        {
+                            l = l->next;
+                            continue;
+                        }
                     }
                 }
                 pdf_key_write(l->key, x, f, decrypto);
@@ -930,7 +957,7 @@ pdf_page_scan(pdf_page* pg, pdf_xref_internal* x, FILE *o, pdfcrypto_priv *crypt
     {
         pdf_obj_scan(pg->group->cs, x);
     }
-    pdf_write_indirect_objs(x, o, crypto);
+    pdf_indirect_objs_write(x, o, crypto);
     //if (pg->contents) // conflicting with content writer
     // pdf_page_contents_write() resolves and write contents array
     if (0)
@@ -946,7 +973,7 @@ pdf_page_scan(pdf_page* pg, pdf_xref_internal* x, FILE *o, pdfcrypto_priv *crypt
 // Writing out page content which is an array of references.
 static
 void
-pdf_write_indirect_objs(pdf_xref_internal *xref, FILE *out, pdfcrypto_priv *crypto)
+pdf_indirect_objs_write(pdf_xref_internal *xref, FILE *out, pdfcrypto_priv *crypto)
 {
     if (xref->page_obj_idx)
     {
@@ -1039,29 +1066,44 @@ pdf_page_obj_write(pdf_page *page, int pgidx, unsigned long write_flag, pdf_xref
 }
 
 pdf_err
-pdf_page_write(pdf_doc *doc, int i/* pg# */, unsigned long write_flag, pdfcrypto_priv *crypto, int version, char *outf)
+pdf_magic_write(FILE *out, pdf_writer_options *options)
+{
+    char buf[128];
+    if (options)
+        sprintf(buf, "%%PDF-%d.%d\n", options->version/10, options->version%10);
+    else
+        sprintf(buf, "%%PDF-%d.%d\n", 1, 7);
+
+    fputs(buf, out);
+    fputs("%\333\332\331\330\n", out);
+    return pdf_ok;
+}
+
+pdf_err
+pdf_page_write(pdf_doc *doc, int i/* pg# */, pdfcrypto_priv *crypto, char *outf, pdf_writer_options *options)
 {
     FILE* out = 0;
     char buf[128];
     int startxref;
     pdf_xref_internal *xref = 0;
+    num_range range;
 
     out = fopen(outf, "wb");
     if (!out)
 	    return pdf_ok;
-    sprintf(buf, "%%PDF-%d.%d\n", version/10, version%10);
-    fputs(buf, out);
-    fputs("%\333\332\331\330\n", out);
+    pdf_magic_write(out, options);
     // scan pages
     xref = pdf_xref_internal_create(pdf_obj_count(), doc->count);
     if (!xref)
 	    goto done_0;
     pdf_catalog_write(doc, xref, out, crypto, WRITE_CATALOG_DEFAULTS);
     pdf_page_scan(doc->pages[i], xref, out, crypto);
-    pdf_write_indirect_objs(xref, out, crypto);
-    pdf_page_obj_write(doc->pages[i], i, write_flag, xref, crypto, out);
+    pdf_indirect_objs_write(xref, out, crypto);
+    pdf_page_obj_write(doc->pages[i], i, options->flags, xref, crypto, out);
 
-    pdf_pages_obj_write(xref, i, 1, out);
+    range.bgn = i;
+    range.end = i + 1;
+    pdf_pages_obj_write(xref, &range, 1, out);
     // write xref table
     startxref = pdf_xref_write(xref, out);
     pdf_trailer_write(xref, startxref, out);
@@ -1074,23 +1116,32 @@ pdf_page_write(pdf_doc *doc, int i/* pg# */, unsigned long write_flag, pdfcrypto
 }
 
 pdf_err
-pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, unsigned long write_flag, int version, int pg1st, int pglast, pdfcrypto_algorithm enc, char *upw, char *opw)
+pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, pdf_writer_options *options)
 {
     pdf_err e = pdf_ok;
     FILE* out = 0;
     char linebuf[1024];
-    int i, startxref, err;
+    int i, j, startxref, err, nr;
+    num_range *page_ranges, pr[1];
     pdf_xref_internal *xref = 0;
     pdfcrypto_priv *crypto = NULL;
     char *odir;
     struct stat s;
-    if (pg1st < 0)
-        pg1st = 0;
-    if (pglast < 0)
-        pglast = doc->count-1;
-    if (pglast < pg1st)
-        pglast = pg1st;
-    if (!ofile && (!(write_flag&WRITE_PDF_PAGE_SEPARATION)))
+
+    if (options->nr == 0)
+    {
+        page_ranges = pr;
+        pr->bgn = 1;
+        pr->end = doc->count;
+        nr = 1;
+    }
+    else
+    {
+        page_ranges = options->page_ranges;
+        nr = options->nr;
+    }
+
+    if (!ofile && (!(options->flags & WRITE_PDF_PAGE_SEPARATION)))
         return pdf_ok;
     if (pdf_doc_need_passwd(doc))
     {
@@ -1109,7 +1160,7 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, unsigned long write_flag,
             goto done;
 	    }
     }
-    if (write_flag&WRITE_PDF_PAGE_SEPARATION)
+    if (options->flags & WRITE_PDF_PAGE_SEPARATION)
     {
 	    char base[128];
 	    char *b, *b1;
@@ -1158,53 +1209,77 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, unsigned long write_flag,
             goto done;
 	    }
 	    //
-        pglast = doc->count-1;
-	    for (i = pg1st; i <= pglast; i++)
-	    {
+        for (j = 0; j < nr; j++)
+        {
+            int pg1st = page_ranges[j].bgn;
+            int pglast = page_ranges[j].end;
+            if (pg1st <= 0)
+                pg1st = 1;
+            for (i = pg1st - 1; i <= pglast; i++)
+            {
+                if (i >= doc->count)
+                    break;
+                for (i = pg1st - 1; i <= pglast; i++)
+                {
 #ifdef __unix__
-            b = basename(infile);
+                    b = basename(infile);
 #endif
-            b1 = strchr(b, '.');
-            if (b1)
-            {
-                char striped[256];
-                memcpy(striped, b, b1-b);
-                striped[b1-b] = 0;
-                sprintf(linebuf, "%s/%s-%d.%s", odir, striped, i+1, "pdf");
+                    b1 = strchr(b, '.');
+                    if (b1)
+                    {
+                        char striped[256];
+                        memcpy(striped, b, b1-b);
+                        striped[b1-b] = 0;
+                        sprintf(linebuf, "%s/%s-%d.%s", odir, striped, i+1, "pdf");
+                    }
+                    else
+                    {
+                        sprintf(linebuf, "%s/%s-%d.%s", odir, b, i+1, "pdf");
+                    }
+                    printf("Writing %s..\n", linebuf);
+                    pdf_page_write(doc, i, crypto, linebuf, options);
+                }
             }
-            else
-            {
-                sprintf(linebuf, "%s/%s-%d.%s", odir, b, i+1, "pdf");
-            }
-            printf("Writing %s..\n", linebuf);
-            pdf_page_write(doc, i, write_flag, crypto, version, linebuf);
-	    }
+        }
 	    if (crypto)
             pdf_crypto_destroy(crypto);
     }
     else
     {
+        int n_pages = 0;
 #ifdef DEBUG
 	    printf("Writing %s..\n", ofile);
 #endif
 	    out = fopen(ofile, "wb");
 	    if (!out)
             return pdf_ok;
-	    sprintf(linebuf, "%%PDF-%d.%d\n", version/10, version%10);
-	    fputs(linebuf, out);
-	    fputs("%\333\332\331\330\n", out);
+        pdf_magic_write(out, options);
 	    // scan pages
 	    xref = pdf_xref_internal_create(pdf_obj_count(), doc->count);
 	    if (!xref)
             goto done;
 	    pdf_catalog_write(doc, xref, out, crypto, WRITE_CATALOG_DEFAULTS);
-	    for (i = pg1st; i <= pglast; i++)
-	    {
-            pdf_page_scan(doc->pages[i], xref, out, crypto);
-            pdf_write_indirect_objs(xref, out, crypto);
-            pdf_page_obj_write(doc->pages[i], i, write_flag, xref, crypto, out);
-	    }
-	    pdf_pages_obj_write(xref, pg1st, pglast-pg1st+1, out);
+        for (j = 0; j < nr; j++)
+        {
+            int pg1st = page_ranges[j].bgn;
+            int pglast = page_ranges[j].end;
+            if (pg1st < 0)
+                break;
+            if (pg1st == 0)
+                pg1st = 1;
+            for (i = pg1st - 1; i < pglast; i++)
+            {
+                if (i >= doc->count)
+                {
+                    break;
+                }
+                pdf_page_scan(doc->pages[i], xref, out, crypto);
+                pdf_indirect_objs_write(xref, out, crypto);
+                pdf_page_obj_write(doc->pages[i], i, options->flags, xref, crypto, out);
+                n_pages++;
+            }
+        }
+        pdf_pages_obj_write(xref, page_ranges, nr, out);
 	    // write xref table
 	    startxref = pdf_xref_write(xref, out);
 	    pdf_trailer_write(xref, startxref, out);
