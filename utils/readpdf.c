@@ -113,6 +113,7 @@ parse_num_range(char *s, num_range *nr)
             if (!(*s) || (*s == ','))
             {
                 end = parse_num(beg, s-1);
+                end++;
                 nr->bgn = bgn;
                 nr->end = end;
                 if (*s == ',')
@@ -135,6 +136,7 @@ parse_num_range(char *s, num_range *nr)
     {
 	    bgn = end = parse_num(beg, s-1);
     }
+    end++;
     nr->bgn = bgn;
     nr->end = end;
     return s;

@@ -180,6 +180,7 @@ pdf_catalog_write(pdf_doc *doc, pdf_xref_internal *x, FILE *o, pdfcrypto_priv *d
     x->xref->cur = 3;
 
     bpt_insert(x->entry, doc->root_ref, 2);
+    bpt_insert(x->entry, 2, 2);
     if (doc->pages_ref)
         bpt_insert(x->entry, doc->pages_ref, 1);
 
@@ -287,13 +288,11 @@ pdf_pages_obj_write(pdf_xref_internal *x, num_range *page_ranges, int nr, FILE *
     fputs("/Kids [", o);
     for (j = 0; j < nr; j++)
     {
-        int pg1st = page_ranges[j].bgn;
-        int pglast = page_ranges[j].end;
+        int pg1st = page_ranges[j].bgn - 1;
+        int pglast = page_ranges[j].end - 1;
         if (pg1st < 0)
-            break;
-        if (pg1st == 0)
-            pg1st = 1;
-        for (i = pg1st - 1; i < pglast; i++)
+            pg1st = 0;
+        for (i = pg1st; i < pglast; i++)
         {
             fprintf(o, " %d %d R", x->page_ref_buf[i], 0);
             n++;
@@ -324,14 +323,20 @@ static
 void
 pdf_trailer_write(pdf_xref_internal *x, int startxref, FILE *o)
 {
+    pdf_obj tmp;
+    dict *d = dict_new(2);
+    if (!d)
+        return;
+    tmp.t = eDict;
+    tmp.value.d.dict = d;
+    pdf_dict_insert_int(d, "Size", x->xref->cur);
+    pdf_dict_insert_ref(d, "Root", 2, 0);
     fputs("trailer\n", o);
-    fputs("<<", o);
-    fprintf(o, "/Size %d\n", x->xref->cur);
-    fprintf(o, "/Root %d %d R\n", 2, 0);
-    fputs(">> ", o);
-    fprintf(o, "%s\n", "startxref");
-    fprintf(o, "%d\n", startxref);
+    pdf_obj_write(&tmp, x, o, 0);
+    fputs("startxref\n", o);
+    fprintf(o,  "%d\n", startxref);
     fputs("%%EOF", o);
+    dict_free(d);
 }
 
 static void
@@ -679,16 +684,24 @@ static
 void
 pdf_group_write(pdf_group *g, pdf_xref_internal *x, FILE *o, pdfcrypto_priv *crypto)
 {
+    pdf_obj tmp;
+    dict *d;
+
     if (!g)
         return;
-    fputs("/Group<<", o);
+    d = dict_new(3);
+    if (!d)
+        return;
+    tmp.t = eDict;
+    tmp.value.d.dict = d;
+    fputs("/Group", o);
     if (g->cs)
     {
-	    pdf_key_obj_write("CS", g->cs, x, o, crypto);
+	    dict_insert(d, "CS", g->cs);
     }
-    pdf_key_int_write("I", g->i, x, o, crypto);
-    pdf_key_int_write("K", g->k, x, o, crypto);
-    fputs(">> ", o);
+    pdf_dict_insert_int(d, "I", g->i);
+    pdf_dict_insert_int(d, "K", g->k);
+    pdf_obj_write(&tmp, x, o, 0);
 }
 
 static
@@ -1092,8 +1105,8 @@ pdf_page_write(pdf_doc *doc, int i/* pg# */, pdfcrypto_priv *crypto, char *outf,
     pdf_indirect_objs_write(xref, out, crypto);
     pdf_page_obj_write(doc->pages[i], i, options->flags, xref, crypto, out);
 
-    range.bgn = i;
-    range.end = i + 1;
+    range.bgn = i + 1;
+    range.end = i + 2;
     pdf_pages_obj_write(xref, &range, 1, out);
     // write xref table
     startxref = pdf_xref_write(xref, out);
@@ -1258,7 +1271,7 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, pdf_writer_options *optio
                 break;
             if (pg1st == 0)
                 pg1st = 1;
-            for (i = pg1st - 1; i < pglast; i++)
+            for (i = pg1st - 1; i <= pglast-1; i++)
             {
                 if (i >= doc->count)
                 {

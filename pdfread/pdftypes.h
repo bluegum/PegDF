@@ -38,82 +38,83 @@ typedef unsigned long  u32;
 typedef struct pdf_obj_s pdf_obj;
 typedef struct pdf_xref_s pdf_xref;
 typedef struct dict_s dict;
+extern pdf_obj* make_key(pdf_obj *o, char *s);
 
 typedef enum pdf_error_e
 {
-      pdf_ok,
-      pdf_syntax_err,
-      pdf_mem_err,
-      pdf_io_err,
-      pdf_file_err,
-      pdf_trailer_err,
-      pdf_op_err,
-      pdf_unknown
+    pdf_ok,
+    pdf_syntax_err,
+    pdf_mem_err,
+    pdf_io_err,
+    pdf_file_err,
+    pdf_trailer_err,
+    pdf_op_err,
+    pdf_unknown
 } pdf_err;
 
 struct pdf_xref_s
 {
-      int num;
-      int gen;
+    int num;
+    int gen;
 };
 
 typedef enum pdf_kind
 {
-      eObjMarker,
-      eDictMarker,
-      eArrayMarker,
-      eNull,
-      eBool,
-      eInt,
-      eReal,
-      eRef,
-      eKey,
-      eName,
-      eString,
-      eHexString,
-      eArray,
-      eDict,
-      eId,
-      eLimit
+    eObjMarker,
+    eDictMarker,
+    eArrayMarker,
+    eNull,
+    eBool,
+    eInt,
+    eReal,
+    eRef,
+    eKey,
+    eName,
+    eString,
+    eHexString,
+    eArray,
+    eDict,
+    eId,
+    eLimit
 } e_pdf_kind;
 
 typedef enum
 {
-      M,
-      L,
-      C,
-      V,
-      Y,
-      H,
-      RE,
+    M,
+    L,
+    C,
+    V,
+    Y,
+    H,
+    RE,
 } e_path_kind;
 
 struct pdf_obj_s
 {
-      e_pdf_kind t;
-      int refs;
-      union
-      {
-            int marker;
-            int b;
-            int i;
-            double f;
+    e_pdf_kind t;
+    int refs;
+    union
+    {
+        int marker;
+        int b;
+        int i;
+        double f;
 	    char *id;
-            char *k;
-            struct {
-                  unsigned short len;
-                  char *buf;
-            } s;
-            struct {
-                  int len;
-                  pdf_obj *items;
-            } a;
-            struct {
-                  dict *dict;
-		  int stm_offset;
-            } d;
-            pdf_xref r;
-      } value;
+        char *k;
+        struct {
+            unsigned short len;
+            char *buf;
+        } s;
+        struct {
+            int len;
+            pdf_obj *items;
+        } a;
+        struct {
+            dict *dict;
+            int stm_offset;
+        } d;
+        pdf_xref r;
+    } value;
 };
 
 typedef struct gs_matrix_s gs_matrix;
@@ -123,87 +124,87 @@ typedef struct gs_bbox_s gs_bbox;
 
 struct gs_matrix_s
 {
-      float a, b, c, d, e, f;
+    float a, b, c, d, e, f;
 };
 
 struct gs_point_s
 {
-      float x, y;
+    float x, y;
 };
 
 struct gs_rect_s
 {
-      float x0, y0;
-      float x1, y1;
+    float x0, y0;
+    float x1, y1;
 };
 
 struct gs_bbox_s
 {
-      int x0, y0;
-      int x1, y1;
+    int x0, y0;
+    int x1, y1;
 };
 
 static inline void
 mat_init(gs_matrix *ctm, float a, float b, float c, float d, float e, float f)
 {
-      ctm->a = a;
-      ctm->b = b;
-      ctm->c = c;
-      ctm->d = d;
-      ctm->e = e;
-      ctm->f = f;
+    ctm->a = a;
+    ctm->b = b;
+    ctm->c = c;
+    ctm->d = d;
+    ctm->e = e;
+    ctm->f = f;
 }
 static inline void
 mat_set(gs_matrix *ctm, float a[6])
 {
-      ctm->a = a[0];
-      ctm->b = a[1];
-      ctm->c = a[2];
-      ctm->d = a[3];
-      ctm->e = a[4];
-      ctm->f = a[5];
+    ctm->a = a[0];
+    ctm->b = a[1];
+    ctm->c = a[2];
+    ctm->d = a[3];
+    ctm->e = a[4];
+    ctm->f = a[5];
 }
 static inline void
 mat_translate(gs_matrix *ctm, float e, float f)
 {
-      ctm->a = 1;
-      ctm->b = 0;
-      ctm->c = 0;
-      ctm->d = 1;
-      ctm->e = e;
-      ctm->f = f;
+    ctm->a = 1;
+    ctm->b = 0;
+    ctm->c = 0;
+    ctm->d = 1;
+    ctm->e = e;
+    ctm->f = f;
 }
 
 static inline void
 mat_cp(gs_matrix *a, gs_matrix *b)
 {
-      memcpy(a, b, sizeof(gs_matrix));
+    memcpy(a, b, sizeof(gs_matrix));
 }
 
 static inline gs_matrix
 mat_con(gs_matrix *a, gs_matrix *b)
 {
-      gs_matrix d;
-      d.a = a->a * b->a + a->b * b->c;
-      d.b = a->a * b->b + a->b * b->d;
-      d.c = a->c * b->a + a->d * b->c;
-      d.d = a->c * b->b + a->d * b->d;
-      d.e = a->e * b->a + a->f * b->c + b->e;
-      d.f = a->e * b->b + a->f * b->d + b->f;
-      return d;
+    gs_matrix d;
+    d.a = a->a * b->a + a->b * b->c;
+    d.b = a->a * b->b + a->b * b->d;
+    d.c = a->c * b->a + a->d * b->c;
+    d.d = a->c * b->b + a->d * b->d;
+    d.e = a->e * b->a + a->f * b->c + b->e;
+    d.f = a->e * b->b + a->f * b->d + b->f;
+    return d;
 }
 
 static inline void
 mat_mul(gs_matrix *d, gs_matrix *a, gs_matrix *b)
 {
-      *d = mat_con(a, b);
+    *d = mat_con(a, b);
 }
 
 static inline void
 mat_pt(gs_matrix *d, float a, float b, float *a1, float *b1)
 {
-      *a1 = a * d->a + b * d->c + d->e;
-      *b1 = a * d->b + b * d->d + d->f;
+    *a1 = a * d->a + b * d->c + d->e;
+    *b1 = a * d->b + b * d->d + d->f;
 }
 
 // paths
@@ -218,76 +219,55 @@ typedef struct stroke_state_s stroke_state;
 
 struct path_m_t
 {
-      e_path_kind t;
-      float x, y;
+    e_path_kind t;
+    float x, y;
 };
 struct path_l_t
 {
-      e_path_kind t;
-      float x, y;
+    e_path_kind t;
+    float x, y;
 };
 struct path_c_t
 {
-      e_path_kind t;
-      float x1, y1, x2, y2, x3, y3;
+    e_path_kind t;
+    float x1, y1, x2, y2, x3, y3;
 };
 struct path_v_t
 {
-      e_path_kind t;
-      float x2, y2, x3, y3;
+    e_path_kind t;
+    float x2, y2, x3, y3;
 };
 struct path_y_t
 {
-      e_path_kind t;
-      float x1, y1, x3, y3;
+    e_path_kind t;
+    float x1, y1, x3, y3;
 };
 struct path_h_t
 {
-      e_path_kind t;
+    e_path_kind t;
 };
 struct path_re_t
 {
-      e_path_kind t;
-      float x, y, w, h;
+    e_path_kind t;
+    float x, y, w, h;
 };
 
 struct stroke_state_s
 {
-      float lw, ml; // line_width, mitre_limit
-      int lj, lc;   // line_join, line_cap
-      float dash[32];
-      int dash_n, dash_offset;
+    float lw, ml; // line_width, mitre_limit
+    int lj, lc;   // line_join, line_cap
+    float dash[32];
+    int dash_n, dash_offset;
 };
 
-// generics
-static inline
-pdf_obj pdf_int_to_obj(int i)
-{
-      pdf_obj o;
-      o.t = eInt;
-      o.value.i = i;
-      return o;
-}
+// generic helpers
 
-static inline
-pdf_obj pdf_key_to_obj(char *s)
-{
-      pdf_obj o;
-      char *k;
-      k = pdf_malloc(strlen(s)+1);
-      if (k)
-      {
-            strcpy(k, s);
-            o.t = eKey;
-            o.value.k = k;
-      }
-      else
-      {
-            o.t = eLimit;
-            o.value.k = NULL;
-      }
-      return o;
-}
+extern pdf_obj* pdf_ref_to_obj(int n, int g);
+extern pdf_obj* pdf_int_to_obj(int i);
+extern pdf_obj* pdf_key_to_obj(char *s);
+extern void pdf_dict_insert_int(dict *d, char *k, int v);
+extern void pdf_dict_insert_ref(dict *d, char *k, int n, int g);
+extern void pdf_dict_insert_name(dict *d, char *k, char *n);
 
 static inline
 void * null_val() { return 0; }
@@ -297,11 +277,12 @@ typedef struct gs_rect_s pdf_rect;
 static inline void
 name_free(pdf_obj *n)
 {
-      if (n->t == eName)
+    if (n->t == eName)
 	    pdf_free(n->value.k);
 }
 
 #define obj_is_name(o)  ((o) && ((o)->t == eKey || (o)->t == eName))
 #define obj_is_dict(o)  ((o) && ((o)->t == eDict))
+
 
 #endif
