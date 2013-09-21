@@ -376,8 +376,16 @@ dict_entries(dict *d)
 
 // Helpers
 
+pdf_obj pdf_ref_to_obj(int n, int g)
+{
+    pdf_obj o;
+    o.t = eRef;
+    o.value.r.num = n;
+    o.value.r.gen = g;
+    return o;
+}
 
-pdf_obj* pdf_ref_to_obj(int n, int g)
+pdf_obj* pdf_ref_to_obj_new(int n, int g)
 {
     pdf_obj *o = pdf_malloc(sizeof(pdf_obj));
     o->t = eRef;
@@ -404,6 +412,15 @@ pdf_obj* pdf_key_to_obj(char *s)
     return o;
 }
 
+pdf_obj
+pdf_float_to_obj(float f)
+{
+    pdf_obj o;
+    o.t = eReal;
+    o.value.f = f;
+    return o;
+}
+
 void
 pdf_dict_insert_int(dict *d, char *k, int v)
 {
@@ -418,7 +435,7 @@ pdf_dict_insert_ref(dict *d, char *k, int n, int g)
 {
     pdf_obj *val;
 
-    val = pdf_ref_to_obj(n, g);
+    val = pdf_ref_to_obj_new(n, g);
     dict_insert(d, k, (void*)val);
 }
 

@@ -268,7 +268,9 @@ tstc_call(Tptr n, char *k, tstc_f f, void *a)
       while (n)
       {
 	    if (!n->kid)
+        {
 		  f(n->k, n->v, a);
+        }
 	    else
 	    {
 		  if (k)

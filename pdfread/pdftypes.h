@@ -100,7 +100,7 @@ struct pdf_obj_s
         int i;
         double f;
 	    char *id;
-        char *k;
+        unsigned char *k;
         struct {
             unsigned short len;
             char *buf;
@@ -262,9 +262,11 @@ struct stroke_state_s
 
 // generic helpers
 
-extern pdf_obj* pdf_ref_to_obj(int n, int g);
+extern pdf_obj* pdf_ref_to_obj_new(int n, int g);
+extern pdf_obj  pdf_ref_to_obj(int n, int g);
 extern pdf_obj* pdf_int_to_obj(int i);
 extern pdf_obj* pdf_key_to_obj(char *s);
+extern pdf_obj  pdf_float_to_obj(float f);
 extern void pdf_dict_insert_int(dict *d, char *k, int v);
 extern void pdf_dict_insert_ref(dict *d, char *k, int n, int g);
 extern void pdf_dict_insert_name(dict *d, char *k, char *n);
@@ -284,5 +286,21 @@ name_free(pdf_obj *n)
 #define obj_is_name(o)  ((o) && ((o)->t == eKey || (o)->t == eName))
 #define obj_is_dict(o)  ((o) && ((o)->t == eDict))
 
+static inline
+pdf_obj *
+pdf_array_build(int n)
+{
+    pdf_obj *a = pdf_malloc(sizeof(pdf_obj));
+    pdf_obj *items;
+    if (!a)
+        return a;
+    items = pdf_malloc(sizeof(pdf_obj) * n);
+    if (!items)
+        return 0;
+    a->value.a.items = items;
+    a->value.a.len = n;
+    a->t = eArray;
+    return a;
+}
 
 #endif

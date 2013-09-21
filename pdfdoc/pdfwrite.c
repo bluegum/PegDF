@@ -45,7 +45,7 @@ struct pdf_xref_table_s
 
 static void pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto);
 static void pdf_key_write(const char *k, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto);
-static void pdf_key_obj_write(const char *, pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto);
+static void pdf_obj_full_write(pdf_obj *o, int n, int g, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto);
 static void pdf_obj_scan(pdf_obj *o, pdf_xref_internal *x);
 static void pdf_indirect_objs_write(pdf_xref_internal *xref, FILE *out, pdfcrypto_priv *crypto);
 
@@ -159,28 +159,23 @@ pdf_xref_insert_indirect(pdf_xref_internal *x, pdf_obj *o)
     pdf_xref_internal_append(x, o->value.r.num, o->value.r.gen, MARK_BLACK);
 }
 
-static void
-pdf_oc_write(pdf_ocproperties *oc, pdf_xref_internal *x, FILE *o, pdfcrypto_priv *crypto)
-{
-    if (!oc)
-        return;
-    fputs("/OCProperties <<", o);
-    pdf_key_obj_write("OCGs", oc->ocgs, x, o, crypto);
-    pdf_key_obj_write("D", oc->d, x, o, crypto);
-    if (oc->configs)
-        pdf_key_obj_write("Configs", oc->configs, x, o, crypto);
-
-    fputs(">> ", o);
-}
-
 static
 void
 pdf_catalog_write(pdf_doc *doc, pdf_xref_internal *x, FILE *o, pdfcrypto_priv *decrypto, unsigned long flags)
 {
+    pdf_obj tmp;
+    dict *d = dict_new(11);
+
+    if (!d)
+        return;
+    tmp.t = eDict;
+    tmp.value.d.dict = d;
+
     x->xref->cur = 3;
 
     bpt_insert(x->entry, doc->root_ref, 2);
     bpt_insert(x->entry, 2, 2);
+    bpt_insert(x->entry, 1, 1);
     if (doc->pages_ref)
         bpt_insert(x->entry, doc->pages_ref, 1);
 
@@ -217,64 +212,51 @@ pdf_catalog_write(pdf_doc *doc, pdf_xref_internal *x, FILE *o, pdfcrypto_priv *d
         pdf_obj_scan(doc->structtreeroot, x);
     }
     pdf_indirect_objs_write(x, o, decrypto);
-    // new catalog dictionary
     x->xref->offsets[2] = ftell(o);
-    fputs("2 0 obj\n", o);
-    fputs("<</Type /Catalog", o);
-    fputs("/Pages 1 0 R\n", o);
-
+    // new catalog dictionary
+    pdf_dict_insert_name(d, "Type", "Catalog");
+    pdf_dict_insert_ref(d, "Pages", 1, 0);
     if (doc->pagemode)
     {
-        fputs("/PageMode ", o);
-        pdf_obj_write(doc->pagemode, x, o, decrypto);
+        dict_insert(d, "PageMode", doc->pagemode);
     }
     if (doc->pagelayout)
     {
-        fputs("/PageLayout ", o);
-        pdf_obj_write(doc->pagelayout, x, o, decrypto);
+        dict_insert(d, "PageLayout", doc->pagelayout);
     }
     if (doc->structtreeroot && (flags & WRITE_CATALOG_STRUCTTREEROOT))
     {
-        fputs("/StructTreeRoot ", o);
-        pdf_obj_write(doc->structtreeroot, x, o, decrypto);
+        dict_insert(d, "StructTreeRoot", doc->structtreeroot);
     }
     if (doc->pieceinfo && (flags & WRITE_CATALOG_PIECEINFO))
     {
-        fputs("/PieceInfo ", o);
-        pdf_obj_write(doc->pieceinfo, x, o, decrypto);
+        dict_insert(d, "PieceInfo", doc->pieceinfo);
     }
     if (doc->pagelabels && (flags & WRITE_CATALOG_PAGELABELS))
     {
-        fputs("/PageLabels ", o);
-        pdf_obj_write(doc->pagelabels, x, o, decrypto);
+        dict_insert(d, "PageLabels", doc->pagelabels);
     }
-
     if (doc->outlines && (flags & WRITE_CATALOG_OUTLINES))
     {
-        fputs("/Outlines ", o);
-        pdf_obj_write(doc->outlines, x, o, decrypto);
+        dict_insert(d, "Outlines", doc->outlines);
     }
     if (doc->names && (flags & WRITE_CATALOG_NAMES))
     {
-        fputs("/Names ", o);
-        pdf_obj_write(doc->names, x, o, decrypto);
+        dict_insert(d, "Names", doc->names);
     }
     if (doc->markinfo && (flags & WRITE_CATALOG_MARKINFO))
     {
-        fputs("/MarkInfo ", o);
-        pdf_obj_write(doc->markinfo, x, o, decrypto);
+        dict_insert(d, "MarkInfo", doc->markinfo);
     }
     if (doc->metadata && doc->metadata->t == eRef && (flags & WRITE_CATALOG_METADATA))
     {
-        fputs("/Metadata ", o);
-        pdf_obj_write(doc->metadata, x, o, decrypto);
+        dict_insert(d, "Metadata", doc->metadata);
     }
-
     if (doc->ocproperties && (flags & WRITE_CATALOG_OCPROPERTIES))
     {
-        pdf_oc_write(doc->ocproperties, x, o, decrypto);
+        dict_insert(d, "OCProperties", doc->ocproperties);
     }
-    fputs(">>\nendobj\n", o);
+    pdf_obj_full_write(&tmp, 2, 0, x, o, decrypto);
 }
 
 static
@@ -282,25 +264,40 @@ void
 pdf_pages_obj_write(pdf_xref_internal *x, num_range *page_ranges, int nr, FILE *o)
 {
     int i, j, n = 0;
+    pdf_obj tmp, *pages;
+    dict *d = dict_new(2);
+    if (!d)
+        return;
+
     x->xref->offsets[1] = ftell(o);
-    fprintf(o, "%d %d obj\n", 1, 0);
-    fputs("<</Type /Pages", o);
-    fputs("/Kids [", o);
+
+    tmp.t = eDict;
+    tmp.value.d.dict = d;
+    pdf_dict_insert_name(d, "Type", "Pages");
+    n = 0;
+    for (i = 0; i < nr; i++)
+    {
+        n += (page_ranges[i].end - page_ranges[i].bgn + 1);
+    }
+    pdf_dict_insert_int(d, "Count", n);
+    pages = pdf_array_build(n);
+    if (!pages)
+    {
+        return;
+    }
     for (j = 0; j < nr; j++)
     {
         int pg1st = page_ranges[j].bgn - 1;
         int pglast = page_ranges[j].end - 1;
         if (pg1st < 0)
             pg1st = 0;
-        for (i = pg1st; i < pglast; i++)
+        for (i = pg1st; i <= pglast; i++)
         {
-            fprintf(o, " %d %d R", x->page_ref_buf[i], 0);
-            n++;
+            pages->value.a.items[i-pg1st] = pdf_ref_to_obj(x->page_ref_buf[i], 0);
         }
     }
-    fputs("]", o);
-    fprintf(o, "/Count %d\n", n);
-    fputs(">>\nendobj\n", o);
+    dict_insert(d, "Kids", pages);
+    pdf_obj_full_write(&tmp, 1, 0, x, o, 0);
 }
 
 static
@@ -337,12 +334,6 @@ pdf_trailer_write(pdf_xref_internal *x, int startxref, FILE *o)
     fprintf(o,  "%d\n", startxref);
     fputs("%%EOF", o);
     dict_free(d);
-}
-
-static void
-pdf_key_int_write(char *k, int i, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
-{
-    fprintf(f, "/%s %d\n", k, i);
 }
 
 static void
@@ -526,7 +517,7 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *decrypt
                     int c;
                     int curx;
                     int strmoff;
-                    int ll;
+
                     fputs("stream\n", f);
                     strmoff = ftell(out);
                     //
@@ -599,10 +590,11 @@ pdf_key_write(const char *k, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *cryp
 }
 
 static void
-pdf_key_obj_write(const char *k, pdf_obj *o, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
+pdf_obj_full_write(pdf_obj *o, int n, int g, pdf_xref_internal *x, FILE *f, pdfcrypto_priv *crypto)
 {
-    pdf_key_write(k, x, f, crypto);
+    fprintf(f, "%d %d obj\n", n, g);
     pdf_obj_write(o, x, f, crypto);
+    fputs("\nendobj\n", f);
 }
 
 static
@@ -618,191 +610,89 @@ pdf_page_contents_write(pdf_obj *content, unsigned long write_flag, pdf_xref_int
     {
 	    return -1;
     }
-    fprintf(out, "%d 0 obj\n", xref->xref->cur);
-    if (write_flag & WRITE_PDF_CONTENT_INFLATE)
-    {
-	    int obj = 0, gen = 0;
-	    pdf_stream *s;
-	    sub_stream *ss;
-	    ss = (sub_stream*)cobj->value.d.dict->stream;
-	    if (ss)
-	    {
-            obj = ss->obj;
-            gen = ss->gen;
-	    }
-	    s = pdf_stream_load(cobj, crypto, obj, gen);
-	    if (s)
-	    {
-            int c;
-            int curx;
-            int strmoff;
-            int ll;
-            int empty = (s->length)?0:1;
-
-            fputs("<<\n", out);
-            if (!empty) {
-                fputs("/Length            \n", out);
-                ll = ftell(out) - 11;
-            }
-            else
-                fprintf(out, "/Length %d\n", 0);
-
-            fputs(">>stream\n", out);
-            strmoff = ftell(out);
-            //
-            if (!empty)
-            {
-                while ((c = pdf_stream_getchar(s)) != EOF)
-                    fputc(c, out);
-            }
-            pdf_stream_free(s, 1);
-            //
-            if (!empty) {
-                curx = ftell(out);
-                fseek(out, ll, SEEK_SET);
-                fprintf(out, "%10d", curx - strmoff);
-                fseek(out, curx, SEEK_SET);
-            }
-            fputs("\nendstream", out);
-	    }
-	    else
-	    {
-            pdf_obj_write(cobj, xref, out, crypto);
-	    }
-    }
-    else
-    {
-	    pdf_obj_write(cobj, xref, out, crypto);
-    }
-    fputs("\nendobj\n", out);
+    pdf_obj_full_write(cobj, xref->xref->cur, 0, xref, out, crypto);
     xref->xref->offsets[xref->xref->cur] = off;
     xref->xref->cur++;
     return content_ref;
 }
 
 static
-void
-pdf_group_write(pdf_group *g, pdf_xref_internal *x, FILE *o, pdfcrypto_priv *crypto)
+pdf_obj
+pdf_group_write(pdf_group *g, pdf_xref_internal *x, pdfcrypto_priv *crypto)
 {
     pdf_obj tmp;
     dict *d;
 
     if (!g)
-        return;
+        return tmp;
     d = dict_new(3);
     if (!d)
-        return;
+        return tmp;
     tmp.t = eDict;
     tmp.value.d.dict = d;
-    fputs("/Group", o);
     if (g->cs)
     {
 	    dict_insert(d, "CS", g->cs);
     }
     pdf_dict_insert_int(d, "I", g->i);
     pdf_dict_insert_int(d, "K", g->k);
-    pdf_obj_write(&tmp, x, o, 0);
+    return tmp;
 }
 
 static
-void
-pdf_resources_write(pdf_resources *r, pdf_xref_internal *x, FILE *o, pdfcrypto_priv *crypto)
+pdf_obj
+pdf_resources_write(pdf_resources *r, pdf_xref_internal *x, pdfcrypto_priv *crypto)
 {
-    fputs("/Resources <<", o);
+    pdf_obj tmp;
+    dict *d;
+
+    d = dict_new(9);
+    if (!d)
+        return tmp;
+    tmp.t = eDict;
+    tmp.value.d.dict = d;
+
     if (r->extgstate)
     {
-        dict_list *ll, *l;
 	    pdf_obj *extg = r->extgstate;
 	    pdf_obj_resolve(extg);
 	    if (extg && extg->t == eDict)
 	    {
-            l = dict_to_list(extg->value.d.dict);
-            ll = l;
-            fputs("/ExtGState <<", o);
-            while (l && l->key)
-            {
-                pdf_obj *t = &l->val;
-                dict_array *a;
-                if (t->t == eRef)
-                    pdf_obj_resolve(t);
-                assert(t->t == eDict);
-                a = dict_to_array(t->value.d.dict);
-                fprintf(o, "/%s <<", l->key);
-                if (a)
-                {
-                    // print dict array "a"
-                    if (a->items)
-                    {
-                        int i;
-                        for (i = 0; i < a->cur; i++)
-                        {
-                            fprintf(o, "/%s ",a->items[i].key);
-                            pdf_obj_write(&a->items[i].val, x, o, crypto);
-                        }
-                    }
-                    // free array/dict_entry
-                    if (a->items)
-                    {
-                        int i;
-                        for (i = 0; i < a->cur; i++)
-                            pdf_free(a->items[i].key);
-                        pdf_free(a->items);
-                    }
-                    pdf_free(a);
-                }
-                fputs(">> ", o);
-                l = l->next;
-            }
-            // free dict_list
-            dict_list_free(ll);
-            fputs(">> ", o);
-	    }
+            dict_insert(d, "ExtGState", extg);
+        }
     } // extgstate
     if (r->font)
     {
-        pdf_obj *font = r->font;
-        pdf_obj_resolve(font);
-        fputs("/Font", o);
-        pdf_obj_write(font, x, o, crypto);
-        fputs("\n", o);
+        pdf_obj_resolve(r->font);
+        dict_insert(d, "Font", r->font);
     }
     if (r->xobject)
     {
         pdf_obj_resolve(r->xobject);
-        fputs("/XObject", o);
-        pdf_obj_write(r->xobject, x, o, crypto);
-        fputs("\n", o);
+        dict_insert(d, "XObject", r->xobject);
     }
     if (r->colorspace)
     {
         pdf_obj_resolve(r->colorspace);
-        fputs("/ColorSpace", o);
-        pdf_obj_write(r->colorspace, x, o, crypto);
-        fputs("\n", o);
+        dict_insert(d, "ColorSpace", r->colorspace);
     }
     if (r->shading)
     {
         pdf_obj_resolve(r->shading);
-        fputs("/Shading", o);
-        pdf_obj_write(r->shading, x, o, crypto);
-        fputs("\n", o);
+        dict_insert(d, "Shading", r->shading);
     }
     if (r->pattern)
     {
         pdf_obj_resolve(r->pattern);
-        fputs("/Pattern", o);
-        pdf_obj_write(r->pattern, x, o, crypto);
-        fputs("\n", o);
+        dict_insert(d, "Pattern", r->pattern);
     }
     if (r->properties)
     {
         pdf_obj_resolve(r->properties);
-        fputs("/Properties", o);
-        pdf_obj_write(r->properties, x, o, crypto);
-        fputs("\n", o);
+        dict_insert(d, "Properties", r->properties);
     }
     // end resources
-    fputs(">> ", o);
+    return tmp;
 }
 
 static
@@ -896,29 +786,11 @@ static
 void
 pdf_resources_scan(pdf_resources *r, pdf_xref_internal* x)
 {
+    if (!r)
+        return;
     if (r->extgstate)
     {
-        // scan for indirect objs
-        pdf_obj *gs = r->extgstate;
-        pdf_obj_resolve(gs);
-        if (gs->t == eDict)
-        {
-            dict_list *ll, *l = dict_to_list(gs->value.d.dict);
-            ll = l;
-            while (l && l->key)
-            {
-                pdf_obj *thisgs = &l->val;
-                if (l->val.t == eRef)
-                    thisgs = pdf_obj_deref(&l->val);
-                if (thisgs && thisgs->t == eDict)
-                {
-                    pdf_obj_scan(thisgs, x);
-                }
-                l = l->next;
-            }
-            // free list
-            dict_list_free(ll);
-        }
+        pdf_obj_scan(r->extgstate, x);
     }
     if (r->font)
     {
@@ -953,25 +825,12 @@ pdf_page_scan(pdf_page* pg, pdf_xref_internal* x, FILE *o, pdfcrypto_priv *crypt
     if (!pg)
         return;
     x->page_obj_idx = 0;
-    if (pg->resources)
-    {
-        pdf_resources_scan(pg->resources, x);
-    }
+    pdf_resources_scan(pg->resources, x);
     if (pg->group)
     {
         pdf_obj_scan(pg->group->cs, x);
     }
     pdf_indirect_objs_write(x, o, crypto);
-    //if (pg->contents) // conflicting with content writer
-    // pdf_page_contents_write() resolves and write contents array
-    if (0)
-    {
-	    pdf_obj_resolve(pg->contents);
-	    if (pg->contents->t == eArray)
-	    {
-            pdf_obj_scan(pg->contents, x);
-	    }
-    }
 }
 
 // Writing out page content which is an array of references.
@@ -993,9 +852,8 @@ pdf_indirect_objs_write(pdf_xref_internal *xref, FILE *out, pdfcrypto_priv *cryp
                 xref->xref->offsets[xref->xref->cur] = ftell(out);
                 // insert negative ref-number to mark back-edge
                 bpt_insert(xref->entry, xref->page_obj_buf[i], (void*)-xref->xref->cur);
-                fprintf(out, "%d 0 obj\n", xref->xref->cur);
-                pdf_obj_write(o, xref, out, crypto);
-                fputs("\nendobj\n", out);
+                // serialize
+                pdf_obj_full_write(o, xref->xref->cur, 0, xref, out, crypto);
                 // update entry
                 bpt_insert(xref->entry, xref->page_obj_buf[i], (void*)xref->xref->cur);
                 // inc new xref counter
@@ -1012,14 +870,24 @@ pdf_page_obj_write(pdf_page *page, int pgidx, unsigned long write_flag, pdf_xref
     int content_ref = -1;
     int content_num = 0;
     int content_ref_arr[1024];
+    pdf_obj grp, tmp, *mediabox, resources;
+    dict *d;
+
     if (!page)
         return;
+    d = dict_new(11);
+    if (!d)
+        return;
+    tmp.t = eDict;
+    tmp.value.d.dict = d;
+
     if (page->contents)
     {
 	    pdf_obj *contents = pdf_obj_deref(page->contents);
 	    if (contents->t == eDict)
 	    {
             content_ref = pdf_page_contents_write(contents, write_flag, xref, out, crypto);
+            bpt_insert(xref->entry, content_ref, content_ref);
 	    }
 	    else if (contents->t == eArray)
 	    {
@@ -1031,42 +899,52 @@ pdf_page_obj_write(pdf_page *page, int pgidx, unsigned long write_flag, pdf_xref
                 content_num = 1024;
             }
             for (i = 0; i < content_num; i++)
+            {
                 content_ref_arr[i] = pdf_page_contents_write(&contents->value.a.items[i], write_flag, xref, out, crypto);
+                bpt_insert(xref->entry, content_ref_arr[i], content_ref_arr[i]);
+            }
 	    }
     }
     if (content_ref == -1 && content_num == 0)
 	    return;
     xref->xref->offsets[xref->xref->cur] = ftell(out);
-    fprintf(out, "%d 0 obj\n", xref->xref->cur);
+    bpt_insert(xref->entry, xref->xref->cur, xref->xref->cur);
     xref->page_ref_buf[pgidx] = xref->xref->cur;
     xref->xref->cur++;
-    fprintf(out, "%s\n", "<<");
-    fprintf(out, "%s\n", "/Type /Page");
-    fprintf(out, "%s [%f %f %f %f]\n", "/MediaBox", page->mediabox.x0, page->mediabox.y0,  page->mediabox.x1, page->mediabox.y1);
+
+    // writing out page obj
+    pdf_dict_insert_name(d, "Type", "Page");
+    mediabox = pdf_array_build(4);
+    mediabox->value.a.items[0] = pdf_float_to_obj(page->mediabox.x0);
+    mediabox->value.a.items[1] = pdf_float_to_obj(page->mediabox.y0);
+    mediabox->value.a.items[2] = pdf_float_to_obj(page->mediabox.x1);
+    mediabox->value.a.items[3] = pdf_float_to_obj(page->mediabox.y1);
+    dict_insert(d, "MediaBox", mediabox);
     if (page->resources)
     {
-        pdf_resources_write(page->resources, xref, out, crypto);
+        resources = pdf_resources_write(page->resources, xref, crypto);
+        dict_insert(d, "Resources", &resources);
     }
     if (page->group)
     {
-        pdf_group_write(page->group, xref, out, crypto);
+        grp = pdf_group_write(page->group, xref, crypto);
+        dict_insert(d, "Group", &grp);
     }
     if (content_ref != -1)
     {
-	    fprintf(out, "/Contents %d %d R\n", content_ref, 0);
+        pdf_dict_insert_ref(d, "Contents", content_ref, 0);
     }
     else
     {
 	    int i;
-	    fputs("/Contents [", out);
+        pdf_obj *cont = pdf_array_build(content_num);
 	    for (i = 0; i < content_num; i++)
 	    {
-            fprintf(out, "%d %d R ", content_ref_arr[i], 0);
+            cont->value.a.items[i] = pdf_ref_to_obj(content_ref_arr[i], 0);
 	    }
-	    fputc(']', out);
+        dict_insert(d, "Contents", cont);
     }
-    fputs(">>", out);
-    fputs("\nendobj\n", out);
+    pdf_obj_full_write(&tmp, xref->xref->cur-1, 0, xref, out, crypto);
 }
 
 pdf_err
@@ -1106,7 +984,7 @@ pdf_page_write(pdf_doc *doc, int i/* pg# */, pdfcrypto_priv *crypto, char *outf,
     pdf_page_obj_write(doc->pages[i], i, options->flags, xref, crypto, out);
 
     range.bgn = i + 1;
-    range.end = i + 2;
+    range.end = i + 1;
     pdf_pages_obj_write(xref, &range, 1, out);
     // write xref table
     startxref = pdf_xref_write(xref, out);
