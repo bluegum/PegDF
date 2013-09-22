@@ -188,7 +188,6 @@ pdf_obj pop_dict(void)
             dict_insert(d, parser_inst->stack[parser_inst->stackp+1].value.k, a);
             name_free(&parser_inst->stack[parser_inst->stackp+1]);
 #endif
-            //name_free(&parser_inst->stack[parser_inst->stackp+1]);
         }
         else
         {

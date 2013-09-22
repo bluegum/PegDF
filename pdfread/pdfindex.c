@@ -102,8 +102,6 @@ pdf_obj_walk()
       }
 }
 
-void pdf_obj_delete(pdf_obj *o);
-
 void free_array(pdf_obj *o)
 {
       if (o && o->t == eArray)

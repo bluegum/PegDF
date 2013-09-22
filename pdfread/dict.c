@@ -31,13 +31,14 @@ dict_entry_new(void *v, char *k)
     if (pdf_keyword_find(k, strlen(k)))
     {
         e->f = entry_no_free;
+        e->k = k;
     }
     else
     {
         e->f = entry_name_free;
+        e->k = k;
     }
     e->v = v;
-    e->k = k;
     return e;
 }
 
@@ -48,7 +49,10 @@ dict_entry_free(char *k, void *v, void *a)
     if (e)
     {
 	    e->f(e->k);
-	    dict_free_val(0, e->v, 0);
+        if (e->v)
+        {
+            dict_free_val(0, e->v, 0);
+        }
 	    pdf_free(e);
     }
 }
@@ -113,10 +117,9 @@ dict_get(dict* d, char *key)
 static void
 dict_free_val(char *key, void *val, void *x)
 {
-    pdf_obj *o;
+    pdf_obj *o = (pdf_obj*)val;
     extern void pdf_obj_delete(void *o);
     pdf_obj_delete(val);
-    o = (pdf_obj*)val;
     if (val)
         pdf_free(val);
     //printf("dict_free_val on entry: %s\n", key);
@@ -221,6 +224,39 @@ dict_print_keyval(char *key, void *val, void *x)
 }
 #endif
 
+static void
+dict_entry_copy(char *k, void *v, void *a)
+{
+    dict_entry *e = (dict_entry *)v;
+    pdf_obj *val;
+    char *p;
+    val = pdf_malloc(sizeof(pdf_obj));
+    *val = *(pdf_obj*)(e->v);
+    if (pdf_keyword_find(e->k, strlen(e->k)))
+    {
+        p = e->k;
+    }
+    else
+    {
+        p = pdf_malloc(strlen(e->k)+1);
+        strcpy(p, e->k);
+    }
+    dict_insert((dict*)a, p, val);
+}
+
+dict* dict_copy(dict *d)
+{
+#ifdef TSTC
+    dict *out;
+    if (!d)
+        return 0;
+    out = dict_new(d->n);
+    tstc_call(d->dict, 0, dict_entry_copy, out);
+    return out;
+#else
+    return 0;
+#endif
+}
 void  dict_free(dict* d)
 {
     if (d)
@@ -402,13 +438,11 @@ pdf_obj* pdf_int_to_obj(int i)
     return o;
 }
 
-pdf_obj* pdf_key_to_obj(char *s)
+pdf_obj pdf_key_to_obj(char *s)
 {
-    pdf_obj *o = pdf_malloc(sizeof(pdf_obj));
-    if (!o)
-        return 0;
-    o->t = eKey;
-    o = make_key(o, s);
+    pdf_obj o;
+    o.t = eKey;
+    make_key(&o, s);
     return o;
 }
 
@@ -425,23 +459,38 @@ void
 pdf_dict_insert_int(dict *d, char *k, int v)
 {
     pdf_obj *val;
+    pdf_obj key = pdf_key_to_obj(k);
 
     val = pdf_int_to_obj(v);
-    dict_insert(d, k, (void*)val);
+    dict_insert(d, key.value.k, (void*)val);
 }
 
 void
 pdf_dict_insert_ref(dict *d, char *k, int n, int g)
 {
     pdf_obj *val;
-
+    pdf_obj key = pdf_key_to_obj(k);
     val = pdf_ref_to_obj_new(n, g);
-    dict_insert(d, k, (void*)val);
+    dict_insert(d, key.value.k, (void*)val);
 }
 
 void
 pdf_dict_insert_name(dict *d, char *k, char *n)
 {
-    pdf_obj *val = pdf_key_to_obj(n);
-    dict_insert(d, k, (void*)val);
+    pdf_obj *val;
+    pdf_obj key = pdf_key_to_obj(k);
+
+    val = pdf_malloc(sizeof(pdf_obj));
+    val->t = eKey;
+    *val = pdf_key_to_obj(n);
+    dict_insert(d, key.value.k, (void*)val);
+}
+
+pdf_obj *
+pdf_dict_new(int n)
+{
+    pdf_obj *o = pdf_malloc(sizeof(pdf_obj));
+    o->t = eDict;
+    o->value.d.dict = dict_new(n);
+    return o;
 }

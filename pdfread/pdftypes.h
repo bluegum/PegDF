@@ -265,11 +265,19 @@ struct stroke_state_s
 extern pdf_obj* pdf_ref_to_obj_new(int n, int g);
 extern pdf_obj  pdf_ref_to_obj(int n, int g);
 extern pdf_obj* pdf_int_to_obj(int i);
-extern pdf_obj* pdf_key_to_obj(char *s);
+extern pdf_obj  pdf_key_to_obj(char *s);
 extern pdf_obj  pdf_float_to_obj(float f);
 extern void pdf_dict_insert_int(dict *d, char *k, int v);
 extern void pdf_dict_insert_ref(dict *d, char *k, int n, int g);
 extern void pdf_dict_insert_name(dict *d, char *k, char *n);
+
+static inline pdf_obj* pdf_obj_copy(pdf_obj *o)
+{
+    pdf_obj *out = (pdf_obj*)pdf_malloc(sizeof(pdf_obj));
+    if (out)
+        *out = *o;
+    return out;
+}
 
 static inline
 void * null_val() { return 0; }
