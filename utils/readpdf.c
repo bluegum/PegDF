@@ -283,9 +283,12 @@ int main(int argc, char **argv)
     }
     else
     {
+        wo.flags = 0;
         wo.version = 17;
         wo.page_ranges = nr;
         wo.nr = i;
+        if (inflate)
+            wo.flags |= WRITE_PDF_CONTENT_INFLATE;
         wo.compression = compression;
         wo.encrypt = encrypt;
         strncpy(wo.upass, upasswd, 32);
