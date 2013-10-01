@@ -35,6 +35,8 @@ struct pdf_xref_internal_s
     int page_obj_idx;
     int *page_obj_buf;
     int *page_ref_buf;
+    //
+    pdf_stream *filt_stream; // output filtering stream(s)
 };
 
 // pdf_xref_table stores the artifects of object writing. to be written out as new xref table.
@@ -78,7 +80,7 @@ is_escapable(unsigned int c)
 }
 static
 pdf_xref_internal*
-pdf_xref_internal_create(int n, int npages)
+pdf_xref_internal_create(int n, int npages, pdf_writer_options *options)
 {
     pdf_xref_internal* x;
     if (!n)
@@ -97,6 +99,11 @@ pdf_xref_internal_create(int n, int npages)
     // npage*2 for new page objs and page content objs
     x->xref->offsets = pdf_malloc(sizeof(int)*(n+2+npages*2));
     x->page_ref_buf = pdf_malloc(sizeof(int)*npages);
+    // install default deflate output stream
+    if ((options->flags & WRITE_PDF_CONTENT_INFLATE) == 0)
+    {
+        x->filt_stream = pdf_ostream_filtered_open(FlateEncode);
+    }
     return x;
 }
 
@@ -462,7 +469,6 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, pdfcrypto_priv *d
             dict_list *ll, *l = dict_to_list(o->value.d.dict);
             sub_stream *strm = o->value.d.dict->stream;
             int strmlen = 0;
-            int last_off = 0;
             int inflate = pdf_to_int(pdf_dict_get(o, "PEGDF_INFLATE_CONTENT"));
             ll = l;
             pdf_stream_puts("<<", f);
@@ -685,7 +691,7 @@ pdf_group_write(pdf_group *g, pdf_xref_internal *x, pdfcrypto_priv *crypto)
     if (!g)
         return tmp;
     if (!tmp)
-        return;
+        return 0;
     d = dict_new(3);
     if (!d)
         return tmp;
@@ -1041,20 +1047,19 @@ pdf_magic_write(pdf_stream *out, pdf_writer_options *options)
 }
 
 pdf_err
-pdf_page_write(pdf_doc *doc, int i/* pg# */, pdfcrypto_priv *crypto, char *outf, pdf_writer_options *options)
+pdf_page_write(pdf_doc *doc, int i/* pg# */, pdfcrypto_priv *crypto, char *ofile, pdf_writer_options *options)
 {
-    FILE* out = 0;
-    char buf[128];
+    pdf_stream* out = 0;
     int startxref;
     pdf_xref_internal *x = 0;
     num_range range;
 
-    out = fopen(outf, "wb");
+    out = pdf_stream_file_open(ofile);
     if (!out)
 	    return pdf_ok;
     pdf_magic_write(out, options);
     // scan pages
-    x = pdf_xref_internal_create(pdf_obj_count(), doc->count);
+    x = pdf_xref_internal_create(pdf_obj_count(), doc->count, options);
     if (!x)
 	    goto done_0;
     pdf_catalog_write(doc, x, out, crypto, WRITE_CATALOG_DEFAULTS);
@@ -1072,7 +1077,7 @@ pdf_page_write(pdf_doc *doc, int i/* pg# */, pdfcrypto_priv *crypto, char *outf,
   done_0:
     if (x)
 	    pdf_xref_internal_free(x);
-    fclose(out);
+    pdf_stream_close(out);
     return pdf_ok;
 }
 
@@ -1211,10 +1216,11 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, pdf_writer_options *optio
 
         s = pdf_stream_file_open(ofile);
         if (!s)
-            return;
+            return pdf_file_err;
+
         pdf_magic_write(s, options);
 	    // scan pages
-	    x = pdf_xref_internal_create(pdf_obj_count(), doc->count);
+	    x = pdf_xref_internal_create(pdf_obj_count(), doc->count, options);
 	    if (!x)
             goto done;
 	    pdf_catalog_write(doc, x, s, crypto, WRITE_CATALOG_DEFAULTS);

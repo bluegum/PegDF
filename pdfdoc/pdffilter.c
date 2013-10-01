@@ -8,6 +8,23 @@
 #include "pdfread.h"
 #include "lzw_decomp.h"
 
+
+// common member functions
+static int
+pdf_filter_base_read(pdf_filter *f, unsigned char *obuf, int request)
+{
+    return 0;
+}
+
+static int
+pdf_filter_base_write(pdf_filter *f, unsigned char *obuf, int request)
+{
+    return 0;
+}
+
+
+
+// deflates
 static int pdf_flated_read(pdf_filter *f, unsigned char *obuf, int request);
 static pdf_err pdf_flated_close(pdf_filter *f, int flag);
 
@@ -112,6 +129,121 @@ pdf_flated_read(pdf_filter *f, unsigned char *obuf, int request)
         return request - z->avail_out;
     }
 }
+///////////////////////////////////////////
+// flate compression
+///////////////////////////////////////////
+#define CHUNK 16384
+
+/* Compress from file source to file dest until EOF on source.
+   def() returns Z_OK on success, Z_MEM_ERROR if memory could not be
+   allocated for processing, Z_STREAM_ERROR if an invalid compression
+   level is supplied, Z_VERSION_ERROR if the version of zlib.h and the
+   version of the library linked do not match, or Z_ERRNO if there is
+   an error reading or writing the files. */
+static int def(FILE *source, FILE *dest, int level)
+{
+    int ret, flush;
+    unsigned have;
+    z_stream strm;
+    unsigned char in[CHUNK];
+    unsigned char out[CHUNK];
+
+    /* allocate deflate state */
+    strm.zalloc = Z_NULL;
+    strm.zfree = Z_NULL;
+    strm.opaque = Z_NULL;
+    ret = deflateInit(&strm, level);
+    if (ret != Z_OK)
+        return ret;
+
+    /* compress until end of file */
+    do {
+        strm.avail_in = fread(in, 1, CHUNK, source);
+        if (ferror(source)) {
+            (void)deflateEnd(&strm);
+            return Z_ERRNO;
+        }
+        flush = feof(source) ? Z_FINISH : Z_NO_FLUSH;
+        strm.next_in = in;
+
+        /* run deflate() on input until output buffer not full, finish
+           compression if all of source has been read in */
+        do {
+            strm.avail_out = CHUNK;
+            strm.next_out = out;
+            ret = deflate(&strm, flush);    /* no bad return value */
+            assert(ret != Z_STREAM_ERROR);  /* state not clobbered */
+            have = CHUNK - strm.avail_out;
+            if (fwrite(out, 1, have, dest) != have || ferror(dest)) {
+                (void)deflateEnd(&strm);
+                return Z_ERRNO;
+            }
+        } while (strm.avail_out == 0);
+        assert(strm.avail_in == 0);     /* all input will be used */
+        /* done when last data in file processed */
+    } while (flush != Z_FINISH);
+    assert(ret == Z_STREAM_END);        /* stream will be complete */
+
+    /* clean up and return */
+    (void)deflateEnd(&strm);
+    return Z_OK;
+}
+
+static int
+pdf_deflate_write(pdf_filter *f, unsigned char *out, int request)
+{
+    int ret;
+    z_stream *z = (z_stream*) f->state;
+    z->avail_out = request;
+    z->next_out = out;
+    ret = deflate(z, Z_NO_FLUSH);    /* no bad return value */
+    assert(ret != Z_STREAM_ERROR);  /* state not clobbered */
+    return request;
+}
+
+
+pdf_err
+pdf_deflate_new(pdf_filter **f)
+{
+    int ret;
+    z_stream *z;
+
+    if (!f)
+        return pdf_unknown;
+    *f = pdf_malloc(sizeof(pdf_filter));
+    if (!(*f))
+        return pdf_mem_err;
+    z = pdf_malloc(sizeof(z_stream));
+    if (!z)
+        return pdf_mem_err;
+    memset(z, 0, sizeof(z_stream));
+
+    /* allocate deflate state */
+    z->zalloc = Z_NULL;
+    z->zfree = Z_NULL;
+    z->opaque = Z_NULL;
+    ret = deflateInit(z, Z_DEFAULT_COMPRESSION);
+    if (ret != Z_OK)
+        return pdf_io_err;
+    (*f)->state = (void*)z;
+    (*f)->write = pdf_deflate_write;
+    (*f)->read = pdf_filter_base_read;
+    return pdf_ok;
+}
+
+pdf_err
+pdf_deflate_close(pdf_filter *f, int flag)
+{
+    int ret = Z_OK;
+    if (f && f->state)
+        ret = deflateEnd(f->state);
+    if (ret != Z_OK)
+        return pdf_io_err;
+    return pdf_ok;
+}
+
+
+
 ///////////////////////////////////////////
 pdf_err
 pdf_rawfilter_close(pdf_filter *f, int flag)

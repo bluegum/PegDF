@@ -121,7 +121,6 @@ main(int argc, char* argv[])
     pdf_err e;
     pdf_doc *doc;
     pdfcrypto *crypto = 0;
-    int version = 17; // for output files
     pdf_writer_options options;
 
     in[0] = 0;

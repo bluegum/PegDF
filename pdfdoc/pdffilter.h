@@ -18,6 +18,9 @@ enum pdf_filterkind_e
       DCTDecode,
       JPXDecode,
       Crypt,
+      FlateEncode,
+      RC4Encrypt,
+      AESEncrypt,
       Limit,
       Raw
 };

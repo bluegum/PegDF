@@ -465,3 +465,27 @@ pdf_istream_filtered_open(pdf_filterkind f)
 {
     return 0;
 }
+
+static int
+pdf_ostream_filtered_close(pdf_stream *sf)
+{
+    pdf_stream_filtered *s = (pdf_stream_filtered*)sf;
+    return 0;
+}
+
+pdf_stream*
+pdf_ostream_filtered_open(pdf_filterkind f)
+{
+    switch (f)
+    {
+        case FlateEncode:
+            break;
+        case RC4Encrypt:
+            break;
+        case AESEncrypt:
+            break;
+        default:
+            break;
+    }
+    return 0;
+}
