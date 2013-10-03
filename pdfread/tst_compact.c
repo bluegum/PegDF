@@ -120,20 +120,29 @@ Tptr _tstc_insert(Tptr p, char *k, char *s, void *v)
 	    // expand kid
 	    if (!t->kid && *s == *ts)
 	    {
-            while (!t->kid && *ts && *s && *s==*t->s)
+            if (strcmp(s, ts) == 0)
             {
-                x = t;
-                t->kid = tstc_new(t->k, ts+1, t->v);
-                t = t->kid;
-                s++;
-                ts++;
+                dict_entry_free(s, t->v, 0);
+                // replace value
+                t->v = v;
             }
-            // add sib
+            else
             {
-                Tptr y = tstc_sib_add(t, k, s, v);
-                if (y != t)
-                { // update parent->kid
-                    x->kid = y;
+                while (!t->kid && *ts && *s && *s==*t->s)
+                {
+                    x = t;
+                    t->kid = tstc_new(t->k, ts+1, t->v);
+                    t = t->kid;
+                    s++;
+                    ts++;
+                }
+                // add sib
+                {
+                    Tptr y = tstc_sib_add(t, k, s, v);
+                    if (y != t)
+                    { // update parent->kid
+                        x->kid = y;
+                    }
                 }
             }
 	    }

@@ -22,7 +22,12 @@ pdf_filter_base_write(pdf_filter *f, unsigned char *obuf, int request)
     return 0;
 }
 
-
+static pdf_err
+pdf_filter_base_flush(pdf_filter *f, char *buf, int *len)
+{
+    *len = 0;
+    return pdf_ok;
+}
 
 // deflates
 static int pdf_flated_read(pdf_filter *f, unsigned char *obuf, int request);
@@ -63,6 +68,7 @@ pdf_flated_new(pdf_filter **f)
     (*f)->state = (void*)z;
     (*f)->read = pdf_flated_read;
     (*f)->close = pdf_flated_close;
+    (*f)->flush = pdf_filter_base_flush;
     (*f)->ptr = (*f)->buf;
     return pdf_ok;
 }
@@ -190,17 +196,59 @@ static int def(FILE *source, FILE *dest, int level)
 }
 
 static int
-pdf_deflate_write(pdf_filter *f, unsigned char *out, int request)
+pdf_deflate_write(pdf_filter *f, unsigned char *in, int request)
 {
     int ret;
     z_stream *z = (z_stream*) f->state;
-    z->avail_out = request;
-    z->next_out = out;
+
+    if (z->avail_in == 0)
+    {
+        if (request == 0)
+        {
+            return 0;
+        }
+
+        z->avail_in = request;
+        z->next_in = in;
+    }
+    z->avail_out = PDF_FILTER_BUF_SIZE;
+    z->next_out = f->buf;
     ret = deflate(z, Z_NO_FLUSH);    /* no bad return value */
     assert(ret != Z_STREAM_ERROR);  /* state not clobbered */
-    return request;
+    return PDF_FILTER_BUF_SIZE - z->avail_out;
 }
 
+pdf_err
+pdf_deflate_close(pdf_filter *f, int flag)
+{
+    int ret = Z_OK;
+    z_stream *z = (z_stream*) f->state;
+    if (f && z)
+    {
+        ret = deflateEnd(z);
+        pdf_free(z);
+    }
+    if (ret != Z_OK)
+        return pdf_io_err;
+    return pdf_ok;
+}
+
+pdf_err
+pdf_deflate_flush(pdf_filter *f, char *buf, int *len)
+{
+    int ret = Z_OK;
+    z_stream *z = (z_stream*) f->state;
+    if (f && z)
+    {
+        z->avail_out = *len;
+        z->next_out = buf;
+        ret = deflate(z, Z_FINISH);
+        *len = *len - z->avail_out;
+    }
+    if (ret != Z_OK)
+        return pdf_io_err;
+    return pdf_ok;
+}
 
 pdf_err
 pdf_deflate_new(pdf_filter **f)
@@ -228,17 +276,8 @@ pdf_deflate_new(pdf_filter **f)
     (*f)->state = (void*)z;
     (*f)->write = pdf_deflate_write;
     (*f)->read = pdf_filter_base_read;
-    return pdf_ok;
-}
-
-pdf_err
-pdf_deflate_close(pdf_filter *f, int flag)
-{
-    int ret = Z_OK;
-    if (f && f->state)
-        ret = deflateEnd(f->state);
-    if (ret != Z_OK)
-        return pdf_io_err;
+    (*f)->close = pdf_deflate_close;
+    (*f)->flush = pdf_deflate_flush;
     return pdf_ok;
 }
 
@@ -276,6 +315,7 @@ pdf_rawfilter_new(sub_stream* ss)
     memset(f, 0, sizeof(pdf_filter));
     f->close = pdf_rawfilter_close;
     f->read = pdf_rawfilter_read;
+    f->flush = pdf_filter_base_flush;
     f->state = (void*) ss;
     return f;
 }
@@ -426,6 +466,7 @@ pdf_a85d_new(pdf_filter **f)
     memset(*f, 0, sizeof(pdf_filter));
     (*f)->close = pdf_a85d_close;
     (*f)->read = pdf_a85d_read;
+    (*f)->flush = pdf_filter_base_flush;
     state = pdf_malloc(sizeof(struct pdf_a85d_s));
     if (!state)
     {
@@ -471,6 +512,7 @@ pdf_lzw_d_new(pdf_filter **f, pdf_filter *last)
     (*f)->state = (void*)lzw;
     (*f)->close = pdf_lzw_d_close;
     (*f)->read = pdf_lzw_d_read;
+    (*f)->flush = pdf_filter_base_flush;
     return pdf_ok;
 }
 

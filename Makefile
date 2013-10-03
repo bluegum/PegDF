@@ -62,6 +62,9 @@ test	:	$(APP)
 	else \
 		echo "failed test"; \
 	fi
+	bin/picker -io X examples/Google.pdf
+	@if [ "$$?" -eq 0 ] ; then echo "passed test"; else echo "failed test"; fi
+
 ## openssl/libcrypto.a
 $(LIB_CRYPTO) :  openssl/include/openssl/evp.h
 	@cd openssl; ./config $(OPENSSL_DEBUG); $(MAKE) build_crypto; cd ..;

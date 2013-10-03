@@ -12,6 +12,7 @@ typedef struct pdf_stream_s pdf_stream;
 #define _PDF_STREAM_STRUCT_ \
 	/* apis */                     \
 	int    (*close)(pdf_stream*); \
+    int    (*flush)(pdf_stream *s); \
     size_t (*write)(void *ptr, size_t size, pdf_stream *s); \
     size_t (*read)(void *ptr, size_t size, pdf_stream *s);  \
     int    (*getc)(pdf_stream *s);  \
@@ -47,6 +48,7 @@ extern int    pdf_stream_seekg(pdf_stream *s, int offset, int way);
 extern int    pdf_stream_seekp(pdf_stream *s, int offset, int way);
 extern int    pdf_stream_tell(pdf_stream*);
 extern int    pdf_stream_getc(pdf_stream *s);
+extern int    pdf_stream_flush(pdf_stream *s);
 extern int    pdf_stream_close(pdf_stream *s);
 extern void   pdf_stream_chain(pdf_stream *head, pdf_stream *chain);
 extern pdf_stream* pdf_stream_file_open(char *);
