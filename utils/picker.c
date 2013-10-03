@@ -118,12 +118,10 @@ main(int argc, char* argv[])
     char *range;
     char base_name[1024];
     char *odir = out;
-    //
     pdf_err e;
     pdf_doc *doc;
     pdfcrypto *crypto = 0;
-    int version = 17; // for output files
-    int write_flag = 0;
+    pdf_writer_options options;
 
     in[0] = 0;
     out[0] = 0;
@@ -133,6 +131,9 @@ main(int argc, char* argv[])
 
     if (argc < 2)
 	    usage(EXIT_SUCCESS);
+
+    options.flags = 0;
+    options.version = 16;
 
     while (1)
     {
@@ -217,7 +218,7 @@ main(int argc, char* argv[])
     printf("writing to %s\n", out);
 #endif
     if (inflate)
-	    write_flag |= WRITE_PDF_CONTENT_INFLATE;
+	    options.flags |= WRITE_PDF_CONTENT_INFLATE;
     if (pdf_doc_need_passwd(doc))
     {
 	    crypto = pdf_crypto_load(doc, passwd);
@@ -272,8 +273,8 @@ main(int argc, char* argv[])
 #ifdef DEBUG
                 printf("writing page %d to %s\n", x, buf);
 #endif
-                // page start at 1 for user
-                pdf_page_write(doc, x-1, write_flag, crypto, version, buf);
+                // page starts at 1 instead of 0
+                pdf_page_write(doc, x-1, crypto, buf, &options);
             }
 	    }
     }

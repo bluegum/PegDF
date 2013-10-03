@@ -53,6 +53,46 @@ stack_try_grow()
     }
 }
 
+pdf_obj*
+make_key(pdf_obj *o, char *s)
+{
+    const char *k;
+    char buf[1024];
+    int len;
+
+    if (strchr(s, '#')) {
+        char *p = s;
+        char *d = buf;
+        while (*p) {
+            if (*p == '#' && isxdigit(p[1]) && isxdigit(p[2])) {
+                *d++ = asciihex2byte(p+1);
+                p += 3;
+            }
+            else {
+                *d++ = *p++;
+            }
+        }
+        *d = 0;
+        len = d - buf;
+    }
+    else {
+        strcpy(buf, s);
+        len = strlen(buf);
+    }
+
+    if (k = pdf_keyword_find(buf, len))
+    {
+        o->value.k = (char*)k;
+    }
+    else
+    {
+        o->t = eName;
+        o->value.k = pdf_malloc(len + 1);
+        memcpy(o->value.k, buf, len + 1);
+    }
+    return o;
+}
+
 int push(e_pdf_kind t, double n, char *s)
 {
     stack_try_grow();
@@ -69,43 +109,8 @@ int push(e_pdf_kind t, double n, char *s)
             parser_inst->stack[parser_inst->stackp].value.i = n;
             break;
         case eKey:
-	    {
-            const char *k;
-            char buf[1024];
-            int len;
-
-            if (strchr(s, '#')) {
-                char *p = s;
-                char *d = buf;
-                while (*p) {
-                    if (*p == '#' && isxdigit(p[1]) && isxdigit(p[2])) {
-                        *d++ = asciihex2byte(p+1);
-                        p += 3;
-                    }
-                    else {
-                        *d++ = *p++;
-                    }
-                }
-                *d = 0;
-                len = d - buf;
-            }
-            else {
-                strcpy(buf, s);
-                len = strlen(buf);
-            }
-
-            if (k = pdf_keyword_find(buf, len))
-            {
-                parser_inst->stack[parser_inst->stackp].value.k = (char*)k;
-            }
-            else
-            {
-                parser_inst->stack[parser_inst->stackp].t = eName;
-                parser_inst->stack[parser_inst->stackp].value.k = pdf_malloc(len + 1);
-                memcpy(parser_inst->stack[parser_inst->stackp].value.k, buf, len + 1);
-            }
+            make_key(&parser_inst->stack[parser_inst->stackp], s);
             break;
-	    }
         case eHexString:
         {
             pdf_obj o;
@@ -160,19 +165,6 @@ int push(e_pdf_kind t, double n, char *s)
     return 0;
 }
 
-void entry_no_free(void *e)
-{
-}
-
-void
-entry_name_free(void *e)
-{
-    if (e)
-	    pdf_free(e);
-    else
-	    printf("!?\n");
-}
-
 pdf_obj pop(void)   { return parser_inst->stack[parser_inst->stackp--]; }
 
 // pop dict entries off stack and assemble a dict obj and push onto stack
@@ -180,7 +172,7 @@ pdf_obj pop_dict(void)
 {
     int i = 0;
     pdf_obj o, *a = NULL;
-    dict* d = dict_new();
+    dict* d = dict_new(0);
 
     o.t = eDict;
     o.value.d.dict = d;
@@ -191,21 +183,11 @@ pdf_obj pop_dict(void)
         {
             //printf("%s|", (char*)(parser_inst->stack[parser_inst->stackp+1].value.k));
 #ifdef TSTC
-            dict_entry *ent;
-            if (parser_inst->stack[parser_inst->stackp+1].t == eName)
-            {
-                ent = dict_entry_new(a, parser_inst->stack[parser_inst->stackp+1].value.k, entry_name_free);
-            }
-            else
-            {
-                ent = dict_entry_new(a, parser_inst->stack[parser_inst->stackp+1].value.k, entry_no_free);
-            }
-            dict_insert(d, parser_inst->stack[parser_inst->stackp+1].value.k, ent);
+            dict_insert(d, parser_inst->stack[parser_inst->stackp+1].value.k, a);
 #else
             dict_insert(d, parser_inst->stack[parser_inst->stackp+1].value.k, a);
             name_free(&parser_inst->stack[parser_inst->stackp+1]);
 #endif
-            //name_free(&parser_inst->stack[parser_inst->stackp+1]);
         }
         else
         {
