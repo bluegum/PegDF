@@ -100,10 +100,12 @@ pdf_xref_internal_create(int n, int npages, pdf_writer_options *options)
     x->xref->offsets = pdf_malloc(sizeof(int)*(n+2+npages*2));
     x->page_ref_buf = pdf_malloc(sizeof(int)*npages);
     // install default deflate output stream
+#if 0
     if ((options->flags & WRITE_PDF_CONTENT_INFLATE) == 0)
     {
         x->filt_stream = pdf_ostream_filtered_open(FlateEncode);
     }
+#endif
     return x;
 }
 
@@ -470,6 +472,7 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, pdfcrypto_priv *d
             sub_stream *strm = o->value.d.dict->stream;
             int strmlen = 0;
             int inflate = pdf_to_int(pdf_dict_get(o, "PEGDF_INFLATE_CONTENT"));
+            int filter_flag = 0;
             ll = l;
             pdf_stream_puts("<<", f);
             while (l && l->key)
@@ -489,6 +492,7 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, pdfcrypto_priv *d
                     {
                         strmlen = l->val.value.i;
                     }
+#if 0
                     if (decrypto || inflate)
                     {
                     }
@@ -497,6 +501,7 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, pdfcrypto_priv *d
                         pdf_stream_puts("/Length ", f);
                         pdf_stream_puti(strmlen, f);
                     }
+#endif
                     l = l->next;
                     continue;
                 }
@@ -513,6 +518,7 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, pdfcrypto_priv *d
                     }
                     else if (inflate)
                     {
+                        filter_flag = 1;
                         l = l->next;
                         continue;
                     }
@@ -522,6 +528,7 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, pdfcrypto_priv *d
                         // is present
                         if (decrypto)
                         {
+                            filter_flag = 1;
                             l = l->next;
                             continue;
                         }
@@ -533,49 +540,83 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, pdfcrypto_priv *d
             }
             if (strm)
             {
-                if (decrypto || inflate)
+                int obj, gen;
+                pdf_stream *s = NULL;
+                sub_stream *ss = (sub_stream*)o->value.d.dict->stream;
+                pdf_stream *sb = pdf_stream_buffer_open();
+                pdf_stream *filts = 0, *out = sb;
+
+                if (!inflate)
                 {
-                    int obj, gen;
-                    pdf_stream *s = NULL;
-                    sub_stream *ss = (sub_stream*)o->value.d.dict->stream;
-                    pdf_stream *buf = pdf_stream_buffer_open();
-                    if (ss)
+                    filts = pdf_ostream_filtered_open(FlateEncode);
+                    if (filts)
+                        pdf_stream_chain(filts, sb);
+                    out = filts;
+                }
+                else
+                    filter_flag = 0;
+                if (ss)
+                {
+                    obj = ss->obj;
+                    gen = ss->gen;
+                }
+                s = pdf_stream_load(o, decrypto, obj, gen);
+                if (s)
+                {
+                    int c;
+                    unsigned char buf[1024], *ptr = buf, *lim;
+                    lim = ptr + 1024;
+                    //
+                    while ((c = pdf_stream_getchar(s)) != EOF)
                     {
-                        obj = ss->obj;
-                        gen = ss->gen;
+                        if (ptr >= lim)
+                        {
+                            pdf_stream_write(buf, 1024, out);
+                            ptr = buf;
+                        }
+                        *ptr++ = c;
                     }
-                    s = pdf_stream_load(o, decrypto, obj, gen);
-                    if (s)
+                    if (ptr - buf)
                     {
-                        int c;
-                        //
-                        while ((c = pdf_stream_getchar(s)) != EOF)
-                            pdf_stream_putc(c, buf);
-                        pdf_stream_free(s, 1);
-                        //
-                        strmlen = pdf_stream_tell(buf);
-                        pdf_stream_puts("/Length ", f);
-                        pdf_stream_puti(strmlen, f);
-                        pdf_stream_puts(">> ", f);
-                        // write out stream
-                        pdf_stream_puts("stream\n", f);
-                        pdf_stream_seekg(buf, 0, S_SEEK_BEG);
-                        while ((c = pdf_stream_getc(buf)) != EOF)
-                            pdf_stream_putc(c, f);
-                        pdf_stream_puts("\nendstream", f);
-                        // tidyup
-                        pdf_stream_close(buf);
+                        pdf_stream_write(buf, ptr-buf, out);
                     }
-                    else
+                    // flush filter stream
+                    if (filts)
                     {
-                        // write raw stream
-                        goto write_rawstream;
+                        pdf_stream_flush(filts);
+                        pdf_stream_close(filts);
                     }
+                    pdf_stream_free(s, 1);
+                    //
+                    strmlen = pdf_stream_tell(sb);
+                    pdf_stream_puts("/Length ", f);
+                    pdf_stream_puti(strmlen, f);
+                    if (filter_flag)
+                    {
+                        pdf_stream_puts("/Filter/FlateDecode", f);
+                    }
+                    pdf_stream_puts(">> ", f);
+                    // write out stream
+                    pdf_stream_puts("stream\n", f);
+                    pdf_stream_seekg(sb, 0, S_SEEK_BEG);
+                    while ((c = pdf_stream_getc(sb)) != EOF)
+                        pdf_stream_putc(c, f);
+
+                    pdf_stream_puts("\nendstream", f);
+                    // tidyup
+                    pdf_stream_close(sb);
                 }
                 else
                 {
+                    // write raw stream
                     unsigned char c;
-                  write_rawstream:
+
+                    pdf_stream_puts("/Length ", f);
+                    pdf_stream_puti(strmlen, f);
+                    if (filter_flag)
+                    {
+                        pdf_stream_puts("/Filter/FlateDecode", f);
+                    }
                     pdf_stream_puts(">> ", f);
                     pdf_stream_puts("stream\n", f);
                     strm->len = strmlen;
@@ -583,6 +624,7 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, pdfcrypto_priv *d
                         pdf_stream_putc(c, f);
                     strm->close(strm, 1);
                     pdf_stream_puts("\nendstream", f);
+
                 }
             }
             else
@@ -658,6 +700,10 @@ pdf_page_contents_write(pdf_obj *content, unsigned long write_flag, pdf_xref_int
     if (write_flag & WRITE_PDF_CONTENT_INFLATE)
     {
         pdf_dict_insert_int(cobj->value.d.dict, "PEGDF_INFLATE_CONTENT", 1);
+    }
+    else
+    {
+        pdf_dict_insert_name(cobj->value.d.dict, "Filter", "FlateDecode");
     }
     pdf_obj_full_write(cobj, x->xref->cur, 0, x, out, crypto);
     x->xref->offsets[x->xref->cur] = off;

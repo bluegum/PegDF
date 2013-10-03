@@ -79,8 +79,20 @@ int
 pdf_stream_close(pdf_stream *s)
 {
     int stat;
+#if 0
+    if (s->next)
+        stat = pdf_stream_close(s->next);
+#endif
     stat = s->close(s);
     pdf_free(s);
+    return stat;
+}
+
+int
+pdf_stream_flush(pdf_stream *s)
+{
+    int stat;
+    stat = s->flush(s);
     return stat;
 }
 
@@ -135,12 +147,19 @@ pdf_stream_base_getc(pdf_stream *s)
     return 1;
 }
 
+static int
+pdf_stream_base_flush(pdf_stream *s)
+{
+    return 1;
+}
+
 static void
 pdf_stream_base_init(pdf_stream *s)
 {
     s->seekg = pdf_stream_base_seekg;
     s->seekp = pdf_stream_base_seekp;
     s->getc  = pdf_stream_base_getc;
+    s->flush = pdf_stream_base_flush;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -159,6 +178,13 @@ pdf_stream_file_write(void *ptr, size_t size, pdf_stream *s)
 {
     FILE *f = (FILE*)s->state;
     return fwrite(ptr, 1, size, f);
+}
+
+static int
+pdf_stream_file_flush(pdf_stream *s)
+{
+    FILE *f = (FILE*)s->state;
+    return fflush(f);
 }
 
 static int
@@ -223,6 +249,7 @@ pdf_stream_file_open(char *ofile)
     s->tell = pdf_stream_file_tell;
     s->seekg = pdf_stream_file_seek;
     s->seekp = pdf_stream_file_seek;
+    s->flush = pdf_stream_file_flush;
     return s;
 }
 
@@ -395,7 +422,17 @@ pdf_stream_buffer_close(pdf_stream *bs)
     return 0;
 }
 
-size_t
+static int
+pdf_stream_buffer_flush(pdf_stream *bs)
+{
+    pdf_buffer_stream *s = (pdf_buffer_stream*)bs;
+    stream_buffer *p = s->buf;
+    // todo
+
+    return 0;
+}
+
+static int
 pdf_stream_buffer_tell(pdf_stream *ss)
 {
     pdf_buffer_stream *s = (pdf_buffer_stream*)ss;
@@ -438,6 +475,8 @@ pdf_stream_buffer_open()
     s->getc  = pdf_stream_buffer_getc;
     s->tell  = pdf_stream_buffer_tell;
     s->seekg = pdf_stream_buffer_seekg;
+    s->seekp = pdf_stream_buffer_seekp;
+    s->flush = pdf_stream_buffer_flush;
     return (pdf_stream*)s;
 }
 
@@ -466,19 +505,87 @@ pdf_istream_filtered_open(pdf_filterkind f)
     return 0;
 }
 
+
+static size_t
+pdf_ostream_filtered_write(void *ptr, size_t size, pdf_stream *sf)
+{
+    pdf_stream_filtered *s = (pdf_stream_filtered*)sf;
+    pdf_filter *f = s->filter;
+    int osize;
+
+    osize = f->write(f, ptr, size);
+    if (!osize)
+        return size;
+    if (s->next)
+        pdf_stream_write(f->buf, osize, s->next);
+
+    do
+    {
+        osize = f->write(f, 0, 0);
+        if (osize && s->next)
+        {
+            pdf_stream_write(f->buf, osize, s->next);
+        }
+    }
+    while (osize);
+    return size;
+}
+
 static int
 pdf_ostream_filtered_close(pdf_stream *sf)
 {
     pdf_stream_filtered *s = (pdf_stream_filtered*)sf;
+    pdf_filter *f = s->filter;
+
+    f->close(f, 0);
+    pdf_free(f);
+    return 0;
+}
+
+static int
+pdf_ostream_filtered_flush(pdf_stream *sf)
+{
+    pdf_stream_filtered *s = (pdf_stream_filtered*)sf;
+    pdf_filter          *f = s->filter;
+    int                  remain;
+    unsigned char        buf[1024];
+
+    // to flush
+    do
+    {
+        remain = 1024;
+        f->flush(f, buf, &remain);
+        if (remain && s->next)
+            pdf_stream_write(buf, remain, s->next);
+    }
+    while (remain);
+
     return 0;
 }
 
 pdf_stream*
 pdf_ostream_filtered_open(pdf_filterkind f)
 {
+    pdf_stream_filtered *s;
+    pdf_filter *filt;
+
+    s = (pdf_stream_filtered*)pdf_malloc(sizeof(pdf_stream_filtered));
+    if (!s)
+        return 0;
+    memset(s, 0, sizeof(pdf_stream_filtered));
+    s->write = pdf_ostream_filtered_write;
+    s->close = pdf_ostream_filtered_close;
+    s->flush = pdf_ostream_filtered_flush;
     switch (f)
     {
         case FlateEncode:
+            if (pdf_deflate_new(&filt) != pdf_ok)
+            {
+                pdf_free(s);
+                s = 0;
+                break;
+            }
+            s->filter = filt;
             break;
         case RC4Encrypt:
             break;
@@ -487,5 +594,6 @@ pdf_ostream_filtered_open(pdf_filterkind f)
         default:
             break;
     }
-    return 0;
+
+    return (pdf_stream*)s;
 }
