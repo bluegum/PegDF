@@ -1272,6 +1272,7 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, pdf_writer_options *optio
             {
                 if (i >= doc->count)
                 {
+                    page_ranges[j].end = i;
                     break;
                 }
                 pdf_page_scan(doc->pages[i], x, s, crypto);

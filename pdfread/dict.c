@@ -230,8 +230,22 @@ dict_entry_copy(char *k, void *v, void *a)
     dict_entry *e = (dict_entry *)v;
     pdf_obj *val;
     char *p;
+
     val = pdf_malloc(sizeof(pdf_obj));
     *val = *(pdf_obj*)(e->v);
+    switch (((pdf_obj*)(e->v))->t)
+    {
+        case eDict:
+            val->value.d.dict = dict_copy(((pdf_obj*)(e->v))->value.d.dict);
+            break;
+        case eName:
+        case eString:
+        case eHexString:
+        case eArray:
+            break;
+        default:
+            break;
+    }
     if (pdf_keyword_find(e->k, strlen(e->k)))
     {
         p = e->k;
@@ -241,6 +255,7 @@ dict_entry_copy(char *k, void *v, void *a)
         p = pdf_malloc(strlen(e->k)+1);
         strcpy(p, e->k);
     }
+
     dict_insert((dict*)a, p, val);
 }
 
