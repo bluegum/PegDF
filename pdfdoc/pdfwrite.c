@@ -354,12 +354,15 @@ pdf_trailer_write(pdf_xref_internal *x, int startxref, pdf_stream *o)
         return;
     tmp.t = eDict;
     tmp.value.d.dict = d;
+    bpt_insert(x->entry, x->xref->cur, 2);
     pdf_dict_insert_int(d, "Size", x->xref->cur);
-    pdf_dict_insert_ref(d, "Root", 2, 0);
+    pdf_dict_insert_ref(d, "Root", x->xref->cur, 0);
+    printf("...%d...\n", x->xref->cur);
     pdf_stream_puts("trailer\n", o);
     pdf_obj_write(&tmp, x, o, 0);
-    pdf_stream_puts("startxref\n", o);
+    pdf_stream_puts("\nstartxref\n", o);
     pdf_stream_puti(startxref, o);
+    pdf_stream_putc('\n', o);
     pdf_stream_puts("%%EOF", o);
     dict_free(d);
 }
@@ -863,19 +866,6 @@ pdf_obj_scan(pdf_obj *o, pdf_xref_internal *x)
                 oo = &obj->value.a.items[i];
                 if (oo->t == eRef)
                 {
-#if 0
-                    if (x->page_obj_idx)
-                    {
-                        int m;
-                        for (m = 0; m < x->page_obj_idx; m++)
-                        {
-                            if (oo->value.r.num == x->page_obj_buf[m])
-                                break;
-                        }
-                        if (m < x->page_obj_idx && (oo->value.r.num == x->page_obj_buf[m]))
-                            continue;
-                    }
-#endif
                     pdf_xref_insert_indirect(x, oo);
                 }
                 else if (oo->t == eDict || oo->t == eArray)
@@ -1022,8 +1012,8 @@ pdf_page_obj_write(pdf_page *page, int pgidx, unsigned long write_flag, pdf_xref
     if (content_ref == -1 && content_num == 0)
 	    return;
     x->xref->offsets[x->xref->cur] = pdf_stream_tell(out);
-    bpt_insert(x->entry, x->xref->cur, x->xref->cur);
-    x->page_ref_buf[pgidx] = x->xref->cur;
+    bpt_insert(x->entry, page->ref.value.r.num, x->xref->cur);
+    x->page_ref_buf[pgidx] = page->ref.value.r.num;
     x->xref->cur++;
 
     // writing out page obj

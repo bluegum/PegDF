@@ -44,9 +44,12 @@ pdf_err pdf_page_load(pdf_doc *doc, pdf_obj *o, pdf_page **page)
     pdf_obj *mediabox;
     pdf_obj *v;
 
+    if (o->t != eRef)
+        return pdf_syntax_err;
     *page = pdf_malloc(sizeof(pdf_page));
     p = *page;
     memset(p, 0, sizeof(pdf_page));
+    p->ref = *o;
     // parse tree dict
     p->parent = pdf_dict_get(o, "Parent");
     mediabox = pdf_dict_get(o, "MediaBox");

@@ -158,7 +158,7 @@ struct pdf_prs_s
 struct pdf_page_s
 {
     pdf_obj *parent;
-    char *lastmodified;
+    char   *lastmodified;
     pdf_resources * resources;
     gs_rect mediabox;
     pdf_obj *cropbox;
@@ -167,29 +167,30 @@ struct pdf_page_s
     pdf_obj *artbox;
     pdf_obj *boxcolorinfo;
     pdf_obj *contents;
-    int rotate;
+    int      rotate;
     pdf_group *group;
     pdf_obj *thumb;
     pdf_obj *b;
-    float dur;
+    float    dur;
     pdf_obj *trans;
     pdf_annots *annots;
     pdf_obj *aa;
     pdf_obj *metadata;
     pdf_obj *pieceinfo;
-    int structparents;
+    int      structparents;
     pdf_obj *id;
-    float pz;
+    float    pz;
     pdf_obj *separationinfo;
     pdf_obj *tabs;
     pdf_obj *templateinstantiated;
     pdf_obj *pressteps;
-    float userunit;
+    float    userunit;
     pdf_obj *vp;
     // private
     pdf_stream *content_streams;
     pdf_prs sstk[32], *s; // Ought to be enough for g/G?
     pdf_interp_state* i;
+    pdf_obj  ref;
 };
 
 typedef enum pdf_pagemode_e pdf_pagemode;
