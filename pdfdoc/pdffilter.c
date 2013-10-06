@@ -555,3 +555,119 @@ pdf_filter_new(pdf_filterkind t, pdf_filter* last)
     }
     return f;
 }
+
+pdf_filterkind
+pdf_filter_find(char *k)
+{
+    pdf_filterkind t;
+    if (strcmp(k, "FlateDecode") == 0)
+    {
+        t = FlateDecode;
+    }
+    else if (strcmp(k, "ASCIIHexDecode") == 0)
+    {
+        t = ASCIIHexDecode;
+    }
+    else if (strcmp(k, "ASCII85Decode") == 0)
+    {
+        t = ASCII85Decode;
+    }
+    else if (strcmp(k, "LZWDecode") == 0)
+    {
+        t = LZWDecode;
+    }
+    else if (strcmp(k, "RunLengthDecode") == 0)
+    {
+        t = RunLengthDecode;
+    }
+    else if (strcmp(k, "CCITTFaxDecode") == 0)
+    {
+        t = CCITTFaxDecode;
+    }
+    else if (strcmp(k, "JBIG2Decode") == 0)
+    {
+        t = JBIG2Decode;
+    }
+    else if (strcmp(k, "DCTDecode") == 0)
+    {
+        t = DCTDecode;
+    }
+    else if (strcmp(k, "JPXDecode") == 0)
+    {
+        t = JPXDecode;
+    }
+    else if (strcmp(k, "Crypt") == 0)
+    {
+        t = Crypt;
+    }
+    else
+    {
+        t = Limit;
+    }
+    return t;
+}
+
+void
+pdf_filter_str_to_enum(pdf_obj *o, pdf_filterkind* filter_array)
+{
+    filter_array[0] = Limit;
+    if (o->t == eKey)
+    {
+        filter_array[0] = pdf_filter_find(o->value.k);
+        filter_array[1] = Limit;
+    }
+    else if (o->t == eArray)
+    {
+        int i;
+        for (i = 0;i < o->value.a.len; i++)
+        {
+            filter_array[i] = pdf_filter_find(o->value.a.items[i].value.k);
+        }
+        filter_array[i] = Limit;
+    }
+}
+
+const char*
+pdf_filter_to_string(pdf_filterkind k)
+{
+    const char *s;
+    switch (k)
+    {
+        case ASCIIHexDecode:
+            s = "ASCIIHexDecode";
+            break;
+        case FlateDecode:
+            s = "FlateDecode";
+            break;
+        case ASCII85Decode:
+            s = "ASCII85Decode";
+            break;
+        case LZWDecode:
+            s = "LZWDecode";
+            break;
+        case RunLengthDecode:
+            s = "RunLengthDecode";
+            break;
+        case CCITTFaxDecode:
+            s = "CCITTFaxDecode";
+            break;
+        case JBIG2Decode:
+            s = "JBIG2Decode";
+            break;
+        case DCTDecode:
+            s = "DCTDecode";
+            break;
+        case JPXDecode:
+            s = "JPXDecode";
+            break;
+        case Crypt:
+            s = "Crypt";
+            break;
+        case RC4Encrypt:
+        case AESEncrypt:
+        default:
+            s = "";
+            break;
+    }
+    return s;
+}

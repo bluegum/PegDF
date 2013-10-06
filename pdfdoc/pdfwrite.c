@@ -476,6 +476,10 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, pdfcrypto_priv *d
             int strmlen = 0;
             int inflate = pdf_to_int(pdf_dict_get(o, "PEGDF_INFLATE_CONTENT"));
             int filter_flag = 0;
+            pdf_filterkind filter_array[16];
+
+
+            filter_array[0] = Limit;
             ll = l;
             pdf_stream_puts("<<", f);
             while (l && l->key)
@@ -515,27 +519,10 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, pdfcrypto_priv *d
                 }
                 else if (l->key[0] == 'F' && strcmp(l->key, "Filter")==0)
                 {
-                    if (l->val.t == eKey && strcmp(l->val.value.k, "DCTDecode") == 0)
-                    {
-                        // not to decode DCT filter
-                    }
-                    else if (inflate)
-                    {
-                        filter_flag = 1;
-                        l = l->next;
-                        continue;
-                    }
-                    else
-                    {
-                        // Otherwise, we write plain stream whenever crypto
-                        // is present
-                        if (decrypto)
-                        {
-                            filter_flag = 1;
-                            l = l->next;
-                            continue;
-                        }
-                    }
+                    pdf_filter_str_to_enum(&l->val, filter_array);
+                    filter_flag = 1;
+                    l = l->next;
+                    continue;
                 }
                 pdf_key_write(l->key, x, f, decrypto);
                 pdf_obj_write(&l->val, x, f, decrypto);
@@ -566,6 +553,7 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, pdfcrypto_priv *d
                 s = pdf_stream_load(o, decrypto, obj, gen);
                 if (s)
                 {
+                    int i = 0;
                     int c;
                     unsigned char buf[1024], *ptr = buf, *lim;
                     lim = ptr + 1024;
@@ -594,9 +582,32 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, pdfcrypto_priv *d
                     strmlen = pdf_stream_tell(sb);
                     pdf_stream_puts("/Length ", f);
                     pdf_stream_puti(strmlen, f);
-                    if (filter_flag)
+                    if (filter_flag || !inflate)
                     {
-                        pdf_stream_puts("/Filter/FlateDecode", f);
+                        pdf_stream_puts("/Filter", f);
+                        if (!inflate)
+                        {
+                            pdf_stream_puts("[/FlateDecode", f);
+                        }
+                        else
+                        {
+                            pdf_stream_putc("[", f);
+                        }
+                        // discard some, write some filters out
+                        while (filter_array[i] != Limit)
+                        {
+                            switch(filter_array[i]) {
+                                case FlateDecode:
+                                case ASCII85Decode:
+                                case LZWDecode:
+                                    break;
+                                default:
+                                    pdf_key_write(pdf_filter_to_string(filter_array[i]), x, f, 0);
+                                    break;
+                            }
+                            i++;
+                        }
+                        pdf_stream_putc(']', f);
                     }
                     pdf_stream_puts(">> ", f);
                     // write out stream

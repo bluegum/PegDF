@@ -21,8 +21,8 @@ enum pdf_filterkind_e
       FlateEncode,
       RC4Encrypt,
       AESEncrypt,
+      Raw,
       Limit,
-      Raw
 };
 #define PDF_FILTER_BUF_SIZE 1024
 struct pdf_filter_s
@@ -48,5 +48,8 @@ extern pdf_err pdf_flated_new(pdf_filter **f);
 extern pdf_filter* pdf_filter_new(pdf_filterkind t, pdf_filter *last);
 extern int pdf_filter_read(pdf_filter *f, unsigned char *buf, int len);
 extern pdf_err pdf_deflate_new(pdf_filter **f);
+extern pdf_filterkind pdf_filter_find(char *k);
+extern void pdf_filter_str_to_enum(pdf_obj *o, pdf_filterkind* filter_array);
+extern const char* pdf_filter_to_string(pdf_filterkind k);
 
 #endif

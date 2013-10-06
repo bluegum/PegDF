@@ -755,49 +755,11 @@ pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
         {
             break;
         }
-        if (strcmp(xx->value.k, "FlateDecode") == 0)
+        t = pdf_filter_find(xx->value.k);
+        if (t == Limit)
         {
-            t = FlateDecode;
-        }
-        else if (strcmp(xx->value.k, "ASCIIHexDecode") == 0)
-        {
-            t = ASCIIHexDecode;
-        }
-        else if (strcmp(xx->value.k, "ASCII85Decode") == 0)
-        {
-            t = ASCII85Decode;
-        }
-        else if (strcmp(xx->value.k, "LZWDecode") == 0)
-        {
-            t = LZWDecode;
-        }
-        else if (strcmp(xx->value.k, "RunLengthDecode") == 0)
-        {
-            t = RunLengthDecode;
-        }
-        else if (strcmp(xx->value.k, "CCITTFaxDecode") == 0)
-        {
-            t = CCITTFaxDecode;
-        }
-        else if (strcmp(xx->value.k, "JBIG2Decode") == 0)
-        {
-            t = JBIG2Decode;
-        }
-        else if (strcmp(xx->value.k, "DCTDecode") == 0)
-        {
-            t = DCTDecode;
-        }
-        else if (strcmp(xx->value.k, "JPXDecode") == 0)
-        {
-            t = JPXDecode;
-        }
-        else if (strcmp(xx->value.k, "Crypt") == 0)
-        {
-            t = Crypt;
-        }
-        else
-        {
-            t = Raw;
+            fprintf(stderr, "Unkown filter type: %s\n", xx->value.k);
+            continue;
         }
         // make the filter
         switch (t)
@@ -827,6 +789,7 @@ pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
                 }
                 break;
             default:
+                fprintf(stderr, "filter type: %s is not implemented\n", xx->value.k);
                 break;
         }
     }
