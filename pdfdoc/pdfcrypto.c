@@ -535,3 +535,54 @@ pdfcrypto_priv* pdf_crypto_load(pdf_doc *doc, char *pw)
     }
     return crypto;
 }
+
+
+static pdfcrypto_priv*
+pdf_crypto_rc4_create(int len, char *passwd)
+{
+    return 0;
+}
+
+static pdfcrypto_priv*
+pdf_crypto_aes_create(int len, char *passwd)
+{
+    return 0;
+}
+
+pdfcrypto_priv*
+pdf_crypto_create(pdfcrypto_algorithm algo, int rev, int len, char *passwd)
+{
+    if (algo == eRC4)
+    {
+        return pdf_crypto_rc4_create(len, passwd);
+    }
+    else if (algo == eAESV2)
+    {
+        return pdf_crypto_aes_create(len, passwd);
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+
+void
+pdf_digest_md5(char *s, size_t len, unsigned char *digest)
+{
+    int n;
+    EVP_MD_CTX ctx;
+    const EVP_MD *md = EVP_md5();
+
+    /* Step 0 - init md5 */
+    EVP_MD_CTX_init (&ctx);
+    EVP_DigestInit(&ctx, md);
+
+    EVP_DigestUpdate(&ctx, s, len);
+    EVP_DigestFinal(&ctx, digest, &n);
+
+    assert(n==16);
+
+    EVP_MD_CTX_cleanup (&ctx);
+
+}

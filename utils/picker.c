@@ -274,7 +274,7 @@ main(int argc, char* argv[])
                 printf("writing page %d to %s\n", x, buf);
 #endif
                 // page starts at 1 instead of 0
-                pdf_page_write(doc, x-1, crypto, buf, &options);
+                pdf_page_save(doc, x-1, crypto, buf, &options);
             }
 	    }
     }

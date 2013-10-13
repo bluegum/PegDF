@@ -477,42 +477,19 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, pdfcrypto_priv *d
             int inflate = pdf_to_int(pdf_dict_get(o, "PEGDF_INFLATE_CONTENT"));
             int filter_flag = 0;
             pdf_filterkind filter_array[16];
+            int keep_orig = 0;
 
 
             filter_array[0] = Limit;
+            if (strm)
+            {
+                strmlen = pdf_to_int(pdf_dict_get(o, "Length"));
+            }
             ll = l;
             pdf_stream_puts("<<", f);
             while (l && l->key)
             {
-                if (l->key[0] == 'L' && strcmp(l->key, "Length")==0)
-                {
-                    if (l->val.t == eRef)
-                    {
-                        pdf_obj *ooo = &l->val;
-                        pdf_obj_resolve(ooo);
-                        if (ooo->t == eInt)
-                        {
-                            strmlen = ooo->value.i;
-                        }
-                    }
-                    else
-                    {
-                        strmlen = l->val.value.i;
-                    }
-#if 0
-                    if (decrypto || inflate)
-                    {
-                    }
-                    else
-                    {
-                        pdf_stream_puts("/Length ", f);
-                        pdf_stream_puti(strmlen, f);
-                    }
-#endif
-                    l = l->next;
-                    continue;
-                }
-                else if (l->key[0] == 'P' && strcmp(l->key, "PEGDF_INFLATE_CONTENT")==0)
+                if (l->key[0] == 'P' && strcmp(l->key, "PEGDF_INFLATE_CONTENT")==0)
                 {
                     l = l->next;
                     continue;
@@ -520,6 +497,15 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, pdfcrypto_priv *d
                 else if (l->key[0] == 'F' && strcmp(l->key, "Filter")==0)
                 {
                     pdf_filter_str_to_enum(&l->val, filter_array);
+                    switch (filter_array[0])
+                    {
+                        case DCTDecode:
+                            inflate = 1;
+                            keep_orig = 1;
+                            break;
+                        default:
+                            break;
+                    }
                     filter_flag = 1;
                     l = l->next;
                     continue;
@@ -582,16 +568,13 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, pdfcrypto_priv *d
                     strmlen = pdf_stream_tell(sb);
                     pdf_stream_puts("/Length ", f);
                     pdf_stream_puti(strmlen, f);
-                    if (filter_flag || !inflate)
+                    if (filter_flag || !inflate || keep_orig)
                     {
-                        pdf_stream_puts("/Filter", f);
+                        pdf_key_write("Filter", x, f, 0);
+                        pdf_stream_putc('[', f);
                         if (!inflate)
                         {
-                            pdf_stream_puts("[/FlateDecode", f);
-                        }
-                        else
-                        {
-                            pdf_stream_putc("[", f);
+                            pdf_key_write("FlateDecode", x, f, 0);
                         }
                         // discard some, write some filters out
                         while (filter_array[i] != Limit)
@@ -629,7 +612,13 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, pdfcrypto_priv *d
                     pdf_stream_puti(strmlen, f);
                     if (filter_flag)
                     {
-                        pdf_stream_puts("/Filter/FlateDecode", f);
+                        pdf_stream_puts("/Filter[/FlateDecode", f);
+                        while (filter_array[i] != Limit)
+                        {
+                            pdf_key_write(pdf_filter_to_string(filter_array[i]), x, f, 0);
+                            i++;
+                        }
+                        pdf_stream_putc(']', f);
                     }
                     pdf_stream_puts(">> ", f);
                     pdf_stream_puts("stream\n", f);
@@ -1093,8 +1082,90 @@ pdf_magic_write(pdf_stream *out, pdf_writer_options *options)
     return pdf_ok;
 }
 
+
 pdf_err
-pdf_page_write(pdf_doc *doc, int i/* pg# */, pdfcrypto_priv *crypto, char *ofile, pdf_writer_options *options)
+pdf_encrypt_write(pdf_xref_internal *x, pdf_stream *out, pdf_writer_options *options, char *of_name, pdf_obj *info, int *num)
+{
+    pdf_obj tmp;
+    dict *d;
+    // inline crypt filter
+    pdf_obj cf;
+    dict *cfd;
+    /* standard cf */
+    pdf_obj std_cf;
+    dict *std_cfd;
+    char idstring[32];
+
+    if (options->encrypt != eRC4 &&
+        options->encrypt != eAESV2)
+        return pdf_not_ok;
+
+    *num = x->xref->cur++;
+    x->xref->offsets[x->xref->cur-1] = pdf_stream_tell(out);
+
+    d = dict_new(11);
+
+    if (!d)
+        return pdf_not_ok;
+    tmp.t = eDict;
+    tmp.value.d.dict = d;
+
+    pdf_dict_insert_name(d, "Filter", "Standard");
+    pdf_dict_insert_int(d, "V", 4);
+    pdf_dict_insert_int(d, "R", 4);
+    pdf_dict_insert_int(d, "P", -1340);
+    pdf_dict_insert_int(d, "Length", 128);
+
+    {
+        // inline crypt filter
+        cfd = dict_new(11);
+
+        if (!cfd)
+            return pdf_not_ok;
+        cf.t = eDict;
+        cf.value.d.dict = cfd;
+        {
+            pdf_obj oo;
+            /* standard cf */
+            std_cfd = dict_new(11);
+
+            if (!std_cfd)
+                return pdf_not_ok;
+            std_cf.t = eDict;
+            std_cf.value.d.dict = std_cfd;
+
+
+            pdf_dict_insert_name(std_cfd, "AuthEvent", "DocOpen");
+            pdf_dict_insert_int(std_cfd, "Length", 128);
+            if (options->encrypt == eRC4)
+            {
+                pdf_dict_insert_name(std_cfd, "CFM", "V2");
+            }
+            else
+            {
+                pdf_dict_insert_name(std_cfd, "CFM", "AESV2");
+            }
+            make_key(&oo, "StdCF");
+            dict_insert(cfd, oo.value.k, pdf_obj_copy(&std_cf));
+        }
+        dict_insert(d, "CF", pdf_obj_copy(&cf));
+    }
+    pdf_dict_insert_name(d, "StmF", "StdCF");
+
+    memset(idstring, 0, 32);
+    pdf_id_create(of_name, pdf_stream_tell(out), info, idstring);
+    pdf_dict_insert_string(d, "O", idstring, 32);
+    pdf_dict_insert_string(d, "U", idstring, 32);
+
+    pdf_obj_full_write(&tmp, x->xref->cur, 0, x, out, 0);
+
+    pdf_obj_delete(&tmp);
+    return pdf_ok;
+}
+
+
+pdf_err
+pdf_page_save(pdf_doc *doc, int i/* pg# */, pdfcrypto_priv *crypto, char *ofile, pdf_writer_options *options)
 {
     pdf_stream* out = 0;
     int startxref;
@@ -1249,7 +1320,7 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, pdf_writer_options *optio
                         sprintf(linebuf, "%s/%s-%d.%s", odir, b, i+1, "pdf");
                     }
                     printf("Writing %s..\n", linebuf);
-                    pdf_page_write(doc, i, crypto, linebuf, options);
+                    pdf_page_save(doc, i, crypto, linebuf, options);
                 }
             }
         }
@@ -1260,10 +1331,21 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, pdf_writer_options *optio
     {
         int n_pages = 0;
         pdf_stream *s;
-
+        int enc_obj_num;
+        pdf_obj *info_obj;
         s = pdf_stream_file_open(ofile);
         if (!s)
             return pdf_file_err;
+
+        if (options->encrypt == eRC4 || options->encrypt == eAESV2)
+        {
+            pdf_crypto_create(options->encrypt,
+                              4, // revision number
+                              16,
+                              options->upass
+                );
+        }
+
 
         pdf_magic_write(s, options);
 	    // scan pages
@@ -1293,6 +1375,32 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, pdf_writer_options *optio
             }
         }
         pdf_pages_obj_write(x, page_ranges, nr, s);
+        if (doc->trailer && doc->trailer->info == 0)
+        {
+            info_obj = pdf_info_create(0);
+        }
+        else
+        {
+            info_obj = pdf_info_create(doc->trailer->info);
+        }
+
+        if (info_obj)
+        {
+            int off = pdf_stream_tell(s);
+            pdf_obj_full_write(info_obj, x->xref->cur, 0, x, s, 0);
+            x->xref->offsets[x->xref->cur] = off;
+            x->xref->cur++;
+        }
+
+        pdf_encrypt_write(x, s, options, ofile, info_obj, &enc_obj_num);
+
+        if (info_obj)
+        {
+            pdf_obj_delete(info_obj);
+            pdf_free(info_obj);
+            info_obj = 0;
+        }
+
 	    // write xref table
 	    startxref = pdf_xref_write(x, s);
 	    pdf_trailer_write(x, startxref, s);
@@ -1306,3 +1414,4 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, pdf_writer_options *optio
     }
     return pdf_ok;
 }
+

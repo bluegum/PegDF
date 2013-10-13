@@ -501,11 +501,35 @@ pdf_dict_insert_name(dict *d, char *k, char *n)
     dict_insert(d, key.value.k, (void*)val);
 }
 
-pdf_obj *
-pdf_dict_new(int n)
+void
+pdf_dict_insert_string(dict *d, char *k, char *s, int n)
 {
-    pdf_obj *o = pdf_malloc(sizeof(pdf_obj));
-    o->t = eDict;
-    o->value.d.dict = dict_new(n);
-    return o;
+    pdf_obj *val;
+    pdf_obj key = pdf_key_to_obj(k);
+
+    val = pdf_string_new(s, n);
+    dict_insert(d, key.value.k, (void*)val);
+}
+
+
+void
+pdf_dict_insert_obj(dict *d, char *k, pdf_obj* o)
+{
+    pdf_obj key = pdf_key_to_obj(k);
+
+    dict_insert(d, key.value.k, (void*)pdf_obj_full_copy(o));
+}
+
+
+void
+dict_each(dict *d, void (*call()), void *a)
+{
+    if (d && d->dict)
+    {
+#ifdef TSTC
+	    tstc_call(d->dict, 0, call, a);
+#else
+	    tst_traverse(d->dict, call, a);
+#endif
+    }
 }

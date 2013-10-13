@@ -49,6 +49,7 @@ typedef enum pdf_error_e
     pdf_file_err,
     pdf_trailer_err,
     pdf_op_err,
+    pdf_not_ok,
     pdf_unknown
 } pdf_err;
 

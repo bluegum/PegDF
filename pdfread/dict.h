@@ -74,5 +74,6 @@ extern void dict_entry_free(char *k, void *v, void*);
 extern void entry_no_free(void *e);
 extern void entry_name_free(void *e);
 extern dict* dict_copy(dict *d);
+extern void dict_each(dict *d, void (*call()), void *a);
 
 #endif

@@ -38,7 +38,7 @@ extern void pdf_doc_done(pdf_doc *d);
 extern void pdf_crypto_destroy(pdfcrypto *crypto);
 extern pdf_err pdf_finish(pdf_doc *doc);
 extern pdf_err pdf_write_pdf(pdf_doc *doc, char *infile, char *ofile, pdf_writer_options *options);
-extern pdf_err pdf_page_write(pdf_doc *doc, int i/* pg# */, pdfcrypto *crypto, char *outf, pdf_writer_options*);
+extern pdf_err pdf_page_save(pdf_doc *doc, int i/* pg# */, pdfcrypto *crypto, char *outf, pdf_writer_options*);
 extern int pdf_doc_authenticate_user_password(pdf_doc *doc, char *pw);
 extern pdf_err pdf_doc_process_all(pdf_doc *doc, char *dev, FILE *outf, char *pw);
 
