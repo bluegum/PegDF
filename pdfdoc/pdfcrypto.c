@@ -290,7 +290,7 @@ pdf_compute_user_password(pdfcrypto_priv* c, unsigned char id1[16], unsigned cha
 // pdf arc4 cipher
 
 pdf_err
-pdf_arc4_close(void *s, int flag)
+pdf_rc4_close(void *s, int flag)
 {
     EVP_CIPHER_CTX *ctx = (EVP_CIPHER_CTX *)s;
     EVP_CIPHER_CTX_cleanup(ctx);
@@ -300,7 +300,7 @@ pdf_arc4_close(void *s, int flag)
 
 
 int
-pdf_arc4_read(void *ctx, unsigned char *in, unsigned char *obuf, int request)
+pdf_rc4_read(void *ctx, unsigned char *in, unsigned char *obuf, int request)
 {
     int tmplen;
 
@@ -374,12 +374,6 @@ pdf_aes_e_new(char *final_key, int key_len, unsigned char *iv)
     }
 
     return (void*)ctx;
-}
-
-void*
-pdf_rc4_e_new(char *final_key, int key_len)
-{
-    return 0;
 }
 
 
@@ -744,5 +738,39 @@ pdf_rc4_new(int len, char *key)
 	    EVP_CipherInit_ex(ctx, NULL, NULL, key, NULL, 0);
     }
     return ctx;
+}
+
+
+int
+pdf_rc4_flush(void *_ctx, char *out)
+{
+    int tmplen;
+    EVP_CIPHER_CTX *ctx = (EVP_CIPHER_CTX*)_ctx;
+
+    if(!EVP_EncryptFinal(ctx, out, &tmplen))
+    {
+        /* Error */
+        return 0;
+    }
+    return tmplen;
+}
+
+
+// return number of bytes written
+int
+pdf_rc4_write(void *_ctx, char *in, char *out, int req)
+{
+    int tmplen = 0;
+    EVP_CIPHER_CTX *ctx = (EVP_CIPHER_CTX*)_ctx;
+
+    if (req)
+    {
+        if (!EVP_EncryptUpdate(ctx, out, &tmplen, in, req))
+        {
+            /* Error */
+            return 0;
+        }
+    }
+    return tmplen;
 }
 

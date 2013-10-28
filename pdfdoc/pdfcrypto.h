@@ -52,11 +52,12 @@ extern int which_revision(pdfcrypto_priv *c);
 extern pdfcrypto_priv *pdfcrypto_new(pdfcrypto_algorithm, authevent, int len);
 extern void *pdf_rc4_new(int len, char *key);
 extern void *pdf_aes_new(int len, char *key, char *iv);
-extern void* pdf_rc4_e_new(char *final_key, int key_len);
 extern void* pdf_aes_e_new(char *final_key, int key_len, unsigned char *iv);
-extern int pdf_arc4_read(void *ctx, unsigned char *in, unsigned char *obuf, int request);
-extern pdf_err pdf_arc4_close(void *s, int flag);
+extern int   pdf_rc4_read(void *ctx, unsigned char *in, unsigned char *obuf, int request);
+extern pdf_err pdf_rc4_close(void *s, int flag);
 extern int pdf_aes_write(void *ctx, char *in, char *out, int req);
+extern int pdf_rc4_write(void *_ctx, char *in, char *out, int req);
+extern int pdf_rc4_flush(void *_ctx, char *out);
 
 
 

@@ -774,7 +774,6 @@ pdf_filter_aes_e_new(pdf_filter **f, int n, int g, void *priv)
     *f = pdf_malloc(sizeof(pdf_filter));
     if (!(*f))
         return pdf_mem_err;
-    (*f)->state = priv;
 
     pdf_crypto_obj_key_compute(crypto, n, g, final_key, crypto_key_len(crypto)/8);
 
@@ -792,19 +791,7 @@ pdf_filter_aes_e_new(pdf_filter **f, int n, int g, void *priv)
     return pdf_ok;
 }
 
-
-pdf_err
-pdf_filter_rc4_e_new(pdf_filter **f, int n, int g, void *priv)
-{
-    pdfcrypto_priv *crypto = (pdfcrypto_priv *)priv;
-    *f = pdf_malloc(sizeof(pdf_filter));
-    if (!(*f))
-        return pdf_mem_err;
-    (*f)->state = priv;
-    return pdf_ok;
-}
-
-
+// used for reading filter
 struct rc4_state_s
 {
     void *ctx; // openssl-CTX holder
@@ -900,7 +887,9 @@ pdf_filter_aes_read(pdf_filter *f, unsigned char *obuf, int request)
 
     return request;
 }
-// pdf arc4 cipher
+
+
+// pdf arc4 decrypt cipher
 static
 pdf_err
 pdf_filter_arc4_close(pdf_filter *f, int flag)
@@ -910,7 +899,7 @@ pdf_filter_arc4_close(pdf_filter *f, int flag)
 
     if (s)
     {
-        pdf_arc4_close(s->ctx, flag);
+        pdf_rc4_close(s->ctx, flag);
         pdf_free(s);
     }
 
@@ -932,7 +921,7 @@ pdf_filter_arc4_read(pdf_filter *f, unsigned char *obuf, int request)
 
     l = (up->read)(up, f->ptr, (request < PDF_FILTER_BUF_SIZE)?request:PDF_FILTER_BUF_SIZE);
 
-    return pdf_arc4_read(s->ctx, f->ptr, obuf, l);
+    return pdf_rc4_read(s->ctx, f->ptr, obuf, l);
 
 }
 // iv: initializing vector
@@ -1002,3 +991,62 @@ pdf_cryptofilter_new(pdfcrypto_priv *crypto, int num, int gen, unsigned char *iv
 
 }
 
+// pdf arc4 encrypt cipher
+static
+pdf_err
+pdf_filter_arc4_e_close(pdf_filter *f, int flag)
+{
+    if (f && f->state)
+    {
+        pdf_rc4_close(f->state, flag);
+    }
+
+    return pdf_ok;
+}
+
+static int
+pdf_filter_arc4_write(pdf_filter *f, unsigned char *ibuf, int request, int *written)
+{
+    *written = request;
+    return pdf_rc4_write(f->state, ibuf, f->buf, request);
+}
+
+static
+pdf_err
+pdf_filter_arc4_e_flush(pdf_filter *f, char *buf, int *len)
+{
+    if (f->eof)
+    {
+        *len = 0;
+        return pdf_ok;
+    }
+    *len = pdf_rc4_flush(f->state, buf);
+    f->eof = 1;
+    return pdf_ok;
+}
+
+pdf_err
+pdf_filter_rc4_e_new(pdf_filter **f, int n, int g, void *priv)
+{
+    pdfcrypto_priv *crypto = (pdfcrypto_priv *)priv;
+    char final_key[256];
+    void *ctx;
+
+    *f = pdf_malloc(sizeof(pdf_filter));
+    if (!(*f))
+        return pdf_mem_err;
+
+    pdf_crypto_obj_key_compute(crypto, n, g, final_key, crypto_key_len(crypto)/8);
+
+    ctx = pdf_rc4_new(crypto_key_len(crypto), final_key);
+
+    (*f)->state = (void*) ctx;
+    (*f)->close = pdf_filter_arc4_e_close;
+    (*f)->read  = pdf_filter_arc4_read;
+    (*f)->write = pdf_filter_arc4_write;
+    (*f)->flush = pdf_filter_arc4_e_flush;
+    (*f)->ptr   = (*f)->buf;
+    (*f)->eof   = 0;
+
+    return pdf_ok;
+}
