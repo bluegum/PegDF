@@ -425,51 +425,6 @@ dict_entries(dict *d)
     return d->n;
 }
 
-// Helpers
-
-pdf_obj pdf_ref_to_obj(int n, int g)
-{
-    pdf_obj o;
-    o.t = eRef;
-    o.value.r.num = n;
-    o.value.r.gen = g;
-    return o;
-}
-
-pdf_obj* pdf_ref_to_obj_new(int n, int g)
-{
-    pdf_obj *o = pdf_malloc(sizeof(pdf_obj));
-    o->t = eRef;
-    o->value.r.num = n;
-    o->value.r.gen = g;
-    return o;
-}
-
-pdf_obj* pdf_int_to_obj(int i)
-{
-    pdf_obj *o = pdf_malloc(sizeof(pdf_obj));
-    o->t = eInt;
-    o->value.i = i;
-    return o;
-}
-
-pdf_obj pdf_key_to_obj(char *s)
-{
-    pdf_obj o;
-    o.t = eKey;
-    make_key(&o, s);
-    return o;
-}
-
-pdf_obj
-pdf_float_to_obj(float f)
-{
-    pdf_obj o;
-    o.t = eReal;
-    o.value.f = f;
-    return o;
-}
-
 void
 pdf_dict_insert_int(dict *d, char *k, int v)
 {
@@ -508,6 +463,17 @@ pdf_dict_insert_string(dict *d, char *k, char *s, int n)
     pdf_obj key = pdf_key_to_obj(k);
 
     val = pdf_string_new(s, n);
+    dict_insert(d, key.value.k, (void*)val);
+}
+
+void
+pdf_dict_insert_hstring(dict *d, char *k, char *s, int n)
+{
+    pdf_obj *val;
+    pdf_obj key = pdf_key_to_obj(k);
+
+    val = pdf_string_new(s, n);
+    val->t = eHexString;
     dict_insert(d, key.value.k, (void*)val);
 }
 

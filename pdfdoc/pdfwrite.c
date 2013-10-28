@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <stdlib.h>
 #include "bplustree.h"
 #include "dict.h"
 #include "pdf.h"
@@ -47,11 +48,11 @@ struct pdf_xref_table_s
     int *offsets;
 };
 
-static void pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, pdfcrypto_priv *crypto);
+static void pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, int n, int g, pdfcrypto_priv *crypto, pdfcrypto_priv *encrypto);
 static void pdf_key_write(const char *k, pdf_xref_internal *x, pdf_stream *f, pdfcrypto_priv *crypto);
-static void pdf_obj_full_write(pdf_obj *o, int n, int g, pdf_xref_internal *x, pdf_stream *f, pdfcrypto_priv *crypto);
+static void pdf_obj_full_write(pdf_obj *o, int n, int g, pdf_xref_internal *x, pdf_stream *f, pdfcrypto_priv *crypto, pdfcrypto_priv *encrypto);
 static void pdf_obj_scan(pdf_obj *o, pdf_xref_internal *x);
-static void pdf_indirect_objs_write(pdf_xref_internal *xref, pdf_stream *out, pdfcrypto_priv *crypto);
+static void pdf_indirect_objs_write(pdf_xref_internal *xref, pdf_stream *out, pdfcrypto_priv *crypto, pdfcrypto_priv *encyrpto);
 
 static const char escape_chart[256] =
 {
@@ -223,7 +224,7 @@ pdf_catalog_write(pdf_doc *doc, pdf_xref_internal *x, pdf_stream *o, pdfcrypto_p
     {
         pdf_obj_scan(doc->structtreeroot, x);
     }
-    pdf_indirect_objs_write(x, o, decrypto);
+    pdf_indirect_objs_write(x, o, decrypto, 0);
     x->xref->offsets[2] = pdf_stream_tell(o);
     // new catalog dictionary
     pdf_dict_insert_name(d, "Type", "Catalog");
@@ -277,7 +278,7 @@ pdf_catalog_write(pdf_doc *doc, pdf_xref_internal *x, pdf_stream *o, pdfcrypto_p
         pdf_obj *t = pdf_obj_copy(doc->ocproperties);
         dict_insert(d, "OCProperties", t);
     }
-    pdf_obj_full_write(&tmp, 2, 0, x, o, decrypto);
+    pdf_obj_full_write(&tmp, 2, 0, x, o, decrypto, 0);
     pdf_obj_delete(&tmp);
 }
 
@@ -319,7 +320,7 @@ pdf_pages_obj_write(pdf_xref_internal *x, num_range *page_ranges, int nr, pdf_st
         }
     }
     dict_insert(d, "Kids", pages);
-    pdf_obj_full_write(&tmp, 1, 0, x, o, 0);
+    pdf_obj_full_write(&tmp, 1, 0, x, o, 0, 0);
     pdf_obj_delete(&tmp);
 }
 
@@ -345,30 +346,67 @@ pdf_xref_write(pdf_xref_internal *x, pdf_stream *o)
 }
 
 static
-void
-pdf_trailer_write(pdf_xref_internal *x, int startxref, pdf_stream *o)
+pdf_obj*
+pdf_trailer_create(pdf_xref_internal *x, char *id1, char *id2, void *encrypto, int encrypt_num)
 {
-    pdf_obj tmp;
-    dict *d = dict_new(2);
-    if (!d)
-        return;
-    tmp.t = eDict;
-    tmp.value.d.dict = d;
+    pdf_obj *o = pdf_dict_new(3);
+    dict *d = o->value.d.dict;
+    pdf_obj *id = pdf_array_build(2);
+    pdf_obj *tmp;
+
+    if (id1)
+    {
+        tmp = pdf_hstring_new(id1, 16);
+        id->value.a.items[0] = *tmp;
+        pdf_free(tmp);
+    }
+    if (id2)
+    {
+        tmp = pdf_hstring_new(id2, 16);
+        id->value.a.items[1] = *tmp;
+        pdf_free(tmp);
+    }
+
     bpt_insert(x->entry, x->xref->cur, 2);
     pdf_dict_insert_int(d, "Size", x->xref->cur);
     pdf_dict_insert_ref(d, "Root", x->xref->cur, 0);
-    printf("...%d...\n", x->xref->cur);
+    dict_insert(d, "ID", id);
+    if (encrypto)
+    {
+        pdf_dict_insert_ref(d, "Encrypt", encrypt_num, 0);
+    }
+    return o;
+}
+
+static
+void
+pdf_trailer_write(pdf_xref_internal *x, int startxref, char *ids, void *encrypt, int encrypt_num, pdf_stream *o)
+{
+    pdf_obj *tmp;
+
+    tmp = pdf_trailer_create(x, ids, ids, encrypt, encrypt_num);
+
+    if (!tmp)
+        return;
+
     pdf_stream_puts("trailer\n", o);
-    pdf_obj_write(&tmp, x, o, 0);
+
+    pdf_obj_write(tmp, x, o,
+                  0, // n
+                  0, // g
+                  0,
+                  0);
+
     pdf_stream_puts("\nstartxref\n", o);
     pdf_stream_puti(startxref, o);
     pdf_stream_putc('\n', o);
     pdf_stream_puts("%%EOF", o);
-    dict_free(d);
+    dict_free(tmp->value.d.dict);
+    pdf_free(tmp);
 }
 
 static void
-pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, pdfcrypto_priv *decrypto)
+pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, int n, int g, pdfcrypto_priv *decrypto, pdfcrypto_priv *encrypto)
 {
     int i;
     if (!o)
@@ -444,7 +482,7 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, pdfcrypto_priv *d
             pdf_stream_putc(')', f);
             break;
 	    case eHexString:
-            pdf_stream_puts("\n<", f);
+            pdf_stream_puts("<", f);
             if (decrypto)
             {
                 pdf_stream *s = pdf_stream_load(o, decrypto, x->page_obj_buf[x->cur_idx], 0);
@@ -494,7 +532,12 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, pdfcrypto_priv *d
                     l = l->next;
                     continue;
                 }
-                else if (l->key[0] == 'F' && strcmp(l->key, "Filter")==0)
+                else if (l->key[0] == 'L' && strcmp(l->key, "Length")==0 && strm)
+                {
+                    l = l->next;
+                    continue;
+                }
+                else if (l->key[0] == 'F' && strcmp(l->key, "Filter")==0 && strm)
                 {
                     pdf_filter_str_to_enum(&l->val, filter_array);
                     switch (filter_array[0])
@@ -511,7 +554,7 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, pdfcrypto_priv *d
                     continue;
                 }
                 pdf_key_write(l->key, x, f, decrypto);
-                pdf_obj_write(&l->val, x, f, decrypto);
+                pdf_obj_write(&l->val, x, f, n, g, decrypto, encrypto);
                 l = l->next;
             }
             if (strm)
@@ -521,17 +564,44 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, pdfcrypto_priv *d
                 sub_stream *ss = (sub_stream*)o->value.d.dict->stream;
                 pdf_stream *sb = pdf_stream_buffer_open();
                 pdf_stream *filts = 0, *out = sb;
+                pdf_stream *encs = 0;
+
+                if (encrypto)
+                {
+                    pdfcrypto_algorithm algo = which_algo(encrypto);
+
+                    if (algo == eRC4)
+                    {
+                        encs = pdf_ostream_filtered_open(RC4Encrypt, n, g, encrypto);
+                    }
+                    else if (algo == eAESV2)
+                    {
+                        encs = pdf_ostream_filtered_open(AESEncrypt, n, g, encrypto);
+                    }
+
+                    if (encs)
+                    {
+                        pdf_stream_chain(encs, sb);
+                        out = encs;
+                    }
+
+                }
 
                 if (!inflate)
                 {
-                    filts = pdf_ostream_filtered_open(FlateEncode);
+                    filts = pdf_ostream_filtered_open(FlateEncode, 0);
                     if (filts)
-                        pdf_stream_chain(filts, sb);
-                    out = filts;
+                    {
+                        pdf_stream_chain(filts, out);
+                        out = filts;
+                    }
                 }
                 else
+                {
                     filter_flag = 0;
-                if (ss)
+                }
+
+                if (ss) // for descryption
                 {
                     obj = ss->obj;
                     gen = ss->gen;
@@ -629,6 +699,10 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, pdfcrypto_priv *d
                     pdf_stream_puts("\nendstream", f);
 
                 }
+                if (encs)
+                {
+                    pdf_stream_close(encs);
+                }
             }
             else
             {
@@ -643,7 +717,7 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, pdfcrypto_priv *d
             pdf_stream_puts("[", f);
             for (i = 0; i < o->value.a.len; i++)
             {
-                pdf_obj_write(&o->value.a.items[i], x, f, decrypto);
+                pdf_obj_write(&o->value.a.items[i], x, f, n, g, decrypto, encrypto);
             }
             pdf_stream_puts("]", f);
         }
@@ -674,22 +748,22 @@ pdf_key_write(const char *k, pdf_xref_internal *x, pdf_stream *f, pdfcrypto_priv
     pdf_obj key;
     key.t = eName;
     key.value.k = k;
-    pdf_obj_write(&key, x, f, crypto);
+    pdf_obj_write(&key, x, f, 0, 0, crypto, 0);
 }
 
 static void
-pdf_obj_full_write(pdf_obj *o, int n, int g, pdf_xref_internal *x, pdf_stream *f, pdfcrypto_priv *crypto)
+pdf_obj_full_write(pdf_obj *o, int n, int g, pdf_xref_internal *x, pdf_stream *f, pdfcrypto_priv *decrypto, pdfcrypto_priv* encrypto)
 {
     char tmp[128];
     sprintf(tmp, "%d %d obj\n", n, g);
     pdf_stream_puts(tmp, f);
-    pdf_obj_write(o, x, f, crypto);
+    pdf_obj_write(o, x, f, n, g, decrypto, encrypto);
     pdf_stream_puts("\nendobj\n", f);
 }
 
 static
 int
-pdf_page_contents_write(pdf_obj *content, unsigned long write_flag, pdf_xref_internal *x, pdf_stream *out, pdfcrypto_priv *crypto)
+pdf_page_contents_write(pdf_obj *content, unsigned long write_flag, pdf_xref_internal *x, pdf_stream *out, pdfcrypto_priv *crypto, pdfcrypto_priv *encrypto)
 {
     int content_ref = x->xref->cur;
     int off = pdf_stream_tell(out);
@@ -708,7 +782,7 @@ pdf_page_contents_write(pdf_obj *content, unsigned long write_flag, pdf_xref_int
     {
         pdf_dict_insert_name(cobj->value.d.dict, "Filter", "FlateDecode");
     }
-    pdf_obj_full_write(cobj, x->xref->cur, 0, x, out, crypto);
+    pdf_obj_full_write(cobj, x->xref->cur, 0, x, out, crypto, encrypto);
     x->xref->offsets[x->xref->cur] = off;
     x->xref->cur++;
     return content_ref;
@@ -918,7 +992,7 @@ pdf_resources_scan(pdf_resources *r, pdf_xref_internal* x)
 
 static
 void
-pdf_page_scan(pdf_page* pg, pdf_xref_internal* x, pdf_stream *o, pdfcrypto_priv *crypto)
+pdf_page_scan(pdf_page* pg, pdf_xref_internal* x, pdf_stream *o, pdfcrypto_priv *crypto, pdfcrypto_priv *encrypto)
 {
     if (!pg)
         return;
@@ -928,13 +1002,13 @@ pdf_page_scan(pdf_page* pg, pdf_xref_internal* x, pdf_stream *o, pdfcrypto_priv 
     {
         pdf_obj_scan(pg->group->cs, x);
     }
-    pdf_indirect_objs_write(x, o, crypto);
+    pdf_indirect_objs_write(x, o, crypto, encrypto);
 }
 
 // Writing out page content which is an array of references.
 static
 void
-pdf_indirect_objs_write(pdf_xref_internal *x, pdf_stream *out, pdfcrypto_priv *crypto)
+pdf_indirect_objs_write(pdf_xref_internal *x, pdf_stream *out, pdfcrypto_priv *crypto, pdfcrypto_priv *encrypto)
 {
     if (x->page_obj_idx)
     {
@@ -951,7 +1025,7 @@ pdf_indirect_objs_write(pdf_xref_internal *x, pdf_stream *out, pdfcrypto_priv *c
                 // insert negative ref-number to mark back-edge
                 bpt_insert(x->entry, x->page_obj_buf[i], (void*)-x->xref->cur);
                 // serialize
-                pdf_obj_full_write(o, x->xref->cur, 0, x, out, crypto);
+                pdf_obj_full_write(o, x->xref->cur, 0, x, out, crypto, encrypto);
                 // update entry
                 bpt_insert(x->entry, x->page_obj_buf[i], (void*)x->xref->cur);
                 // inc new xref counter
@@ -963,7 +1037,7 @@ pdf_indirect_objs_write(pdf_xref_internal *x, pdf_stream *out, pdfcrypto_priv *c
 
 static
 void
-pdf_page_obj_write(pdf_page *page, int pgidx, unsigned long write_flag, pdf_xref_internal *x, pdfcrypto_priv *crypto, pdf_stream *out)
+pdf_page_obj_write(pdf_page *page, int pgidx, unsigned long write_flag, pdf_xref_internal *x, pdfcrypto_priv *crypto, pdfcrypto_priv *encrypto, pdf_stream *out)
 {
     int content_ref = -1;
     int content_ref_orig = -1;
@@ -971,6 +1045,7 @@ pdf_page_obj_write(pdf_page *page, int pgidx, unsigned long write_flag, pdf_xref
     int content_ref_arr[1024];
     pdf_obj *tmp, *mediabox;
     dict *d;
+    pdf_obj *contents;
 
     if (!page)
         return;
@@ -981,17 +1056,18 @@ pdf_page_obj_write(pdf_page *page, int pgidx, unsigned long write_flag, pdf_xref
 
     if (page->contents)
     {
-        pdf_obj *contents = pdf_obj_deref(page->contents);
-        if (page->contents->t == eRef)
+        contents = pdf_obj_deref(page->contents);
+
+        if (contents->t == eDict)
         {
             content_ref_orig = page->contents->value.r.num;
-            content_ref = pdf_page_contents_write(contents, write_flag, x, out, crypto);
+            content_ref = pdf_page_contents_write(contents, write_flag, x, out, crypto, encrypto);
             bpt_insert(x->entry, content_ref_orig, content_ref);
         }
 	    else if (contents->t == eArray)
 	    {
             int i;
-            pdf_obj *contents = pdf_obj_deref(page->contents);
+
             content_num = contents->value.a.len;
             if (content_num > 1024)
             {
@@ -1003,14 +1079,16 @@ pdf_page_obj_write(pdf_page *page, int pgidx, unsigned long write_flag, pdf_xref
                 if (contents->value.a.items[i].t == eRef)
                 {
                     int nnn = contents->value.a.items[i].value.r.num;
-                    content_ref_arr[i] = pdf_page_contents_write(&contents->value.a.items[i], write_flag, x, out, crypto);
+                    content_ref_arr[i] = pdf_page_contents_write(&contents->value.a.items[i], write_flag, x, out, crypto, encrypto);
                     bpt_insert(x->entry, nnn, content_ref_arr[i]);
                 }
             }
 	    }
     }
     if (content_ref == -1 && content_num == 0)
-	    return;
+    {
+        goto error_content;
+    }
     x->xref->offsets[x->xref->cur] = pdf_stream_tell(out);
     bpt_insert(x->entry, page->ref.value.r.num, x->xref->cur);
     x->page_ref_buf[pgidx] = page->ref.value.r.num;
@@ -1051,9 +1129,9 @@ pdf_page_obj_write(pdf_page *page, int pgidx, unsigned long write_flag, pdf_xref
         pdf_obj *cont = pdf_array_build(content_num);
 	    for (i = 0; i < content_num; i++)
 	    {
-            if (page->contents->value.a.items[i].t == eRef)
+            if (contents->value.a.items[i].t == eRef)
             {
-                cont->value.a.items[i] = pdf_ref_to_obj(page->contents->value.a.items[i].value.r.num, 0);
+                cont->value.a.items[i] = pdf_ref_to_obj(contents->value.a.items[i].value.r.num, 0);
             }
             else
             {
@@ -1062,8 +1140,9 @@ pdf_page_obj_write(pdf_page *page, int pgidx, unsigned long write_flag, pdf_xref
 	    }
         dict_insert(d, "Contents", cont);
     }
-    pdf_obj_full_write(tmp, x->xref->cur-1, 0, x, out, crypto);
+    pdf_obj_full_write(tmp, x->xref->cur-1, 0, x, out, crypto, 0);
 
+  error_content:
     pdf_obj_delete(tmp);
     pdf_free(tmp);
 }
@@ -1084,7 +1163,7 @@ pdf_magic_write(pdf_stream *out, pdf_writer_options *options)
 
 
 pdf_err
-pdf_encrypt_write(pdf_xref_internal *x, pdf_stream *out, pdf_writer_options *options, char *of_name, pdf_obj *info, int *num)
+pdf_encrypt_write(pdf_xref_internal *x, pdf_stream *out, pdf_writer_options *options, char *of_name, pdf_obj *info, int *num, char o[32], char u[32])
 {
     pdf_obj tmp;
     dict *d;
@@ -1094,14 +1173,20 @@ pdf_encrypt_write(pdf_xref_internal *x, pdf_stream *out, pdf_writer_options *opt
     /* standard cf */
     pdf_obj std_cf;
     dict *std_cfd;
-    char idstring[32];
+    char idstring1[16];
+    char idstring2[16];
+    long permission;
+
+    permission = PERMISSION_ALL;
 
     if (options->encrypt != eRC4 &&
         options->encrypt != eAESV2)
         return pdf_not_ok;
 
-    *num = x->xref->cur++;
-    x->xref->offsets[x->xref->cur-1] = pdf_stream_tell(out);
+    *num = x->xref->cur;
+    x->xref->offsets[x->xref->cur] = pdf_stream_tell(out);
+    bpt_insert(x->entry, x->xref->cur, x->xref->cur);
+    x->xref->cur++;
 
     d = dict_new(11);
 
@@ -1113,7 +1198,7 @@ pdf_encrypt_write(pdf_xref_internal *x, pdf_stream *out, pdf_writer_options *opt
     pdf_dict_insert_name(d, "Filter", "Standard");
     pdf_dict_insert_int(d, "V", 4);
     pdf_dict_insert_int(d, "R", 4);
-    pdf_dict_insert_int(d, "P", -1340);
+    pdf_dict_insert_int(d, "P", permission);
     pdf_dict_insert_int(d, "Length", 128);
 
     {
@@ -1136,7 +1221,7 @@ pdf_encrypt_write(pdf_xref_internal *x, pdf_stream *out, pdf_writer_options *opt
 
 
             pdf_dict_insert_name(std_cfd, "AuthEvent", "DocOpen");
-            pdf_dict_insert_int(std_cfd, "Length", 128);
+            pdf_dict_insert_int(std_cfd, "Length", 16);  // pp68, PDF32000
             if (options->encrypt == eRC4)
             {
                 pdf_dict_insert_name(std_cfd, "CFM", "V2");
@@ -1151,15 +1236,16 @@ pdf_encrypt_write(pdf_xref_internal *x, pdf_stream *out, pdf_writer_options *opt
         dict_insert(d, "CF", pdf_obj_copy(&cf));
     }
     pdf_dict_insert_name(d, "StmF", "StdCF");
+    pdf_dict_insert_name(d, "StrF", "StdCF");
 
-    memset(idstring, 0, 32);
-    pdf_id_create(of_name, pdf_stream_tell(out), info, idstring);
-    pdf_dict_insert_string(d, "O", idstring, 32);
-    pdf_dict_insert_string(d, "U", idstring, 32);
+    pdf_id_create(of_name, pdf_stream_tell(out), info, idstring1);
+    pdf_dict_insert_string(d, "O", o, 32);
+    pdf_dict_insert_string(d, "U", u, 32);
 
-    pdf_obj_full_write(&tmp, x->xref->cur, 0, x, out, 0);
+    pdf_obj_full_write(&tmp, x->xref->cur - 1, 0, x, out, 0, 0);
 
     pdf_obj_delete(&tmp);
+
     return pdf_ok;
 }
 
@@ -1181,16 +1267,18 @@ pdf_page_save(pdf_doc *doc, int i/* pg# */, pdfcrypto_priv *crypto, char *ofile,
     if (!x)
 	    goto done_0;
     pdf_catalog_write(doc, x, out, crypto, WRITE_CATALOG_DEFAULTS);
-    pdf_page_scan(doc->pages[i], x, out, crypto);
-    pdf_indirect_objs_write(x, out, crypto);
-    pdf_page_obj_write(doc->pages[i], i, options->flags, x, crypto, out);
+    pdf_page_scan(doc->pages[i], x, out, crypto, 0);
+    pdf_indirect_objs_write(x, out, crypto, 0);
+    pdf_page_obj_write(doc->pages[i], i, options->flags, x, crypto, 0, out);
 
     range.bgn = i + 1;
     range.end = i + 1;
     pdf_pages_obj_write(x, &range, 1, out);
     // write xref table
     startxref = pdf_xref_write(x, out);
-    pdf_trailer_write(x, startxref, out);
+    pdf_trailer_write(x, startxref, 0,
+                      0, 0, // encrypto inst, and encrypt obj num
+                      out);
     // done
   done_0:
     if (x)
@@ -1333,17 +1421,50 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, pdf_writer_options *optio
         pdf_stream *s;
         int enc_obj_num;
         pdf_obj *info_obj;
+        unsigned char idstring[16];
+        char user_str[32], owner_str[32];
+        pdfcrypto_priv *encrypto = 0;
+        int encrypt_num;
+
+
         s = pdf_stream_file_open(ofile);
         if (!s)
             return pdf_file_err;
 
+        if (doc->trailer && doc->trailer->info == 0)
+        {
+            info_obj = pdf_info_create(0);
+        }
+        else
+        {
+            info_obj = pdf_info_create(doc->trailer->info);
+        }
+
+        pdf_id_create(ofile, rand(), info_obj, idstring);
+
         if (options->encrypt == eRC4 || options->encrypt == eAESV2)
         {
-            pdf_crypto_create(options->encrypt,
-                              4, // revision number
-                              16,
-                              options->upass
+            pdf_stream *cipher_s = 0;
+
+            encrypto = pdf_crypto_create(options->encrypt,
+                                         4, // revision number
+                                         16, // key length
+                                         options->upass, strlen(options->upass),
+                                         idstring, owner_str, user_str
                 );
+
+#if 0
+            if (options->encrypt == eRC4)
+                encrypto->algo = eRC4;
+            else if (options->encrypt == eAESV2)
+                encrypto->algo = eAESV2;
+
+            if (cipher_s)
+            {
+                pdf_stream_chain(cipher_s, s);
+                s = cipher_s;
+            }
+#endif
         }
 
 
@@ -1368,31 +1489,26 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, pdf_writer_options *optio
                     page_ranges[j].end = i;
                     break;
                 }
-                pdf_page_scan(doc->pages[i], x, s, crypto);
-                pdf_indirect_objs_write(x, s, crypto);
-                pdf_page_obj_write(doc->pages[i], i, options->flags, x, crypto, s);
+                pdf_page_scan(doc->pages[i], x, s, crypto, encrypto);
+                pdf_indirect_objs_write(x, s, crypto, encrypto);
+                pdf_page_obj_write(doc->pages[i], i, options->flags, x, crypto, encrypto, s);
                 n_pages++;
             }
         }
         pdf_pages_obj_write(x, page_ranges, nr, s);
-        if (doc->trailer && doc->trailer->info == 0)
-        {
-            info_obj = pdf_info_create(0);
-        }
-        else
-        {
-            info_obj = pdf_info_create(doc->trailer->info);
-        }
 
         if (info_obj)
         {
             int off = pdf_stream_tell(s);
-            pdf_obj_full_write(info_obj, x->xref->cur, 0, x, s, 0);
+            pdf_obj_full_write(info_obj, x->xref->cur, 0, x, s, 0, 0);
             x->xref->offsets[x->xref->cur] = off;
             x->xref->cur++;
         }
 
-        pdf_encrypt_write(x, s, options, ofile, info_obj, &enc_obj_num);
+        if (encrypto)
+        {
+            pdf_encrypt_write(x, s, options, ofile, info_obj, &enc_obj_num, owner_str, user_str);
+        }
 
         if (info_obj)
         {
@@ -1403,13 +1519,16 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, pdf_writer_options *optio
 
 	    // write xref table
 	    startxref = pdf_xref_write(x, s);
-	    pdf_trailer_write(x, startxref, s);
+	    pdf_trailer_write(x, startxref, idstring, encrypto, enc_obj_num, s);
 	    // done
       done:
 	    if (x)
             pdf_xref_internal_free(x);
 	    if (crypto)
             pdf_crypto_destroy(crypto);
+        if (encrypto)
+            pdf_free(encrypto);
+
         pdf_stream_close(s);
     }
     return pdf_ok;

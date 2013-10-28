@@ -7,11 +7,50 @@
 #include "pdfdoc.h"
 #include "pdfcrypto.h"
 
+struct pdfcrypto_priv_s
+{
+    pdfcrypto_algorithm algo;
+    int rev;
+    authevent event;
+    int len;
+    unsigned char key[32];
+};
+
 static unsigned char pdf_key_padding[32] =
 {
     0x28,0xBF,0x4E,0x5E,0x4E,0x75,0x8A,0x41,0x64,0x00,0x4E,0x56,0xFF,0xFA,0x01,0x08,
     0x2E,0x2E,0x00,0xB6,0xD0,0x68,0x3E,0x80,0x2F,0x0C,0xA9,0xFE,0x64,0x53,0x69,0x7A
 };
+
+pdfcrypto_priv *
+pdfcrypto_new(pdfcrypto_algorithm algo, authevent e, int len)
+{
+    pdfcrypto_priv *cf;
+    cf = pdf_malloc(sizeof(pdfcrypto_priv));
+    if (!cf)
+        return 0;
+    memset(cf, 0, sizeof(pdfcrypto_priv));
+    cf->algo = algo;
+    cf->event = e;
+    cf->len = len;
+    return cf;
+}
+
+pdfcrypto_algorithm
+which_algo(pdfcrypto_priv *c)
+{
+    return c->algo;
+}
+int which_revision(pdfcrypto_priv *c)
+{
+    return c->rev;
+}
+
+int
+crypto_key_len(pdfcrypto_priv *crypto)
+{
+    return crypto->len;
+}
 
 /*
  * input:
@@ -88,6 +127,11 @@ pdf_compute_key(int r, unsigned int n, char *password, int pwlen, unsigned char 
         digest[i] = 0;
     for (i = 0; i < 32; i ++) /* can't trust libc's memset */
         pw[i] = 0;
+    #ifdef DEBUG
+    printf("key=%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X\n",
+           key[0], key[1], key[2], key[3], key[4], key[5], key[6], key[7],
+           key[8], key[9], key[10], key[11], key[12], key[13], key[14], key[15]);
+    #endif
 }
 
 pdfcrypto_priv *
@@ -107,6 +151,7 @@ pdf_crypto_init(pdf_encrypt* encrypt, unsigned char id1[16], char *pw)
     crypto->rev = encrypt->r;
     if (encrypt->v == 4)
     {
+        crypto->len = encrypt->length;
     }
     else if (encrypt->v == 1)
     {
@@ -164,12 +209,7 @@ pdf_crypto_encrypt_arc4(pdfcrypto_algorithm algo, int len, unsigned char *key, u
     EVP_CIPHER_CTX_init (&ctx);
 
     EVP_EncryptInit(&ctx, rc4, key, NULL); // NULL for rc4 iv
-#if 0
-    if (algo == e40bitsRC4)
-	    EVP_CIPHER_CTX_set_key_length(&ctx, 5);
-    else
-	    EVP_CIPHER_CTX_set_key_length(&ctx, 16);
-#endif
+
     if(!EVP_EncryptUpdate(&ctx, outbuf, outlen, str, 32))
     {
         /* Error */
@@ -188,12 +228,17 @@ pdf_crypto_encrypt_arc4(pdfcrypto_algorithm algo, int len, unsigned char *key, u
 }
 
 void
-pdf_crypto_calc_userpassword(pdfcrypto_priv* c, unsigned char id1[16], char *pw, int pwlen, unsigned char *o)
+pdf_compute_user_password(pdfcrypto_priv* c, unsigned char id1[16], unsigned char *o)
 {
     int len;
 
     assert (c);
 
+#ifdef DEBUG
+    printf("ID=%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X\n",
+           id1[0], id1[1], id1[2], id1[3], id1[4], id1[5], id1[6], id1[7],
+           id1[8], id1[9], id1[10], id1[11], id1[12], id1[13], id1[14], id1[15]);
+#endif
     if (c->rev == 2)
     {
         pdf_crypto_encrypt_arc4(c->algo, c->len, c->key, pdf_key_padding, o, &len);
@@ -223,58 +268,59 @@ pdf_crypto_calc_userpassword(pdfcrypto_priv* c, unsigned char id1[16], char *pw,
                 xor[i] = c->key[i] ^ x;
             pdf_crypto_encrypt_arc4(c->algo, c->len, xor, out, o, &olen);
             memcpy(out, o, 16);
+#ifdef DEBUG
+            printf("u%d=%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X\n", x,
+           o[0], o[1], o[2], o[3], o[4], o[5], o[6], o[7],
+           o[8], o[9], o[10], o[11], o[12], o[13], o[14], o[15]);
+#endif
         }
         memcpy(o + 16, pdf_key_padding, 16);
     }
     else if (c->rev == 5)
     {
     }
+#ifdef DEBUG
+    printf("U=%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X\n",
+           o[0], o[1], o[2], o[3], o[4], o[5], o[6], o[7],
+           o[8], o[9], o[10], o[11], o[12], o[13], o[14], o[15]);
+#endif
     return;
 }
 
 // pdf arc4 cipher
-static
+
 pdf_err
-pdf_filter_arc4_close(pdf_filter *f, int flag)
+pdf_arc4_close(void *s, int flag)
 {
-    EVP_CIPHER_CTX *ctx;
-    if (!f)
-        return 0;
-    ctx = (EVP_CIPHER_CTX*)f->state;
+    EVP_CIPHER_CTX *ctx = (EVP_CIPHER_CTX *)s;
     EVP_CIPHER_CTX_cleanup(ctx);
     pdf_free(ctx);
-    //printf("\nf=%x\n", (unsigned long)f);
-    pdf_free(f);
     return pdf_ok;
 }
 
-static
-int
-pdf_filter_arc4_read(pdf_filter *f, unsigned char *obuf, int request)
-{
-    pdf_filter *up;
-    EVP_CIPHER_CTX *ctx;
-    int tmplen, l;
 
-    if (!f)
-        return 0;
-    ctx = (EVP_CIPHER_CTX*)f->state;
-    up = f->next; // upstream
-    // read upstream
-    l = (up->read)(up, f->ptr, (request < PDF_FILTER_BUF_SIZE)?request:PDF_FILTER_BUF_SIZE);
-    if (l == 0)
+int
+pdf_arc4_read(void *ctx, unsigned char *in, unsigned char *obuf, int request)
+{
+    int tmplen;
+
+    if (request == 0)
     {
         if (!EVP_DecryptFinal(ctx, obuf, &tmplen))
             return 0;
         else
             return tmplen;
     }
-    if(!EVP_DecryptUpdate(ctx, obuf, &request, f->ptr, l))
+    if(!EVP_DecryptUpdate(ctx, obuf, &request, in, request))
     {
         /* Error */
         return 0;
     }
-    return request;
+    else
+    {
+        return request;
+    }
+    return 0;
 }
 
 // pdf AES cipher
@@ -285,166 +331,66 @@ struct aes_priv_s
     unsigned char buf[32];
 };
 
-pdf_err
-pdf_filter_aes_close(pdf_filter *f)
+void*
+pdf_aes_priv_new()
 {
-    EVP_CIPHER_CTX *ctx;
-    if (!f)
-        return 0;
-    ctx = (EVP_CIPHER_CTX*)f->state;
+    struct aes_priv_s *buf;
+    buf = (struct aes_priv_s *)pdf_malloc(sizeof(struct aes_priv_s));
+    if (buf)
+    {
+        buf->p = buf->buf+16;
+        buf->e = buf->buf+16;
+    }
+    return (void*)buf;
+}
+
+pdf_err
+pdf_aes_close(EVP_CIPHER_CTX *ctx)
+{
     if (ctx)
     {
         EVP_CIPHER_CTX_cleanup(ctx);
         pdf_free(ctx);
     }
-    if (f->data)
-        pdf_free(f->data);
-    pdf_free(f);
     return pdf_ok;
 }
 
-static int
-pdf_filter_aes_read(pdf_filter *f, unsigned char *obuf, int request)
+void*
+pdf_aes_e_new(char *final_key, int key_len, unsigned char *iv)
 {
-    pdf_filter *up;
-    EVP_CIPHER_CTX *ctx;
-    int tmplen = 0, l;
-    int max_request = PDF_FILTER_BUF_SIZE - 16; // seems buffer overflows(16 byte) from vpaes_cbc_encrypt
-    struct aes_priv_s *buf = (struct aes_priv_s*)(f->data);
-    int e, req = request;
+    EVP_CIPHER_CTX *ctx; // cipher state
+    const EVP_CIPHER *aes128 = EVP_aes_128_cbc();
+    const EVP_CIPHER *aes256 = EVP_aes_256_cbc();
 
-    if (!f)
-        return 0;
-  read_next:
-    if (buf && buf->p < buf->e)
+    ctx = pdf_malloc(sizeof(EVP_CIPHER_CTX));
+
+    if (ctx)
     {
-            *obuf = *buf->p;
-            if (buf->p >= buf->e)
-            {
-                return 0;
-            }
-            else
-            {
-                buf->p++;
-                return 1;
-            }
-    }
-    ctx = (EVP_CIPHER_CTX*)f->state;
-    if (!ctx)
-        return 0;
-    up = f->next; // upstream
-    // read upstream
-  update_next:
-    if (request <= 16)
-    {
-	    l = (up->read)(up, f->ptr, 16);
-    }
-    else
-    {
-	    l = (up->read)(up, f->ptr, (request < max_request)?request:max_request);
-    }
-    if (l == 0)
-    {
-        if (!EVP_DecryptFinal(ctx, buf->buf, &tmplen))
-            return 0;
+        EVP_CIPHER_CTX_init (ctx);
+        if (key_len == 128)
+            EVP_EncryptInit(ctx, aes128, final_key, iv);
         else
-        {
-            EVP_CIPHER_CTX_cleanup(ctx);
-            pdf_free(ctx);
-            f->state = NULL;
-            if (tmplen < req)
-            {
-                memcpy(obuf, buf->buf, tmplen);
-                return tmplen;
-            }
-            else
-            {
-                buf->p = buf->buf;
-                buf->e = buf->buf + tmplen;
-                goto read_next;
-            }
-        }
+            EVP_EncryptInit(ctx, aes256, final_key, iv);
     }
-    if (l <= 16)
-    {
-	    e = EVP_DecryptUpdate(ctx, buf->buf, &request, f->ptr, 16);
-        if (request < req)
-        {
-            if (request)
-                memcpy(obuf, buf->buf, request);
-        }
-        else
-        {
-            buf->p = buf->buf;
-            buf->e = buf->buf + request;
-        }
-    }
-    else
-    {
-	    e = EVP_DecryptUpdate(ctx, obuf, &request, f->ptr, l);
-    }
-    if (!e)
-    {
-        /* Error */
-        return 0;
-    }
-    if (request == 0)
-    {
-#if 1
-        if (req != 0 && l != 0)
-        {
-            request = req;
-            goto update_next;
-        }
-        else
-#endif
-        {
-            unsigned char tmp[16];
-            if (!EVP_DecryptFinal(ctx, tmp, &tmplen))
-                return 0;
-            else
-            {
-                EVP_CIPHER_CTX_cleanup(ctx);
-                pdf_free(ctx);
-                f->state = NULL;
-                if (tmplen > 0 && tmplen < (buf->p-buf->buf))
-                {
-                    memcpy(buf->buf, tmp, tmplen);
-                    *obuf = buf->buf[0];
-                    buf->p = buf->buf+1;
-                    buf->e = buf->buf+tmplen;
-                    return 1;
-                }
-                else
-                    return 0;
-            }
-        }
-    }
-#if 1
-    if (req < request)
-    {
-        request = req;
-        goto read_next;
-    }
-#endif
-    return request;
+
+    return (void*)ctx;
 }
 
-// cipher filter api(s)
-pdf_filter *
-pdf_cryptofilter_new(pdfcrypto_priv *crypto, int num, int gen, unsigned char *iv)
+void*
+pdf_rc4_e_new(char *final_key, int key_len)
 {
-    unsigned int n;
+    return 0;
+}
+
+
+void
+pdf_crypto_obj_key_compute(pdfcrypto_priv *crypto, int num, int gen, char *final_key, int keylen)
+{
+    int n = keylen;
     unsigned char key[256];
-    unsigned char final_key[256];
-    pdf_filter *f = pdf_malloc(sizeof(pdf_filter));
     EVP_MD_CTX ctx;
     const EVP_MD *md = EVP_md5();
-    if (!f)
-        return NULL;
-    //printf("\nc=%x", (unsigned long)f);
-    memset(f, 0, sizeof(pdf_filter));
-    n = crypto->len/8;
+
     memcpy(key, crypto->key, n);
     // Pad with obj-num and gen-num
     key[n] = (num) & 0xff;
@@ -459,70 +405,16 @@ pdf_cryptofilter_new(pdfcrypto_priv *crypto, int num, int gen, unsigned char *iv
 
     if (crypto->algo == eAESV2)
         EVP_DigestUpdate(&ctx, (unsigned char *)"sAlT", 4);
-    EVP_DigestFinal(&ctx, final_key, &n);
+    EVP_DigestFinal(&ctx, final_key, &keylen);
     EVP_MD_CTX_cleanup (&ctx);
-    // max 16 bytes of key
-    if (n>16)
-        n = 16;
 
-    if (crypto->algo == eRC4)
-    {
-        EVP_CIPHER_CTX *ctx; // cipher state
-        const EVP_CIPHER *rc4 = EVP_rc4();
-
-        ctx = pdf_malloc(sizeof(EVP_CIPHER_CTX));
-        if (!ctx)
-            goto cf_fail; // cipher filter fail
-        EVP_CIPHER_CTX_init (ctx);
-        //EVP_DecryptInit(ctx, rc4, final_key, NULL); // NULL for rc4 iv
-	    EVP_CipherInit_ex(ctx, rc4, NULL, NULL, NULL, 0);
-	    if (crypto->algo == eRC4 && crypto->len == 40)
-            EVP_CIPHER_CTX_set_key_length(ctx, 10);
-	    else
-            EVP_CIPHER_CTX_set_key_length(ctx, 16);
-	    /* We finished modifying parameters so now we can set key and IV */
-	    EVP_CipherInit_ex(ctx, NULL, NULL, final_key, NULL, 0);
-
-        f->state = (void*) ctx;
-        f->close = pdf_filter_arc4_close;
-        f->read = pdf_filter_arc4_read;
-        f->ptr = f->buf;
-    }
-    else if (crypto->algo == eAESV2 && crypto->len > 40)
-    {
-        EVP_CIPHER_CTX *ctx; // cipher state
-        const EVP_CIPHER *aes128 = EVP_aes_128_cbc();
-        const EVP_CIPHER *aes256 = EVP_aes_256_cbc();
-
-	    // TODO: remove the "+8" HACK
-	    struct aes_priv_s* buf = pdf_malloc(sizeof(struct aes_priv_s));
-
-        ctx = pdf_malloc(sizeof(EVP_CIPHER_CTX));
-        if (!ctx)
-            goto cf_fail; // cipher filter fail
-        EVP_CIPHER_CTX_init (ctx);
-        if (crypto->len == 128)
-            EVP_DecryptInit(ctx, aes128, final_key, iv);
-        else
-            EVP_DecryptInit(ctx, aes256, final_key, iv);
-        f->state = (void*) ctx;
-        f->close = pdf_filter_aes_close;
-        f->read = pdf_filter_aes_read;
-        f->ptr = f->buf;
-	    buf->p = buf->buf+16;
-        buf->e = buf->buf+16;
-	    f->data = (void*)buf;
-    }
-    else
-    {
-        goto cf_fail;
-    }
-    return f;
-  cf_fail:
-    if (f)
-        pdf_free(f);
-    return NULL;
 }
+
+///////////////////////////////////////////////////////////////////
+// cipher filter api(s)
+
+
+
 
 pdfcrypto_priv* pdf_crypto_load(pdf_doc *doc, char *pw)
 {
@@ -549,21 +441,168 @@ pdf_crypto_aes_create(int len, char *passwd)
     return 0;
 }
 
-pdfcrypto_priv*
-pdf_crypto_create(pdfcrypto_algorithm algo, int rev, int len, char *passwd)
+static void
+pdf_compute_owner_password(pdfcrypto_priv *crypto, char *pwo, int pwolen, char *pwu, int pwulen, char *o)
 {
+    int  i;
+    char pw[32];
+    char key[16];
+    EVP_MD_CTX    dctx;
+    const EVP_MD *md;
+
+    if (!o)
+        return;
+    /* Step 0 - init md5 */
+    md = EVP_md5();
+    EVP_MD_CTX_init (&dctx);
+    EVP_DigestInit(&dctx, md);
+
+    if (!pwo)
+        memcpy(pw, pwu, pwulen);
+    else
+        memcpy(pw, pwo, pwolen);
+
+    // pad or truncate password
+    if (pwolen)
+        memcpy(pw, pwo, pwolen);
+    for (i = pwolen; i < 32; i++)
+    {
+        pw[i] = pdf_key_padding[i-pwolen];
+    }
+    /* Step 2 - pass value of step 1 */
+    EVP_DigestUpdate(&dctx, pw, 32);
+
+    // c) d) md5 50 more times, for revision >= 4
+    for (i = 0; i < 50; i++)
+        EVP_DigestUpdate(&dctx, pw, 16);
+
+    memcpy(key, pw, 16);
+
+    // e)
+    if (pwulen)
+        memcpy(pw, pwu, pwulen);
+    for (i = pwolen; i < 32; i++)
+    {
+        pw[i] = pdf_key_padding[i-pwulen];
+    }
+
+    // f)
+    {
+        char buf[32];
+        int outlen, tmplen;
+        EVP_CIPHER_CTX ctx;
+        const EVP_CIPHER *rc4;
+
+
+        EVP_CIPHER_CTX_init (&ctx);
+	    rc4 = EVP_rc4();
+        EVP_EncryptInit(&ctx, rc4, key, NULL); // NULL for rc4 iv
+        EVP_CIPHER_CTX_set_key_length(&ctx, 16);
+//	    EVP_CipherInit_ex(&ctx, rc4, NULL, NULL, NULL, 0);
+
+        if(!EVP_EncryptUpdate(&ctx, buf, &outlen, pw, 32))
+        {
+            /* Error */
+            return;
+        }
+        /* Buffer passed to EVP_EncryptFinal() must be after data just
+         * encrypted to avoid overwriting it.
+         */
+        if(!EVP_EncryptFinal(&ctx, buf + outlen, &tmplen))
+        {
+            /* Error */
+            return;
+        }
+
+        EVP_CIPHER_CTX_cleanup(&ctx);
+
+        // g)
+        outlen = 0;
+        for (i = 0; i < 19; i++)
+        {
+            unsigned char _key[16], _buf[32];
+            int j;
+
+            for (j = 0; j < 16; j++)
+                _key[j] = key[j] ^ i;
+#if 1
+            pdf_crypto_encrypt_arc4(eRC4, 128, _key, buf, _buf, &outlen);
+#else
+            EVP_CIPHER_CTX_init (&ctx);
+            EVP_EncryptInit(&ctx, rc4, _key, NULL); // NULL for rc4 iv
+
+            if(!EVP_EncryptUpdate(&ctx, _buf, &outlen, buf, 32))
+            {
+                /* Error */
+                return;
+            }
+
+            if(!EVP_EncryptFinal(&ctx, _buf + outlen, &tmplen))
+            {
+                /* Error */
+                return;
+            }
+
+            EVP_CIPHER_CTX_cleanup(&ctx);
+#endif
+            memcpy(buf, _buf, 32);
+        }
+
+        // h) done
+        memcpy(o, buf, 32);
+    }
+
+    // clean up
+    EVP_MD_CTX_cleanup (&dctx);
+
+}
+
+
+pdfcrypto_priv*
+pdf_crypto_create(pdfcrypto_algorithm algo, int rev, int len, char *pw, int pwlen, char *id, char o[32], char u[32])
+{
+    pdfcrypto_priv *crypto;
+    long _p_; // for permissions
+
+    _p_ = PERMISSION_ALL; //??
+
+
+
+    crypto = pdf_malloc(sizeof(pdfcrypto_priv));
+    if (!crypto)
+        return NULL;
+    crypto->rev = rev;
+    crypto->len = len * 8;
+
+    pdf_compute_owner_password(crypto, pw, pwlen, pw, pwlen, o);
+
+    pdf_compute_key(rev,
+                    len,
+                    pw, // password
+                    pwlen,  // password len,
+                    o,
+                    _p_,
+                    id,
+                    NULL, //encrypt_metadata,
+                    crypto->key);
+
+    pdf_compute_user_password(crypto, id, u);
+
+    crypto->algo = algo;
     if (algo == eRC4)
     {
-        return pdf_crypto_rc4_create(len, passwd);
+        pdf_crypto_rc4_create(len, pw);
     }
     else if (algo == eAESV2)
     {
-        return pdf_crypto_aes_create(len, passwd);
+        pdf_crypto_aes_create(len, pw);
     }
     else
     {
+        pdf_free(crypto);
         return 0;
     }
+    return crypto;
 }
 
 
@@ -586,3 +625,124 @@ pdf_digest_md5(char *s, size_t len, unsigned char *digest)
     EVP_MD_CTX_cleanup (&ctx);
 
 }
+
+// return number of bytes read
+int
+pdf_aes_final_read(EVP_CIPHER_CTX *ctx, char *out, int len)
+{
+    int tmplen;
+
+    if (!EVP_DecryptFinal(ctx, out, &tmplen))
+    {
+        return 0;
+    }
+    else
+    {
+        return tmplen;
+    }
+    return 0;
+}
+
+// return number of bytes read
+int
+pdf_aes_read(EVP_CIPHER_CTX *ctx, char *in, char *out, int req)
+{
+    int tmplen;
+    int e;
+
+    if (req == 0)
+    {
+        return pdf_aes_final_read(ctx, out, req);
+    }
+    else
+    {
+	    e = EVP_DecryptUpdate(ctx, out, &tmplen, in, req);
+        if (!e)
+        {
+            /* Error */
+            return 0;
+        }
+        return tmplen;
+    }
+
+    return 0;
+}
+
+int
+pdf_aes_flush(void *_ctx, char *out)
+{
+    int tmplen;
+    EVP_CIPHER_CTX *ctx = (EVP_CIPHER_CTX*)_ctx;
+
+    if(!EVP_EncryptFinal(ctx, out, &tmplen))
+    {
+        /* Error */
+        return 0;
+    }
+    return tmplen;
+}
+
+// return number of bytes written
+int
+pdf_aes_write(void *_ctx, char *in, char *out, int req)
+{
+    int tmplen = 0;
+    EVP_CIPHER_CTX *ctx = (EVP_CIPHER_CTX*)_ctx;
+
+    if (req)
+    {
+        if (!EVP_EncryptUpdate(ctx, out, &tmplen, in, req))
+        {
+            /* Error */
+            return 0;
+        }
+    }
+    return tmplen;
+}
+
+void *
+pdf_aes_new(int len, char *key, char *iv)
+{
+    EVP_CIPHER_CTX *ctx; // cipher state
+    const EVP_CIPHER *aes128 = EVP_aes_128_cbc();
+    const EVP_CIPHER *aes256 = EVP_aes_256_cbc();
+
+    ctx = pdf_malloc(sizeof(EVP_CIPHER_CTX));
+    if (ctx)
+    {
+        EVP_CIPHER_CTX_init (ctx);
+        if (len == 128)
+            EVP_DecryptInit(ctx, aes128, key, iv);
+        else
+            EVP_DecryptInit(ctx, aes256, key, iv);
+        if (0)
+        {
+            char tmp[16];
+            int  tmplen, e;
+            e = EVP_DecryptUpdate(ctx, tmp, &tmplen, iv, 16);
+        }
+    }
+    return ctx;
+}
+
+void *
+pdf_rc4_new(int len, char *key)
+{
+    EVP_CIPHER_CTX *ctx; // cipher state
+    const EVP_CIPHER *rc4 = EVP_rc4();
+
+    ctx = pdf_malloc(sizeof(EVP_CIPHER_CTX));
+    if (ctx)
+    {
+        EVP_CIPHER_CTX_init (ctx);
+-	    EVP_CipherInit_ex(ctx, rc4, NULL, NULL, NULL, 0);
+        if (len == 40)
+            EVP_CIPHER_CTX_set_key_length(ctx, 10);
+        else
+            EVP_CIPHER_CTX_set_key_length(ctx, 16);
+	    /* We finished modifying parameters so now we can set key and IV */
+	    EVP_CipherInit_ex(ctx, NULL, NULL, key, NULL, 0);
+    }
+    return ctx;
+}
+

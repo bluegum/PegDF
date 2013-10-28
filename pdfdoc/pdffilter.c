@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 #include "zlib.h"
 #include "pdftypes.h"
 #include "pdfmem.h"
@@ -8,6 +9,7 @@
 #include "pdfread.h"
 #include "lzw_decomp.h"
 
+static int pdf_filter_aes_read(pdf_filter *f, unsigned char *obuf, int request);
 
 // common member functions
 static int
@@ -196,7 +198,7 @@ static int def(FILE *source, FILE *dest, int level)
 }
 
 static int
-pdf_deflate_write(pdf_filter *f, unsigned char *in, int request)
+pdf_deflate_write(pdf_filter *f, unsigned char *in, int request, int *written)
 {
     int ret;
     z_stream *z = (z_stream*) f->state;
@@ -210,11 +212,17 @@ pdf_deflate_write(pdf_filter *f, unsigned char *in, int request)
 
         z->avail_in = request;
         z->next_in = in;
+        *written = request;
+    }
+    else
+    {
+        *written = 0;
     }
     z->avail_out = PDF_FILTER_BUF_SIZE;
     z->next_out = f->buf;
     ret = deflate(z, Z_NO_FLUSH);    /* no bad return value */
     assert(ret != Z_STREAM_ERROR);  /* state not clobbered */
+
     return PDF_FILTER_BUF_SIZE - z->avail_out;
 }
 
@@ -600,6 +608,10 @@ pdf_filter_find(char *k)
     {
         t = Crypt;
     }
+    else if (strcmp(k, "Standard") == 0)
+    {
+        t = Standard;
+    }
     else
     {
         t = Limit;
@@ -611,7 +623,7 @@ void
 pdf_filter_str_to_enum(pdf_obj *o, pdf_filterkind* filter_array)
 {
     filter_array[0] = Limit;
-    if (o->t == eKey)
+    if (o->t == eKey || o->t == eName)
     {
         filter_array[0] = pdf_filter_find(o->value.k);
         filter_array[1] = Limit;
@@ -671,3 +683,322 @@ pdf_filter_to_string(pdf_filterkind k)
     }
     return s;
 }
+
+struct aes_state_s
+{
+    void *ctx; // openssl-CTX holder
+    char  buf[PDF_FILTER_BUF_SIZE], *ptr, *end;
+    int   eof;
+};
+
+
+pdf_err
+pdf_filter_aes_close(pdf_filter *f)
+{
+    if (f)
+    {
+        struct aes_state_s *s = f->state;
+        if (s)
+        {
+            if (s->ctx)
+                pdf_aes_close(s->ctx);
+            s->ctx = 0;
+            pdf_free(s);
+            f->state = 0;
+        }
+        if (f->data)
+            pdf_free(f->data);
+
+        pdf_free(f);
+     }
+    return pdf_ok;
+}
+
+
+static int
+pdf_filter_aes_write(pdf_filter *f, unsigned char *ibuf, int request, int *written)
+{
+    // aes writes to filter's internal buffer
+    if (f && f->data)
+    {
+        memcpy(f->buf, f->data, 16);
+        // iv
+        pdf_free(f->data);
+        f->data = 0;
+        *written = 0;
+        return 16;
+    }
+    *written = request;
+    return pdf_aes_write(f->state, ibuf, f->buf, request);
+}
+
+static
+pdf_err
+pdf_filter_aes_e_close(pdf_filter *f, int flag)
+{
+    if (f && f->state)
+    {
+        pdf_aes_close(f->state);
+    }
+    return pdf_ok;
+}
+
+static
+pdf_err
+pdf_filter_aes_e_flush(pdf_filter *f, char *buf, int *len)
+{
+    if (f->eof)
+    {
+        *len = 0;
+        return pdf_ok;
+    }
+    *len = pdf_aes_flush(f->state, buf);
+    f->eof = 1;
+    return pdf_ok;
+}
+
+pdf_err
+pdf_filter_aes_e_new(pdf_filter **f, int n, int g, void *priv)
+{
+    pdfcrypto_priv *crypto = (pdfcrypto_priv *)priv;
+    char final_key[256];
+    void *ctx;
+    unsigned char iv[16];
+    unsigned int *piv = (unsigned int*)iv;
+
+    piv[0] = rand();
+    piv[1] = rand();
+    piv[2] = rand();
+    piv[3] = rand();
+
+    *f = pdf_malloc(sizeof(pdf_filter));
+    if (!(*f))
+        return pdf_mem_err;
+    (*f)->state = priv;
+
+    pdf_crypto_obj_key_compute(crypto, n, g, final_key, crypto_key_len(crypto)/8);
+
+    ctx = pdf_aes_e_new(final_key, crypto_key_len(crypto), iv);
+    (*f)->state = (void*) ctx;
+    (*f)->close = pdf_filter_aes_e_close;
+    (*f)->read = pdf_filter_aes_read;
+    (*f)->write = pdf_filter_aes_write;
+    (*f)->flush = pdf_filter_aes_e_flush;
+    (*f)->ptr = (*f)->buf;
+    (*f)->eof = 0;
+    (*f)->data = pdf_malloc(16); // iv
+    memcpy((*f)->data, iv, 16);
+
+    return pdf_ok;
+}
+
+
+pdf_err
+pdf_filter_rc4_e_new(pdf_filter **f, int n, int g, void *priv)
+{
+    pdfcrypto_priv *crypto = (pdfcrypto_priv *)priv;
+    *f = pdf_malloc(sizeof(pdf_filter));
+    if (!(*f))
+        return pdf_mem_err;
+    (*f)->state = priv;
+    return pdf_ok;
+}
+
+
+struct rc4_state_s
+{
+    void *ctx; // openssl-CTX holder
+    char buf[PDF_FILTER_BUF_SIZE], *ptr, *end;
+};
+
+static int
+pdf_filter_aes_read(pdf_filter *f, unsigned char *obuf, int request)
+{
+    pdf_filter *up;
+    int tmplen = 0, l;
+    int max_request = PDF_FILTER_BUF_SIZE - 16; // seems buffer overflows(16 byte) from vpaes_cbc_encrypt
+
+    int e, req = request;
+    struct aes_state_s *s;
+
+    if (!f)
+        return 0;
+    s = (struct aes_state_s *)f->state;
+
+    if (s->ptr != s->end)
+    {
+        if (s->end - s->ptr < request)
+        {
+            int rd = s->end - s->ptr;
+            memcpy(obuf, s->ptr, rd);
+            s->ptr = s->end;
+            return rd;
+        }
+        else
+        {
+            memcpy(obuf, s->ptr, request);
+            s->ptr += request;
+            return request;
+        }
+    }
+
+    assert(s->ptr == s->end);
+    s->ptr = s->buf; // reset buffer ptr
+
+    up = f->next; // upstream
+    // read upstream
+  update_next:
+    if (request <= 16)
+    {
+	    l = (up->read)(up, f->ptr, 16);
+    }
+    else
+    {
+	    l = (up->read)(up, f->ptr, (request < max_request)?request:max_request);
+    }
+
+    if (l == 0)
+    {
+        if (!s->eof)
+        {
+            l = pdf_aes_final_read(s->ctx, s->buf, PDF_FILTER_BUF_SIZE);
+            assert(l <= PDF_FILTER_BUF_SIZE);
+            if (l < request)
+            {
+                memcpy(obuf, s->buf, l);
+                request = l;
+            }
+            else
+            {
+                memcpy(obuf, s->buf, request);
+                s->ptr = s->buf + request;
+                s->end = s->buf + l;
+            }
+            s->eof = 1;
+        }
+        else
+            return 0;
+    }
+    else
+    {
+        l = pdf_aes_read(s->ctx, f->ptr, s->buf, l);
+        if (l == 0)
+            goto update_next;
+        if (l <= request)
+        {
+            memcpy(obuf, s->buf, l);
+            s->ptr = s->end;
+            return l;
+        }
+        else
+        {
+            memcpy(obuf, s->buf, request);
+            s->end = s->buf + l;
+            s->ptr += request;
+        }
+    }
+
+    return request;
+}
+// pdf arc4 cipher
+static
+pdf_err
+pdf_filter_arc4_close(pdf_filter *f, int flag)
+{
+    struct rc4_state_s *s;
+    s = (struct rc4_state_s *)f->state;
+
+    if (s)
+    {
+        pdf_arc4_close(s->ctx, flag);
+        pdf_free(s);
+    }
+
+    pdf_free(f);
+    return pdf_ok;
+}
+
+static
+int
+pdf_filter_arc4_read(pdf_filter *f, unsigned char *obuf, int request)
+{
+    int         l;
+    pdf_filter *up;
+    struct rc4_state_s *s;
+
+    s = (struct rc4_state_s *)f->state;
+
+    up = f->next; // upstream
+
+    l = (up->read)(up, f->ptr, (request < PDF_FILTER_BUF_SIZE)?request:PDF_FILTER_BUF_SIZE);
+
+    return pdf_arc4_read(s->ctx, f->ptr, obuf, l);
+
+}
+// iv: initializing vector
+pdf_filter *
+pdf_cryptofilter_new(pdfcrypto_priv *crypto, int num, int gen, unsigned char *iv)
+{
+    unsigned int n;
+    unsigned char key[256];
+    unsigned char final_key[256];
+    pdf_filter *f = (pdf_filter *)pdf_malloc(sizeof(pdf_filter));
+
+    if (!f)
+        return NULL;
+
+    memset(f, 0, sizeof(pdf_filter));
+
+    n = crypto_key_len(crypto)/8;
+
+    pdf_crypto_obj_key_compute(crypto, num, gen, final_key, n);
+
+    // max 16 bytes of key
+    if (n>16)
+        n = 16;
+
+    if (which_algo(crypto) == eRC4)
+    {
+        struct rc4_state_s *rc4;
+
+        rc4 = (struct rc4_state_s *)pdf_malloc(sizeof(struct rc4_state_s));
+        rc4->ctx = pdf_rc4_new(crypto_key_len(crypto), final_key);
+        rc4->end = rc4->buf + PDF_FILTER_BUF_SIZE;
+        rc4->ptr = rc4->end;
+        f->state = (void*) rc4;
+
+
+        f->state = (void*) rc4;
+        f->close = pdf_filter_arc4_close;
+        f->read = pdf_filter_arc4_read;
+        f->ptr = f->buf;
+    }
+    else if (which_algo(crypto) == eAESV2 && crypto_key_len(crypto) > 40)
+    {
+
+        struct aes_state_s *aes;
+
+        aes = (struct aes_state_s *)pdf_malloc(sizeof(struct aes_state_s));
+        aes->ctx = pdf_aes_new(crypto_key_len(crypto), final_key, iv);
+        aes->end = aes->buf + PDF_FILTER_BUF_SIZE;
+        aes->ptr = aes->end;
+        aes->eof = 0;
+        f->state = (void*) aes;
+
+        f->close = pdf_filter_aes_close;
+        f->read = pdf_filter_aes_read;
+        f->ptr = f->buf;
+    }
+    else
+    {
+        goto cf_fail;
+    }
+    return f;
+
+  cf_fail:
+    if (f)
+        pdf_free(f);
+    return NULL;
+
+}
+

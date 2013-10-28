@@ -35,6 +35,59 @@ pdf_string_new(char *s, int len)
     return o;
 }
 
+pdf_obj*
+pdf_hstring_new(char *s, int len)
+{
+    pdf_obj *o = pdf_string_new(s, len);
+    if (o)
+        o->t = eHexString;
+    return o;
+}
+// Helpers
+
+pdf_obj pdf_ref_to_obj(int n, int g)
+{
+    pdf_obj o;
+    o.t = eRef;
+    o.value.r.num = n;
+    o.value.r.gen = g;
+    return o;
+}
+
+pdf_obj* pdf_ref_to_obj_new(int n, int g)
+{
+    pdf_obj *o = pdf_malloc(sizeof(pdf_obj));
+    o->t = eRef;
+    o->value.r.num = n;
+    o->value.r.gen = g;
+    return o;
+}
+
+pdf_obj* pdf_int_to_obj(int i)
+{
+    pdf_obj *o = pdf_malloc(sizeof(pdf_obj));
+    o->t = eInt;
+    o->value.i = i;
+    return o;
+}
+
+pdf_obj pdf_key_to_obj(char *s)
+{
+    pdf_obj o;
+    o.t = eKey;
+    make_key(&o, s);
+    return o;
+}
+
+pdf_obj
+pdf_float_to_obj(float f)
+{
+    pdf_obj o;
+    o.t = eReal;
+    o.value.f = f;
+    return o;
+}
+
 
 pdf_obj*
 pdf_obj_full_copy(pdf_obj *o)

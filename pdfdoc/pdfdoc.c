@@ -457,6 +457,10 @@ pdf_err
 pdf_cf_load(pdf_encrypt* e, pdf_obj *o, char *name, pdfcrypto_priv **cf)
 {
     pdf_obj *a;
+    pdfcrypto_algorithm algo;
+    authevent event;
+    int len;
+
 
     *cf = 0;
     if (!o)
@@ -472,33 +476,30 @@ pdf_cf_load(pdf_encrypt* e, pdf_obj *o, char *name, pdfcrypto_priv **cf)
     if (!a)
         return pdf_ok;
     o = a;
-    *cf = pdf_malloc(sizeof(pdfcrypto_priv));
-    if (!*cf)
-        return pdf_mem_err;
-    memset(*cf, 0, sizeof(pdfcrypto_priv));
+
     a = pdf_dict_get(o, "CFM");
-    (*cf)->algo = eRC4;
+    algo = eRC4;
     if (a && obj_is_name(a))
     {
         if (strcmp(a->value.k, "V2") == 0)
         {
-            (*cf)->algo = eRC4;
+            algo = eRC4;
         }
         else if (strcmp(a->value.k, "None") == 0)
         {
-            (*cf)->algo = eNotBeUsed;
+            algo = eNotBeUsed;
         }
         else if (strcmp(a->value.k, "AESV2") == 0)
         {
-            (*cf)->algo = eAESV2;
+            algo = eAESV2;
         }
         else if (strcmp(a->value.k, "AESV3") == 0)
         {
-            (*cf)->algo = eAESV3;
+            algo = eAESV3;
         }
         else
         {
-            (*cf)->algo = eUnpublished;
+            algo = eUnpublished;
         }
     }
     a = pdf_dict_get(o, "AuthEvent");
@@ -506,19 +507,22 @@ pdf_cf_load(pdf_encrypt* e, pdf_obj *o, char *name, pdfcrypto_priv **cf)
     {
         if (strcmp(a->value.k, "EFOpen") == 0)
         {
-            (*cf)->event = eEFOpen;
+            event = eEFOpen;
         }
         else if (strcmp(a->value.k, "DocOpen") == 0)
         {
-            (*cf)->event = eDocOpen;
+            event = eDocOpen;
         }
     }
-    (*cf)->len = e->length;
+    len = e->length;
     a = pdf_dict_get(o, "Length");
     if (a && a->t == eInt)
     {
-        (*cf)->len = a->value.i*8;
+        len = a->value.i*8;
     }
+    *cf = pdfcrypto_new(algo, event, len);
+    if (!*cf)
+        return pdf_mem_err;
     return pdf_ok;
 }
 
@@ -724,7 +728,7 @@ pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
     // chain crypto filter
     if (crypto)
     {
-        if (crypto->algo == eAESV2)
+        if (which_algo(crypto) == eAESV2)
         {
             // need initial_vector
             unsigned char iv[16];
@@ -998,10 +1002,9 @@ pdf_authenticate_user_password(pdf_encrypt *encrypt, unsigned char id[16], unsig
         pwlen = strlen(pw);
     crypto = pdf_crypto_init(encrypt, id,
                              pw);
-    rev = crypto->rev;
+    rev = which_revision(crypto);
     // lazy authentication
-    pdf_crypto_calc_userpassword(crypto, id,
-                                 pw, pwlen,
+    pdf_compute_user_password(crypto, id,
                                  u);
     pdf_crypto_destroy(crypto);
     if (rev == 3 || rev == 4)
