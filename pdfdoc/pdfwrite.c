@@ -449,38 +449,123 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, int n, int g, pdf
             break;
         }
         case eString:
+        {
+            int c;
+            pdf_stream *out = f;
+            pdf_stream *encs = 0;
+            pdf_stream *sb = 0;
+
             pdf_stream_puts("(", f);
+
+            if (encrypto)
+            {
+
+                pdfcrypto_algorithm algo = which_algo(encrypto);
+                sb = pdf_stream_buffer_open();
+
+                if (algo == eRC4)
+                {
+                    encs = pdf_ostream_filtered_open(RC4Encrypt, n, g, encrypto);
+                }
+                else if (algo == eAESV2)
+                {
+                    encs = pdf_ostream_filtered_open(AESEncrypt, n, g, encrypto);
+                }
+
+                if (encs)
+                {
+                    pdf_stream_chain(encs, sb);
+                    out = encs;
+                }
+            }
+
             if (decrypto)
             {
                 pdf_stream *s = pdf_stream_load(o, decrypto, x->page_obj_buf[x->cur_idx], 0);
                 if (s)
                 {
-                    int c;
                     while ((c = pdf_stream_getchar(s)) != EOF)
-                        pdf_stream_putc(c, f);
+                        pdf_stream_putc(c, out);
                     pdf_stream_free(s, 1);
+
+                    pdf_stream_flush(out);
+                    if (sb)
+                    {
+                        pdf_stream_seekg(sb, 0, S_SEEK_BEG);
+                        while ((c = pdf_stream_getc(sb)) != EOF)
+                        {
+                            switch (c)
+                            {
+                                case ')':
+                                case '(':
+                                case '\\':
+                                    pdf_stream_putc('\\', f);
+                                    pdf_stream_putc(o->value.s.buf[i], f);
+                                    break;
+                                default:
+                                    pdf_stream_putc(o->value.s.buf[i], f);
+                                    break;
+                            }
+                        }
+                    }
                 }
             }
             else
             {
-                for (i = 0; i < o->value.s.len; i ++)
+                if (sb)
                 {
-                    switch(o->value.s.buf[i])
+                    // write to internal stream
+                    for (i = 0; i < o->value.s.len; i ++)
+                        pdf_stream_putc(o->value.s.buf[i], out);
+                    pdf_stream_flush(out);
+                    pdf_stream_seekg(sb, 0, S_SEEK_BEG);
+
+                    // write to final output
+                    while ((c = pdf_stream_getc(sb)) != EOF)
                     {
-                        case ')':
-                        case '(':
-                        case '\\':
-                            pdf_stream_putc('\\', f);
-                            pdf_stream_putc(o->value.s.buf[i], f);
-                        break;
-                        default:
-                            pdf_stream_putc(o->value.s.buf[i], f);
-                            break;
+                        switch (c)
+                        {
+                            case ')':
+                            case '(':
+                            case '\\':
+                                pdf_stream_putc('\\', f);
+                                pdf_stream_putc(c, f);
+                                break;
+                            default:
+                                pdf_stream_putc(c, f);
+                                break;
+                        }
+                    }
+
+                }
+                else
+                {
+                    for (i = 0; i < o->value.s.len; i ++)
+                    {
+                        switch(o->value.s.buf[i])
+                        {
+                            case ')':
+                            case '(':
+                            case '\\':
+                                pdf_stream_putc('\\', f);
+                                pdf_stream_putc(o->value.s.buf[i], out);
+                                break;
+                            default:
+                                pdf_stream_putc(o->value.s.buf[i], out);
+                                break;
+                        }
                     }
                 }
             }
+
             pdf_stream_putc(')', f);
+
+            if (encs)
+                pdf_stream_close(encs);
+            if (sb)
+                pdf_stream_close(sb);
             break;
+        }
 	    case eHexString:
             pdf_stream_puts("<", f);
             if (decrypto)

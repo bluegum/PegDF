@@ -65,7 +65,7 @@ pdf_stream_read(void *ptr, size_t size, pdf_stream *s)
     return s->read(ptr, size, s);
 }
 
-size_t
+int
 pdf_stream_getchar(pdf_stream *s)
 {
     unsigned char c;
