@@ -120,13 +120,15 @@ Tptr _tstc_insert(Tptr p, char *k, char *s, void *v)
 	    // expand kid
 	    if (!t->kid && *s == *ts)
 	    {
-            if (strcmp(s, ts) == 0)
+#if 1
+            if (strcmp(k, t->k) == 0)
             {
                 dict_entry_free(s, t->v, 0);
                 // replace value
                 t->v = v;
             }
             else
+#endif
             {
                 while (!t->kid && *ts && *s && *s==*t->s)
                 {

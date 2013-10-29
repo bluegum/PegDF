@@ -10,7 +10,6 @@
 #include "pdffont.h"
 #include "pdfdevice.h"
 #include "pdfinterp.h"
-#include "pdfhelper.h"
 #include "pdfoc.h"
 #include "pdfstream.h"
 
@@ -31,6 +30,19 @@ typedef struct pdf_trailer_s pdf_trailer;
 typedef struct pdf_extgstate_s pdf_extgstate;
 typedef struct pdf_prs_s pdf_prs;
 typedef enum pdf_annotation_type_e pdf_annotation_type;
+
+struct pdf_info_s
+{
+    pdf_obj *title;
+    pdf_obj *author;
+    pdf_obj *subject;
+    pdf_obj *keywords;
+    pdf_obj *creator;
+    pdf_obj *producer;
+    pdf_obj *trapped;
+    char *creationdate;
+    char *moddate;
+};
 
 struct pdf_mask_s
 {
@@ -158,7 +170,7 @@ struct pdf_prs_s
 struct pdf_page_s
 {
     pdf_obj *parent;
-    char *lastmodified;
+    char   *lastmodified;
     pdf_resources * resources;
     gs_rect mediabox;
     pdf_obj *cropbox;
@@ -167,29 +179,30 @@ struct pdf_page_s
     pdf_obj *artbox;
     pdf_obj *boxcolorinfo;
     pdf_obj *contents;
-    int rotate;
+    int      rotate;
     pdf_group *group;
     pdf_obj *thumb;
     pdf_obj *b;
-    float dur;
+    float    dur;
     pdf_obj *trans;
     pdf_annots *annots;
     pdf_obj *aa;
     pdf_obj *metadata;
     pdf_obj *pieceinfo;
-    int structparents;
+    int      structparents;
     pdf_obj *id;
-    float pz;
+    float    pz;
     pdf_obj *separationinfo;
     pdf_obj *tabs;
     pdf_obj *templateinstantiated;
     pdf_obj *pressteps;
-    float userunit;
+    float    userunit;
     pdf_obj *vp;
     // private
     pdf_stream *content_streams;
     pdf_prs sstk[32], *s; // Ought to be enough for g/G?
     pdf_interp_state* i;
+    pdf_obj  ref;
 };
 
 typedef enum pdf_pagemode_e pdf_pagemode;
@@ -366,5 +379,6 @@ extern void pdf_device_color_set(pdf_device *d, float *c, pdf_cspacetype cs, int
 extern void pdf_path_add(pdf_extgstate *gs, e_path_kind t, float a, float b, float c, float d, float e, float f);
 extern pdf_err pdf_path_paint(pdf_device *dev, pdf_extgstate *gs, int stroke, int even_odd);
 extern void pdf_update_brush(pdf_page *p);
+extern pdf_obj *pdf_info_create(pdf_info *);
 
 #endif

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <time.h>
 #include "dict.h"
 #include "pdftypes.h"
 #include "pdfindex.h"
@@ -44,9 +45,12 @@ pdf_err pdf_page_load(pdf_doc *doc, pdf_obj *o, pdf_page **page)
     pdf_obj *mediabox;
     pdf_obj *v;
 
+    if (o->t != eRef)
+        return pdf_syntax_err;
     *page = pdf_malloc(sizeof(pdf_page));
     p = *page;
     memset(p, 0, sizeof(pdf_page));
+    p->ref = *o;
     // parse tree dict
     p->parent = pdf_dict_get(o, "Parent");
     mediabox = pdf_dict_get(o, "MediaBox");
@@ -387,45 +391,64 @@ pdf_info_load(pdf_obj *o, pdf_info **info)
 
     i = *info;
     memset(*info, 0, sizeof(pdf_info));
-    a = pdf_dict_get(o, "Title");
-    if (a) {i->title = pdf_malloc(a->value.s.len+1); memcpy(i->title, a->value.s.buf, a->value.s.len); i->title[a->value.s.len] = 0;}
-    a = pdf_dict_get(o, "Author");
-    if (a) {i->author = pdf_malloc(a->value.s.len+1); memcpy(i->author, a->value.s.buf, a->value.s.len); i->author[a->value.s.len] = 0;}
-    a = pdf_dict_get(o, "Subject");
-    if (a) {i->subject = pdf_malloc(a->value.s.len+1); memcpy(i->subject, a->value.s.buf, a->value.s.len); i->subject[a->value.s.len] = 0;}
-    a =(pdf_obj*)pdf_dict_get(o, "Keywords");
-    if (a) {i->keywords = pdf_malloc(a->value.s.len+1); memcpy(i->keywords, a->value.s.buf, a->value.s.len); i->keywords[a->value.s.len] = 0;}
-    a = (pdf_obj*)pdf_dict_get(o, "Creator");
-    if (a) {i->creator = pdf_malloc(a->value.s.len+1); memcpy(i->creator, a->value.s.buf, a->value.s.len); i->creator[a->value.s.len] = 0;}
-    a = pdf_dict_get(o, "Producer");
-    if (a) {i->producer = pdf_malloc(a->value.s.len+1); memcpy(i->producer, a->value.s.buf, a->value.s.len); i->producer[a->value.s.len] = 0;}
+    if (a = pdf_dict_get(o, "Title"))
+    {
+        i->title = pdf_obj_full_copy(a);
+    }
+    if (a = pdf_dict_get(o, "Author"))
+    {
+        i->author = pdf_obj_full_copy(a);
+    }
+    if (a = pdf_dict_get(o, "Subject"))
+    {
+        i->subject = pdf_obj_full_copy(a);
+    }
+    if (a = (pdf_obj*)pdf_dict_get(o, "Keywords"))
+    {
+        i->keywords = pdf_obj_full_copy(a);
+    }
+    if (a = (pdf_obj*)pdf_dict_get(o, "Creator"))
+    {
+        i->creator = pdf_obj_full_copy(a);
+    }
+    if (a = pdf_dict_get(o, "Producer"))
+    {
+        i->producer = pdf_obj_full_copy(a);
+    }
+
     a = pdf_dict_get(o, "CreationDate");
     if (a) {i->creationdate = pdf_malloc(a->value.s.len+1); memcpy(i->creationdate, a->value.s.buf, a->value.s.len); i->creationdate[a->value.s.len] = 0;}
     a = pdf_dict_get(o, "ModDate");
     if (a) {i->moddate = pdf_malloc(a->value.s.len+1); memcpy(i->moddate, a->value.s.buf, a->value.s.len); i->moddate[a->value.s.len] = 0;}
-    a = pdf_dict_get(o, "Trapped");
-    i->trapped = UNknown;
-    if (a)
+    if (a = pdf_dict_get(o, "Trapped"))
     {
-        if (strcmp(a->value.k, "True") == 0)
-            i->trapped = TRue;
-        else if (strcmp(a->value.k, "False") == 0)
-            i->trapped = FAlse;
+        i->trapped = pdf_obj_full_copy(a);
     }
     return pdf_ok;
 }
 
 pdf_err pdf_info_print(pdf_info *info)
 {
-    if (info->title) printf("Title:%s\n", info->title);
-    if (info->author) printf("Auther:%s\n", info->author);
-    if (info->subject) printf("Subject:%s\n", info->subject);
-    if (info->keywords) printf("Keywords:%s\n", info->keywords);
-    if (info->creator) printf("Creator:%s\n", info->creator);
-    if (info->producer) printf("Producer:%s\n", info->producer);
-    if (info->creationdate) printf("CreationDate:%s\n", info->creationdate);
-    if (info->moddate) printf("ModDate:%s\n", info->moddate);
-    printf("Trapped:%s\n", info->trapped==TRue?"Yes":(info->trapped==FAlse)?"No":"Unknown");
+    if (info->title)
+        printf("Title:%s\n", info->title->value.s.buf);
+    if (info->author)
+        printf("Auther:%s\n", info->author->value.s.buf);
+    if (info->subject)
+        printf("Subject:%s\n", info->subject->value.s.buf);
+    if (info->keywords)
+        printf("Keywords:%s\n", info->keywords->value.s.buf);
+    if (info->creator)
+        printf("Creator:%s\n", info->creator->value.s.buf);
+    if (info->producer)
+        printf("Producer:%s\n", info->producer->value.s.buf);
+    if (info->creationdate)
+        printf("CreationDate:%s\n", info->creationdate);
+    if (info->moddate)
+        printf("ModDate:%s\n", info->moddate);
+    if (info->trapped)
+    {
+        printf("Trapped=??");
+    }
     return pdf_ok;
 }
 
@@ -434,6 +457,10 @@ pdf_err
 pdf_cf_load(pdf_encrypt* e, pdf_obj *o, char *name, pdfcrypto_priv **cf)
 {
     pdf_obj *a;
+    pdfcrypto_algorithm algo;
+    authevent event;
+    int len;
+
 
     *cf = 0;
     if (!o)
@@ -449,33 +476,30 @@ pdf_cf_load(pdf_encrypt* e, pdf_obj *o, char *name, pdfcrypto_priv **cf)
     if (!a)
         return pdf_ok;
     o = a;
-    *cf = pdf_malloc(sizeof(pdfcrypto_priv));
-    if (!*cf)
-        return pdf_mem_err;
-    memset(*cf, 0, sizeof(pdfcrypto_priv));
+
     a = pdf_dict_get(o, "CFM");
-    (*cf)->algo = eRC4;
+    algo = eRC4;
     if (a && obj_is_name(a))
     {
         if (strcmp(a->value.k, "V2") == 0)
         {
-            (*cf)->algo = eRC4;
+            algo = eRC4;
         }
         else if (strcmp(a->value.k, "None") == 0)
         {
-            (*cf)->algo = eNotBeUsed;
+            algo = eNotBeUsed;
         }
         else if (strcmp(a->value.k, "AESV2") == 0)
         {
-            (*cf)->algo = eAESV2;
+            algo = eAESV2;
         }
         else if (strcmp(a->value.k, "AESV3") == 0)
         {
-            (*cf)->algo = eAESV3;
+            algo = eAESV3;
         }
         else
         {
-            (*cf)->algo = eUnpublished;
+            algo = eUnpublished;
         }
     }
     a = pdf_dict_get(o, "AuthEvent");
@@ -483,19 +507,22 @@ pdf_cf_load(pdf_encrypt* e, pdf_obj *o, char *name, pdfcrypto_priv **cf)
     {
         if (strcmp(a->value.k, "EFOpen") == 0)
         {
-            (*cf)->event = eEFOpen;
+            event = eEFOpen;
         }
         else if (strcmp(a->value.k, "DocOpen") == 0)
         {
-            (*cf)->event = eDocOpen;
+            event = eDocOpen;
         }
     }
-    (*cf)->len = e->length;
+    len = e->length;
     a = pdf_dict_get(o, "Length");
     if (a && a->t == eInt)
     {
-        (*cf)->len = a->value.i*8;
+        len = a->value.i*8;
     }
+    *cf = pdfcrypto_new(algo, event, len);
+    if (!*cf)
+        return pdf_mem_err;
     return pdf_ok;
 }
 
@@ -701,7 +728,7 @@ pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
     // chain crypto filter
     if (crypto)
     {
-        if (crypto->algo == eAESV2)
+        if (which_algo(crypto) == eAESV2)
         {
             // need initial_vector
             unsigned char iv[16];
@@ -752,49 +779,11 @@ pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
         {
             break;
         }
-        if (strcmp(xx->value.k, "FlateDecode") == 0)
+        t = pdf_filter_find(xx->value.k);
+        if (t == Limit)
         {
-            t = FlateDecode;
-        }
-        else if (strcmp(xx->value.k, "ASCIIHexDecode") == 0)
-        {
-            t = ASCIIHexDecode;
-        }
-        else if (strcmp(xx->value.k, "ASCII85Decode") == 0)
-        {
-            t = ASCII85Decode;
-        }
-        else if (strcmp(xx->value.k, "LZWDecode") == 0)
-        {
-            t = LZWDecode;
-        }
-        else if (strcmp(xx->value.k, "RunLengthDecode") == 0)
-        {
-            t = RunLengthDecode;
-        }
-        else if (strcmp(xx->value.k, "CCITTFaxDecode") == 0)
-        {
-            t = CCITTFaxDecode;
-        }
-        else if (strcmp(xx->value.k, "JBIG2Decode") == 0)
-        {
-            t = JBIG2Decode;
-        }
-        else if (strcmp(xx->value.k, "DCTDecode") == 0)
-        {
-            t = DCTDecode;
-        }
-        else if (strcmp(xx->value.k, "JPXDecode") == 0)
-        {
-            t = JPXDecode;
-        }
-        else if (strcmp(xx->value.k, "Crypt") == 0)
-        {
-            t = Crypt;
-        }
-        else
-        {
-            t = Raw;
+            fprintf(stderr, "Unkown filter type: %s\n", xx->value.k);
+            continue;
         }
         // make the filter
         switch (t)
@@ -824,6 +813,7 @@ pdf_stream_load(pdf_obj* o, pdfcrypto_priv *crypto, int numobj, int numgen)
                 }
                 break;
             default:
+                fprintf(stderr, "filter type: %s is not implemented\n", xx->value.k);
                 break;
         }
     }
@@ -1012,10 +1002,9 @@ pdf_authenticate_user_password(pdf_encrypt *encrypt, unsigned char id[16], unsig
         pwlen = strlen(pw);
     crypto = pdf_crypto_init(encrypt, id,
                              pw);
-    rev = crypto->rev;
+    rev = which_revision(crypto);
     // lazy authentication
-    pdf_crypto_calc_userpassword(crypto, id,
-                                 pw, pwlen,
+    pdf_compute_user_password(crypto, id,
                                  u);
     pdf_crypto_destroy(crypto);
     if (rev == 3 || rev == 4)
@@ -1081,12 +1070,41 @@ pdf_info_free(pdf_info *info)
 {
     if (!info)
         return;
-    if (info->title)  pdf_free(info->title);
-    if (info->author)  pdf_free(info->author);
-    if (info->subject)  pdf_free(info->subject);
-    if (info->keywords)  pdf_free(info->keywords);
-    if (info->creator)  pdf_free(info->creator);
-    if (info->producer)  pdf_free(info->producer);
+    if (info->title)
+    {
+        pdf_obj_delete(info->title);
+        free(info->title);
+    }
+    if (info->author)
+    {
+        pdf_obj_delete(info->author);
+        pdf_free(info->author);
+    }
+    if (info->subject)
+    {
+        pdf_obj_delete(info->subject);
+        pdf_free(info->subject);
+    }
+    if (info->keywords)
+    {
+        pdf_obj_delete(info->keywords);
+        pdf_free(info->keywords);
+    }
+    if (info->creator)
+    {
+        pdf_obj_delete(info->creator);
+        pdf_free(info->creator);
+    }
+    if (info->producer)
+    {
+        pdf_obj_delete(info->producer);
+        pdf_free(info->producer);
+    }
+    if (info->trapped)
+    {
+        pdf_obj_delete(info->trapped);
+        pdf_free(info->trapped);
+    }
     if (info->creationdate) pdf_free(info->creationdate);
     if (info->moddate)  pdf_free(info->moddate);
 }
@@ -1228,3 +1246,136 @@ pdf_update_brush(pdf_page *p)
 int
 pdf_doc_page_count(pdf_doc *doc)
 {return doc->count;}
+
+
+void
+pdf_id_create(char *filename, int filesize, pdf_obj *info, char *out)
+{
+    int i;
+    char msg[2048];
+    char buf[256];
+
+    msg[0] = 0;
+    buf[0] = 0;
+
+    sprintf(buf, "%d", time(0));
+    strcat(msg, buf);
+    strcat(msg, filename);
+    sprintf(buf, "%d", filesize);
+    strcat(msg, buf);
+
+    if (info && info->t == eDict)
+    {
+        void info_concat_string(char *k, void *val, void *b)
+        {
+            dict_entry *e = (dict_entry*) val;
+            pdf_obj *o = e->v;
+            if (o->t == eString)
+            {
+                strncat(b, o->value.s.buf, o->value.s.len);
+            }
+        }
+
+        dict_each(info->value.d.dict, info_concat_string, msg);
+    }
+    pdf_digest_md5(msg, strlen(msg), out);
+
+}
+
+pdf_obj *
+pdf_datestring_create()
+{
+    time_t     t;
+    struct tm *tmp;
+    char       buf[128];
+
+    t = time(0);
+    tmp = localtime(&t);
+    if (tmp)
+    {
+        strftime(buf, 128, "D:%G%m%d%H%M%S%z00", tmp);
+        return pdf_string_new(buf, strlen(buf));
+    }
+    return 0;
+}
+
+pdf_obj *
+pdf_info_create(pdf_info *i)
+{
+    pdf_obj *o = pdf_dict_new(0);
+    dict *d;
+    char buf[128];
+    pdf_obj *date_obj;
+
+    if (!o)
+        return 0;
+
+    d = o->value.d.dict;
+
+    if (i && i->title)
+    {
+        pdf_dict_insert_obj(d, "Title", i->title);
+    }
+    if (i && i->author)
+    {
+        pdf_dict_insert_obj(d, "Author", i->author);
+    }
+    if (i && i->subject)
+    {
+        pdf_dict_insert_obj(d, "Subject", i->subject);
+    }
+    if (i && i->keywords)
+    {
+        pdf_dict_insert_obj(d, "Keywords", i->keywords);
+    }
+
+    if (!i || !i->producer)
+    {
+        pdf_dict_insert_string(d, "Producer", "PegDF", strlen("PegDF"));
+    }
+    else
+    {
+        pdf_dict_insert_obj(d, "Producer", i->producer);
+    }
+    if (!i || !i->creator)
+    {
+        pdf_dict_insert_string(d, "Creator", "PegDF", strlen("PegDF"));
+    }
+    else
+    {
+        pdf_dict_insert_obj(d, "Creator", i->creator);
+    }
+
+    date_obj = pdf_datestring_create();
+
+    if (!i || !i->creationdate)
+    {
+        if (date_obj)
+            pdf_dict_insert_obj(d, "CreationDate", date_obj);
+    }
+    else
+    {
+        pdf_dict_insert_string(d, "CreationDate", i->creationdate, strlen(i->creationdate));
+    }
+
+    if (date_obj)
+    {
+        pdf_dict_insert_obj(d, "ModDate", date_obj);
+    }
+
+    if (date_obj)
+    {
+        pdf_obj_delete(date_obj);
+        pdf_free(date_obj);
+    }
+
+    if (i && i->trapped)
+    {
+        pdf_dict_insert_obj(d, "Trapped", i->trapped);
+    }
+
+    return o;
+
+}
+
+

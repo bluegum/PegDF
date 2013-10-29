@@ -230,8 +230,22 @@ dict_entry_copy(char *k, void *v, void *a)
     dict_entry *e = (dict_entry *)v;
     pdf_obj *val;
     char *p;
+
     val = pdf_malloc(sizeof(pdf_obj));
     *val = *(pdf_obj*)(e->v);
+    switch (((pdf_obj*)(e->v))->t)
+    {
+        case eDict:
+            val->value.d.dict = dict_copy(((pdf_obj*)(e->v))->value.d.dict);
+            break;
+        case eName:
+        case eString:
+        case eHexString:
+        case eArray:
+            break;
+        default:
+            break;
+    }
     if (pdf_keyword_find(e->k, strlen(e->k)))
     {
         p = e->k;
@@ -241,6 +255,7 @@ dict_entry_copy(char *k, void *v, void *a)
         p = pdf_malloc(strlen(e->k)+1);
         strcpy(p, e->k);
     }
+
     dict_insert((dict*)a, p, val);
 }
 
@@ -410,51 +425,6 @@ dict_entries(dict *d)
     return d->n;
 }
 
-// Helpers
-
-pdf_obj pdf_ref_to_obj(int n, int g)
-{
-    pdf_obj o;
-    o.t = eRef;
-    o.value.r.num = n;
-    o.value.r.gen = g;
-    return o;
-}
-
-pdf_obj* pdf_ref_to_obj_new(int n, int g)
-{
-    pdf_obj *o = pdf_malloc(sizeof(pdf_obj));
-    o->t = eRef;
-    o->value.r.num = n;
-    o->value.r.gen = g;
-    return o;
-}
-
-pdf_obj* pdf_int_to_obj(int i)
-{
-    pdf_obj *o = pdf_malloc(sizeof(pdf_obj));
-    o->t = eInt;
-    o->value.i = i;
-    return o;
-}
-
-pdf_obj pdf_key_to_obj(char *s)
-{
-    pdf_obj o;
-    o.t = eKey;
-    make_key(&o, s);
-    return o;
-}
-
-pdf_obj
-pdf_float_to_obj(float f)
-{
-    pdf_obj o;
-    o.t = eReal;
-    o.value.f = f;
-    return o;
-}
-
 void
 pdf_dict_insert_int(dict *d, char *k, int v)
 {
@@ -486,11 +456,46 @@ pdf_dict_insert_name(dict *d, char *k, char *n)
     dict_insert(d, key.value.k, (void*)val);
 }
 
-pdf_obj *
-pdf_dict_new(int n)
+void
+pdf_dict_insert_string(dict *d, char *k, char *s, int n)
 {
-    pdf_obj *o = pdf_malloc(sizeof(pdf_obj));
-    o->t = eDict;
-    o->value.d.dict = dict_new(n);
-    return o;
+    pdf_obj *val;
+    pdf_obj key = pdf_key_to_obj(k);
+
+    val = pdf_string_new(s, n);
+    dict_insert(d, key.value.k, (void*)val);
+}
+
+void
+pdf_dict_insert_hstring(dict *d, char *k, char *s, int n)
+{
+    pdf_obj *val;
+    pdf_obj key = pdf_key_to_obj(k);
+
+    val = pdf_string_new(s, n);
+    val->t = eHexString;
+    dict_insert(d, key.value.k, (void*)val);
+}
+
+
+void
+pdf_dict_insert_obj(dict *d, char *k, pdf_obj* o)
+{
+    pdf_obj key = pdf_key_to_obj(k);
+
+    dict_insert(d, key.value.k, (void*)pdf_obj_full_copy(o));
+}
+
+
+void
+dict_each(dict *d, void (*call()), void *a)
+{
+    if (d && d->dict)
+    {
+#ifdef TSTC
+	    tstc_call(d->dict, 0, call, a);
+#else
+	    tst_traverse(d->dict, call, a);
+#endif
+    }
 }

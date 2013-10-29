@@ -14,6 +14,7 @@ SRCS_$(d)	:= pdfdoc.c pdfpage.c pdfcatalog.c pdffilter.c pdfcontentstream.c pdfc
 		pdfcolorspace.c pdfwrite.c pdffont.c pdfencodingtable.c pdfcmap.c pdfdevice.c pdfdevicetxt.c \
 		pdfoc.c pdfstream.c \
 		lzw_decomp.c \
+	    pdfobj.c \
 		pdfdevicehtml.c pdfpaint.c gxdraw.c $(GLYPH_NAME_TO_UNI)
 
 OBJS_$(d)	:= $(addprefix $(OBJ_DIR)/, $(SRCS_$(d):%.c=%.o))

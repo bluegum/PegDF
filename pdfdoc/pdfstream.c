@@ -507,13 +507,13 @@ pdf_istream_filtered_open(pdf_filterkind f)
 
 
 static size_t
-pdf_ostream_filtered_write(void *ptr, size_t size, pdf_stream *sf)
+pdf_ostream_filtered_write(char *ptr, size_t size, pdf_stream *sf)
 {
     pdf_stream_filtered *s = (pdf_stream_filtered*)sf;
     pdf_filter *f = s->filter;
-    int osize;
+    int osize, written, ret = size;
 
-    osize = f->write(f, ptr, size);
+    osize = f->write(f, ptr, size, &written);
     if (!osize)
         return size;
     if (s->next)
@@ -521,14 +521,16 @@ pdf_ostream_filtered_write(void *ptr, size_t size, pdf_stream *sf)
 
     do
     {
-        osize = f->write(f, 0, 0);
+        size -= written;
+        osize = f->write(f, ptr + written, size, &written);
         if (osize && s->next)
         {
             pdf_stream_write(f->buf, osize, s->next);
         }
     }
     while (osize);
-    return size;
+
+    return ret;
 }
 
 static int
@@ -539,6 +541,7 @@ pdf_ostream_filtered_close(pdf_stream *sf)
 
     f->close(f, 0);
     pdf_free(f);
+    s->filter = 0;
     return 0;
 }
 
@@ -560,11 +563,13 @@ pdf_ostream_filtered_flush(pdf_stream *sf)
     }
     while (remain);
 
+    pdf_stream_flush(s->next);
+
     return 0;
 }
 
 pdf_stream*
-pdf_ostream_filtered_open(pdf_filterkind f)
+pdf_ostream_filtered_open(pdf_filterkind f, int n, int g, void *priv)
 {
     pdf_stream_filtered *s;
     pdf_filter *filt;
@@ -588,8 +593,27 @@ pdf_ostream_filtered_open(pdf_filterkind f)
             s->filter = filt;
             break;
         case RC4Encrypt:
+            if (pdf_filter_rc4_e_new(&filt, n, g, priv) != pdf_ok)
+            {
+                pdf_free(s);
+                s = 0;
+            }
+            else
+            {
+                s->filter = filt;
+            }
+            break;
             break;
         case AESEncrypt:
+            if (pdf_filter_aes_e_new(&filt, n, g, priv) != pdf_ok)
+            {
+                pdf_free(s);
+                s = 0;
+            }
+            else
+            {
+                s->filter = filt;
+            }
             break;
         default:
             break;

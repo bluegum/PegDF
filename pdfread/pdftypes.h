@@ -49,6 +49,7 @@ typedef enum pdf_error_e
     pdf_file_err,
     pdf_trailer_err,
     pdf_op_err,
+    pdf_not_ok,
     pdf_unknown
 } pdf_err;
 
@@ -270,6 +271,7 @@ extern pdf_obj  pdf_float_to_obj(float f);
 extern void pdf_dict_insert_int(dict *d, char *k, int v);
 extern void pdf_dict_insert_ref(dict *d, char *k, int n, int g);
 extern void pdf_dict_insert_name(dict *d, char *k, char *n);
+extern pdf_obj *pdf_string_new(char *s, int len);
 
 static inline pdf_obj* pdf_obj_copy(pdf_obj *o)
 {
