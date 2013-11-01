@@ -25,8 +25,8 @@
 #include "pdftypes.h"
 #include "pdfindex.h"
 #include "dict.h"
-#include "pdffilter.h"
 #include "pdfread.h"
+#include "pdffilter.h"
 
 extern pdf_parser *parser_inst;
 

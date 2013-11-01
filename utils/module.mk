@@ -1,6 +1,6 @@
 APP        += $(addprefix $(BIN_DIR)/, readpdf picker pedal)
 d	       := utils
-HEADERS    := include/pdf.h pdfdoc/pdfdoc.h
+HEADERS    := include/pdf.h src/pdfdoc.h
 
 $(OBJ_DIR)/%.o: $(d)/%.c
 

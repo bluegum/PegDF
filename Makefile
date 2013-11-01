@@ -1,6 +1,6 @@
 ### Build flags for all targets
 #
-INCLUDE_ALL     = -I . -I include -I pdfdraw -I pdfdoc -I pdfread -I openssl/include -I openssl/include/openssl -I openssl -I zlib
+INCLUDE_ALL     = -I . -I include -I pdfdraw -I src -I pdfread -I openssl/include -I openssl/include/openssl -I openssl -I zlib
 CF_ALL          = -Wall -I . $(INCLUDE_ALL)
 LF_ALL          = -lm -lcrypto -L openssl -ldl
 LL_ALL          =
@@ -28,7 +28,7 @@ COMPLINK        = $(CC) $(CF_ALL) $(CF_TGT) $(LF_ALL) $(LF_TGT) -o $@ $< $(LL_TG
 ARCHIVE         = $(AR) $(ARFLAGS) $@ $^
 MAKE            = make
 #
-vpath %.h . pdfdoc zlib
+vpath %.h . src zlib
 #
 OBJ_DIR         = obj
 DEPS_DIR        = deps

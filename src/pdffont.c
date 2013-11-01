@@ -267,7 +267,7 @@ pdf_encoding_load(pdf_obj *a, pdf_font_encoding* e)
                             break;
                     }
                 }
-			
+
             }
 	    }
     }
