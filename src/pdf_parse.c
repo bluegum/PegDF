@@ -40,7 +40,7 @@ extern pdf_parser *parser_inst;
             result= (EOF == c) ? 0 : (*(buf)= c, 1);    \
       }
 
-#include "pdfread/pdf.c"
+#include "pdf.c"
 
 void parser_free()
 {

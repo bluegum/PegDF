@@ -1,7 +1,7 @@
 ### Build flags for all targets
 #
-INCLUDE_ALL     = -I . -I include -I pdfdraw -I src -I pdfread -I openssl/include -I openssl/include/openssl -I openssl -I zlib
-CF_ALL          = -Wall -I . $(INCLUDE_ALL)
+INCLUDE_ALL     = -I . -I include -I pdfdraw -I src -I openssl/include -I openssl/include/openssl -I openssl -I zlib
+CF_ALL          = -Wall -fPIC -I . $(INCLUDE_ALL)
 LF_ALL          = -lm -lcrypto -L openssl -ldl
 LL_ALL          =
 OPENSSL_DEBUG   =

@@ -77,7 +77,7 @@ struct hint_s
 typedef struct trailer_s trailer;
 struct trailer_s
 {
-      pdf_obj root; 
+      pdf_obj root;
       int is_xrefstm;
       trailer *next;
 };
