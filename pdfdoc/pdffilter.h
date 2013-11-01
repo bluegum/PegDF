@@ -55,5 +55,6 @@ extern void pdf_filter_str_to_enum(pdf_obj *o, pdf_filterkind* filter_array);
 extern const char* pdf_filter_to_string(pdf_filterkind k);
 extern pdf_err pdf_filter_rc4_e_new(pdf_filter **f, int n, int g, void *priv);
 extern pdf_err pdf_filter_aes_e_new(pdf_filter **f, int n, int g, void *priv);
+extern pdf_filter* pdf_rawfilter_new(sub_stream *ss);
 
 #endif

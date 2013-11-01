@@ -43,7 +43,6 @@ extern size_t pdf_stream_putc(char c, pdf_stream *s);
 extern size_t pdf_stream_write(void *ptr, size_t size, pdf_stream *s);
 extern size_t pdf_stream_read(void *ptr, size_t size, pdf_stream *s);
 extern size_t pdf_stream_buffer_size(pdf_stream*);
-extern int    pdf_stream_getchar(pdf_stream *s);
 extern int    pdf_stream_seekg(pdf_stream *s, int offset, int way);
 extern int    pdf_stream_seekp(pdf_stream *s, int offset, int way);
 extern int    pdf_stream_tell(pdf_stream*);
@@ -55,5 +54,8 @@ extern pdf_stream* pdf_stream_file_open(char *);
 extern pdf_stream* pdf_istream_filted_open(pdf_filterkind);
 extern pdf_stream* pdf_ostream_filted_open(pdf_filterkind, void *);
 extern pdf_stream* pdf_stream_buffer_open();
+extern pdf_err pdf_stream_free(pdf_stream *s, int flag); // flag: for in_mem stream, 1 to free
+pdf_stream*
+pdf_istream_filtered_load(pdf_obj* o, void *crypto, int numobj, int numgen);
 
 #endif

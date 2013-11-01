@@ -2,6 +2,7 @@
 #include <math.h>
 #include "pdftypes.h"
 #include "gsdraw.h"
+#include "pdfread.h"
 #include "pdffilter.h"
 #include "pdfdoc.h"
 #include "pdfdevice.h"

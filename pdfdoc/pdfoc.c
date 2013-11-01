@@ -1,5 +1,5 @@
 #include "pdfoc.h"
-#include "pdf_priv.h"
+#include "pdfhelper.h"
 
 pdf_ocproperties *
 pdf_ocproperties_load(pdf_obj *oc)

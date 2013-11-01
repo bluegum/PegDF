@@ -4,6 +4,7 @@
 #include <search.h>
 #include "pdftypes.h"
 #include "pdfindex.h"
+#include "pdfread.h"
 #include "pdffilter.h"
 #include "pdfdoc.h"
 #include "pdffont.h"
@@ -240,7 +241,7 @@ pdf_cmap_tounicode_parse(pdf_obj *cmap, pdf_font *f, pdfcrypto_priv* encrypt)
 	    return;
       if (cmap->t != eRef)
 	    return;
-      s = pdf_stream_load(cmap, encrypt, cmap->value.r.num, cmap->value.r.gen);
+      s = pdf_istream_filtered_load(cmap, encrypt, cmap->value.r.num, cmap->value.r.gen);
       if (!s)
 	    return;
       f->tounicode = 0;

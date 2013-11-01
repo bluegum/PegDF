@@ -10,11 +10,11 @@
 #include "bplustree.h"
 #include "dict.h"
 #include "pdf.h"
+#include "pdfread.h"
 #include "pdffilter.h"
 #include "pdfindex.h"
 #include "pdfdoc.h"
-#include "pdfread.h"
-#include "pdf_priv.h"
+#include "pdfhelper.h"
 #include "pdfstream.h"
 
 #define MARK_BLACK -1
@@ -481,10 +481,10 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, int n, int g, pdf
 
             if (decrypto)
             {
-                pdf_stream *s = pdf_stream_load(o, decrypto, x->page_obj_buf[x->cur_idx], 0);
+                pdf_stream *s = pdf_istream_filtered_load(o, decrypto, x->page_obj_buf[x->cur_idx], 0);
                 if (s)
                 {
-                    while ((c = pdf_stream_getchar(s)) != EOF)
+                    while ((c = pdf_stream_getc(s)) != EOF)
                         pdf_stream_putc(c, out);
                     pdf_stream_free(s, 1);
 
@@ -570,11 +570,11 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, int n, int g, pdf
             pdf_stream_puts("<", f);
             if (decrypto)
             {
-                pdf_stream *s = pdf_stream_load(o, decrypto, x->page_obj_buf[x->cur_idx], 0);
+                pdf_stream *s = pdf_istream_filtered_load(o, decrypto, x->page_obj_buf[x->cur_idx], 0);
                 if (s)
                 {
                     int c;
-                    while ((c = pdf_stream_getchar(s)) != EOF)
+                    while ((c = pdf_stream_getc(s)) != EOF)
                     {
                         pdf_stream_puth((byte)c, f);
                     }
@@ -691,7 +691,7 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, int n, int g, pdf
                     obj = ss->obj;
                     gen = ss->gen;
                 }
-                s = pdf_stream_load(o, decrypto, obj, gen);
+                s = pdf_istream_filtered_load(o, decrypto, obj, gen);
                 if (s)
                 {
                     int i = 0;
@@ -699,7 +699,7 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, int n, int g, pdf
                     unsigned char buf[1024], *ptr = buf, *lim;
                     lim = ptr + 1024;
                     //
-                    while ((c = pdf_stream_getchar(s)) != EOF)
+                    while ((c = pdf_stream_getc(s)) != EOF)
                     {
                         if (ptr >= lim)
                         {

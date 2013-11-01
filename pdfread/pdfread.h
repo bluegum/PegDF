@@ -167,5 +167,5 @@ extern void init_filestream_parser_instance(pdf_parser *p);
 #endif
 ////////////////////////////////
 extern void parse_finish();
-extern pdf_filter* pdf_rawfilter_new(sub_stream *ss);
+
 #endif

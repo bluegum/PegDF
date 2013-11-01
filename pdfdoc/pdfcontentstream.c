@@ -6,11 +6,12 @@
 #include "pdftypes.h"
 #include "pdfmem.h"
 #include "pdfindex.h"
+#include "pdfread.h"
 #include "pdffilter.h"
 #include "pdfdoc.h"
 #include "pdfcmds.h"
 #include "dict.h"
-#include "pdf_priv.h"
+#include "pdfhelper.h"
 
 extern const char * pdf_keyword_find (register const char *str, register unsigned int len);
 
@@ -145,7 +146,7 @@ s_get_char(buffer_stream *s)
                         int num = s->content->value.a.items[s->i].value.r.num;
                         int gen = s->content->value.a.items[s->i].value.r.gen;
                         pdf_stream *ss;
-                        ss = pdf_stream_load(&s->content->value.a.items[s->i], s->encrypt, num, gen);
+                        ss = pdf_istream_filtered_load(&s->content->value.a.items[s->i], s->encrypt, num, gen);
                         s->s = ss;
                         if (ss->length == 0)
                             goto next_filt;
@@ -214,7 +215,7 @@ s_buffer_stream_open(pdf_obj *contents, pdfcrypto_priv * encrypt, pdf_stream *ss
     s = pdf_malloc(sizeof(buffer_stream));
     if (!s)
         return 0;
-    ss = pdf_stream_load(cs, encrypt, num, gen);
+    ss = pdf_istream_filtered_load(cs, encrypt, num, gen);
 
     if (!ss)
     {

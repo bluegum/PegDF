@@ -1,7 +1,11 @@
 #include <stdio.h>
 #include <string.h>
 #include "pdftypes.h"
+#include "dict.h"
+#include "pdfread.h"
 #include "pdfstream.h"
+#include "pdfcrypto.h"
+#include "pdfhelper.h"
 
 // super class functions in wrappers
 
@@ -66,23 +70,10 @@ pdf_stream_read(void *ptr, size_t size, pdf_stream *s)
 }
 
 int
-pdf_stream_getchar(pdf_stream *s)
-{
-    unsigned char c;
-    if ((s->ffilter->read)(s->ffilter, &c, 1) == 0)
-        return EOF;
-    else
-        return c;
-}
-
-int
 pdf_stream_close(pdf_stream *s)
 {
     int stat;
-#if 0
-    if (s->next)
-        stat = pdf_stream_close(s->next);
-#endif
+
     stat = s->close(s);
     pdf_free(s);
     return stat;
@@ -492,20 +483,6 @@ typedef struct pdf_stream_filtered_s
 } pdf_stream_filtered;
 
 
-static int
-pdf_istream_filtered_close(pdf_stream *sf)
-{
-    pdf_stream_filtered *s = (pdf_stream_filtered*)sf;
-    return 0;
-}
-
-pdf_stream*
-pdf_istream_filtered_open(pdf_filterkind f)
-{
-    return 0;
-}
-
-
 static size_t
 pdf_ostream_filtered_write(char *ptr, size_t size, pdf_stream *sf)
 {
@@ -621,3 +598,248 @@ pdf_ostream_filtered_open(pdf_filterkind f, int n, int g, void *priv)
 
     return (pdf_stream*)s;
 }
+
+
+
+static int
+pdf_istream_filtered_close(pdf_stream *sf)
+{
+    pdf_stream_filtered *s = (pdf_stream_filtered*)sf;
+    return 0;
+}
+
+//
+// Filtered Input Stream
+//
+
+
+static int
+pdf_istream_filtered_getc(pdf_stream *s)
+{
+    unsigned char c = EOF;
+
+    if (s->ffilter)
+    {
+        if ((s->ffilter->read)(s->ffilter, &c, 1) == 0)
+            return EOF;
+    }
+    return c;
+}
+
+static size_t
+pdf_istream_filtered_read(void *ptr, size_t size, pdf_stream *fs)
+{
+    if (!fs)
+        return 0;
+
+    return (fs->ffilter->read)(fs->ffilter, ptr, size);
+}
+
+static size_t
+pdf_istream_filtered_write(void *ptr, size_t size, pdf_stream *s)
+{
+    return 0;
+}
+
+static int
+pdf_istream_filtered_tell(pdf_stream *s)
+{
+    return 0;
+}
+
+pdf_stream*
+pdf_istream_filtered_open(pdf_filterkind f)
+{
+    return 0;
+}
+
+
+pdf_stream*
+pdf_istream_filtered_load(pdf_obj* o, void *crypto, int numobj, int numgen)
+{
+    pdf_filter *last = NULL, *raw = NULL, *crypt = NULL;
+    pdf_stream *s = 0;
+    sub_stream *ss;
+    pdf_obj *x, *xx;
+    int m, mm;
+
+
+    if (o && o->t == eRef) {
+        numobj = o->value.r.num;
+        numgen = o->value.r.gen;
+    }
+    else if (o->t != eDict) {
+        return NULL;
+    }
+    pdf_obj_resolve(o);
+    if (!o) {
+        return NULL;
+    }
+    // fill stream info
+    if (o->t == eDict)
+    {
+        int length;
+        pdf_obj *len_obj = pdf_dict_get(o, "Length");
+        if (!len_obj)
+        {
+            fprintf(stderr, "%s\n", "Invalid stream.");
+            return NULL;
+        }
+        length = pdf_to_int(len_obj);
+        s = pdf_malloc(sizeof(pdf_stream));
+        if (!s)
+            goto fail;
+        memset(s, 0, sizeof(pdf_stream));
+        s->length = length;
+        if (length == 0)
+        { // zero lenght stream, just return
+            return s;
+        }
+        // make raw filter
+        /// internal struct. raw stream object
+        ss = o->value.d.dict->stream;
+        if (!ss)
+            goto fail;
+        ss->len = s->length;
+    }
+    else if (o->t == eString)
+    {
+        s = pdf_malloc(sizeof(pdf_stream));
+        if (!s)
+            goto fail;
+        memset(s, 0, sizeof(pdf_stream));
+        s->length = o->value.s.len;
+        // make string raw filter
+        ss = string_stream_new(o->value.s.buf, 0, o->value.s.len, 0, 0);
+    }
+    else
+        goto fail;
+
+    raw = pdf_rawfilter_new(ss);
+    // chain crypto filter
+    if (crypto)
+    {
+        if (which_algo(crypto) == eAESV2)
+        {
+            // need initial_vector
+            unsigned char iv[16];
+            int n;
+            n = (raw->read)(raw, iv, 16);
+            crypt = pdf_cryptofilter_new(crypto, numobj, numgen, iv);
+        }
+        else
+        {
+            crypt = pdf_cryptofilter_new(crypto, numobj, numgen, NULL);
+        }
+        if (!crypt)
+            goto fail;
+        crypt->next = raw;
+    }
+    if (o->t == eString)
+    {
+        last = (crypt)?crypt:raw;
+        goto done;
+    }
+
+    // chain the rest
+    x = pdf_dict_get(o, "Filter");
+    last = (crypt)?crypt:raw;
+    if (!x)
+    {
+        goto done;
+    }
+    else
+    {
+        if (x->t == eArray)
+        {
+            mm = x->value.a.len;
+            xx = x->value.a.items;
+        }
+        else if (obj_is_name(x))
+        {
+            mm = 1;
+            xx = x;
+        }
+    }
+
+    for (m = 0; m < mm; m++, xx++)
+    {
+        pdf_filterkind t = Raw;
+        pdf_filter *f;
+        if (!obj_is_name(xx))
+        {
+            break;
+        }
+        t = pdf_filter_find(xx->value.k);
+        if (t == Limit)
+        {
+            fprintf(stderr, "Unkown filter type: %s\n", xx->value.k);
+            continue;
+        }
+        // make the filter
+        switch (t)
+        {
+            case FlateDecode:
+            case ASCII85Decode:
+            case LZWDecode:
+                f = pdf_filter_new(t, last);
+                if (!f)
+                {
+                    if (s)
+                        pdf_free(s);
+                    if (crypt)
+                        PDF_FILTER_CLOSE(crypt, 0); // do not free in_mem stream
+                    return NULL;
+                }
+                // train them
+                if (!last)
+                {
+                    last = f;
+                    s->ffilter = f;
+                }
+                else
+                {
+                    f->next = last;
+                    last = f;
+                }
+                break;
+            default:
+                fprintf(stderr, "filter type: %s is not implemented\n", xx->value.k);
+                break;
+        }
+    }
+  done:
+    s->ffilter = last;
+    s->close = pdf_istream_filtered_close;
+    s->write = pdf_istream_filtered_write;
+    s->read  = pdf_istream_filtered_read;
+    s->getc  = pdf_istream_filtered_getc;
+    s->tell  = pdf_istream_filtered_tell;
+    s->flush = pdf_stream_base_flush;
+    s->seekp = pdf_stream_base_seekp;
+    s->seekg = pdf_stream_base_seekg;
+
+    return s;
+  fail:
+    if (s)
+        pdf_free(s);
+    if (raw)
+        raw->close(raw, 1);
+    return NULL;
+}
+
+
+pdf_err
+pdf_stream_free(pdf_stream *s, int flag)
+{
+    pdf_filter *f;
+    if (!s)
+        return pdf_ok;
+    if (s->length) {
+        f = s->ffilter;
+        PDF_FILTER_CLOSE(f, flag);
+    }
+    pdf_free(s);
+    return pdf_ok;
+}
+

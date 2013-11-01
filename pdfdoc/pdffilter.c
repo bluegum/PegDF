@@ -4,9 +4,9 @@
 #include "zlib.h"
 #include "pdftypes.h"
 #include "pdfmem.h"
+#include "pdfread.h"
 #include "pdffilter.h"
 #include "pdfdoc.h"
-#include "pdfread.h"
 #include "lzw_decomp.h"
 
 static int pdf_filter_aes_read(pdf_filter *f, unsigned char *obuf, int request);
@@ -924,6 +924,7 @@ pdf_filter_arc4_read(pdf_filter *f, unsigned char *obuf, int request)
     return pdf_rc4_read(s->ctx, f->ptr, obuf, l);
 
 }
+
 // iv: initializing vector
 pdf_filter *
 pdf_cryptofilter_new(pdfcrypto_priv *crypto, int num, int gen, unsigned char *iv)

@@ -1,14 +1,14 @@
 #include <stdio.h>
 #include <assert.h>
 #include "pdftypes.h"
+#include "pdfread.h" // for _DMSG
 #include "pdffilter.h"
 #include "pdfdoc.h"
 #include "pdfindex.h"
 #include "pdfcmds.h"
 #include "gsdraw.h"
 #include "pdffont.h"
-#include "pdfread.h" // for _DMSG
-#include "pdf_priv.h"
+#include "pdfhelper.h"
 
 pdf_err
 x_colorspace(pdf_page *p, pdf_obj o, int pen)

@@ -2,9 +2,10 @@
 #include "pdftypes.h"
 #include "pdfindex.h"
 #include "gsdraw.h"
+#include "pdfread.h"
 #include "pdffilter.h"
 #include "pdfdoc.h"
-#include "pdf_priv.h"
+#include "pdfhelper.h"
 
 #define pdf_to_name(o) (o).value.k
 pdf_err

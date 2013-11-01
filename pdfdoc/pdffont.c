@@ -2,13 +2,14 @@
 #include "pdftypes.h"
 #include "pdfindex.h"
 #include "dict.h"
+#include "pdfread.h"
 #include "pdffilter.h"
 #include "pdffont.h"
 #include "pdfencodingtable.c"
 #include "glyph_name_to_uni.c"
 #include "pdfcrypto.h"
 #include "pdfdoc.h"
-#include "pdf_priv.h"
+#include "pdfhelper.h"
 
 static const char * get_glyph_name(pdf_font_encoding *e, unsigned int c);
 static unsigned int get_cid_simple(unsigned char *c, unsigned int *cid) { *cid = c[0];return 1; }

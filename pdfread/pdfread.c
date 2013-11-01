@@ -25,6 +25,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "pdftypes.h"
+#include "pdfread.h"
 #include "pdfindex.h"
 #include "dict.h"
 #include "pdffilter.h"
@@ -33,8 +34,7 @@
 #include "pdfdoc.h"
 #include "pdfmem.h"
 #include "pdfcrypto.h"
-#include "pdfread.h"
-#include "pdf_priv.h"
+#include "pdfhelper.h"
 #include "pdf.h"
 
 extern const char * pdf_keyword_find (register const char *str, register unsigned int len);
@@ -802,7 +802,7 @@ int  lex_positive_int(pdf_stream *s, int *o)
     int i=0;
     while (1)
     {
-        c = pdf_stream_getchar(s);
+        c = pdf_stream_getc(s);
         if (c == EOF)
             break;
         if (c == ' ')
@@ -815,7 +815,7 @@ int  lex_positive_int(pdf_stream *s, int *o)
     i = c - '0';
     while (1)
     {
-        c = pdf_stream_getchar(s);
+        c = pdf_stream_getc(s);
         if (c == EOF)
             break;
         if (c >= '0' && c <= '9')
@@ -861,7 +861,7 @@ objstream_read(pdf_obj *o, int num, int gen, pdfcrypto_priv *crypto)
 
     objs = pdf_malloc(sizeof(*objs)*n);
     // construct filter chain and stream interface
-    s = pdf_stream_load(o, crypto, num, gen);
+    s = pdf_istream_filtered_load(o, crypto, num, gen);
     if (!s)
         goto fail1;
     // construct parser
@@ -908,7 +908,7 @@ objstream_read(pdf_obj *o, int num, int gen, pdfcrypto_priv *crypto)
         ll1 = strlen(p);
         p += strlen(p);
         for (j = 0; j < len; j++)
-            *p++ = pdf_stream_getchar(s);
+            *p++ = pdf_stream_getc(s);
         sprintf(p, " %s", "endobj\n");
         ll2 = strlen(p);
         parser_inst->oneobj = buf;
@@ -933,7 +933,7 @@ objstream_read(pdf_obj *o, int num, int gen, pdfcrypto_priv *crypto)
         p += strlen(p);
         while(1)
         {
-            cc = pdf_stream_getchar(s);
+            cc = pdf_stream_getc(s);
             if (cc == EOF)
                 break;
             // else

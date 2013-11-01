@@ -2,16 +2,17 @@
 #define PDFDOC_H
 
 #include "pdf.h"
+#include "pdfread.h"
 #include "pdfmem.h"
 #include "gsdraw.h"
 #include "pdfresource.h"
 #include "pdffilter.h"
+#include "pdfstream.h"
 #include "pdfcrypto.h"
 #include "pdffont.h"
 #include "pdfdevice.h"
 #include "pdfinterp.h"
 #include "pdfoc.h"
-#include "pdfstream.h"
 
 typedef struct pdf_page_s pdf_page;
 //typedef struct pdf_doc_s pdf_doc;
@@ -353,10 +354,6 @@ extern pdf_err pdf_info_print(pdf_info *info);
 extern pdf_resources* pdf_resources_load(pdf_obj *o);
 extern pdf_extgstate* pdf_extgstate_load(pdf_obj *o);
 extern pdf_annots* pdf_annots_load(pdf_obj* o);
-extern pdf_stream* pdf_streams_load(pdf_obj* o);
-extern pdf_err pdf_streams_free(pdf_stream* s);
-extern pdf_stream* pdf_stream_load(pdf_obj* o, pdfcrypto_priv*, int, int);
-extern pdf_err pdf_stream_free(pdf_stream *s, int flag); // flag: for in_mem stream, 1 to free
 extern pdf_err pdf_annots_free(pdf_annots *a);
 extern pdf_err pdf_resources_free(pdf_resources*);
 extern pdf_err pdf_extgstate_free(pdf_extgstate*);
