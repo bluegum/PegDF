@@ -1,6 +1,7 @@
 ### Build flags for all targets
 #
-INCLUDE_ALL     = -I . -I include -I pdfdraw -I src -I openssl/include -I openssl/include/openssl -I openssl -I zlib
+PKGS_DIR       := pkgs
+INCLUDE_ALL     = -I . -I include -I src -I $(PKGS_DIR)/openssl/include -I $(PKGS_DIR)/openssl/include/openssl -I $(PKGS_DIR)/openssl -I $(PKGS_DIR)/pkgs/zlib
 CF_ALL          = -Wall -fPIC -I . $(INCLUDE_ALL)
 LF_ALL          = -lm -lcrypto -L openssl -ldl
 LL_ALL          =
@@ -28,14 +29,14 @@ COMPLINK        = $(CC) $(CF_ALL) $(CF_TGT) $(LF_ALL) $(LF_TGT) -o $@ $< $(LL_TG
 ARCHIVE         = $(AR) $(ARFLAGS) $@ $^
 MAKE            = make
 #
-vpath %.h . src zlib
+vpath           %.h . src pkgs/zlib
 #
 OBJ_DIR         = obj
 DEPS_DIR        = deps
 BIN_DIR         = bin
 INSTALL_DIR     = /usr/local/bin
 # GLOBALS TARGETS
-LIB_CRYPTO      = openssl/libcrypto.a
+LIB_CRYPTO      = pkgs/openssl/libcrypto.a
 TGT_LIB	        =
 APP             =
 CLEAN           =
@@ -66,13 +67,13 @@ test	:	$(APP)
 	@if [ "$$?" -eq 0 ] ; then echo "passed test"; else echo "failed test"; fi
 
 ## openssl/libcrypto.a
-$(LIB_CRYPTO) :  openssl/include/openssl/evp.h
-	@cd openssl; ./config $(OPENSSL_DEBUG); $(MAKE) build_crypto; cd ..;
-openssl/include/openssl/evp.h :
+$(LIB_CRYPTO) :  $(PKGS_DIR)/openssl/include/openssl/evp.h
+	@cd $(PKGS_DIR)/openssl; ./config $(OPENSSL_DEBUG); $(MAKE) build_crypto; cd ..;
+$(PKGS_DIR)/openssl/include/openssl/evp.h :
 	@cd openssl; ./config $(OPENSSL_DEBUG); $(MAKE) build_crypto; cd ..;
 
 realclean : clean
-	- @cd openssl; if test -e Makefile ; then $(MAKE) clean; rm -f Makefile; rm crypto/opensslconf.h; rm include/openssl/evp.h; fi; cd ..;
+	- @cd $(PKGS_DIR)/openssl; if test -e Makefile ; then $(MAKE) clean; rm -f Makefile; rm crypto/opensslconf.h; rm include/openssl/evp.h; fi; cd ..;
 	- @rm $(GLYPH_NAME_TO_UNI) $(LIB_CRYTO)
 	- @rm $(PKG_CLEAN)
 	$(MAKE) -C peg spotless

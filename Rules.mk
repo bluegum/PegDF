@@ -16,8 +16,6 @@ $(BIN_DIR) :
 # Subdirectories, in random order
 
 include         src/module.mk
-include         pdfdraw/module.mk
-include         zlib/module.mk
 include         utils/module.mk
 include         pkgs/module.mk
 
