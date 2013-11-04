@@ -18,7 +18,7 @@ SRCS_$(d)	:= pdfdoc.c pdfpage.c pdfcatalog.c pdffilter.c pdfcontentstream.c pdfc
 		pdfoc.c pdfstream.c \
 		lzw_decomp.c \
 	    pdfobj.c \
-		pdfdevicehtml.c pdfpaint.c gxdraw.c $(GLYPH_NAME_TO_UNI) \
+		pdfdevicehtml.c pdfpaint.c gxdraw.c \
 		\
 		pdfread.c bplustree.c dict.c tst.c tst_compact.c pdfindex.c pdfmem.c substream.c $(KEYWORDS_HASH)
 

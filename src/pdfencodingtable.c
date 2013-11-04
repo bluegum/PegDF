@@ -8,7 +8,7 @@
 
 //#include <config.h>
 #include <stdlib.h>
-//#include "FontEncodingTables.h"
+#include "pdfencodingtables.h"
 
 const char *mac_roman_encoding[256] = {
   NULL,

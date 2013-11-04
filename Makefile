@@ -6,7 +6,7 @@ CF_ALL          = -Wall -fPIC -I . $(INCLUDE_ALL)
 LF_ALL          = -lm -lcrypto -L openssl -ldl
 LL_ALL          =
 OPENSSL_DEBUG   =
-INSTALL = /usr/bin/install -c
+INSTALL         = /usr/bin/install -c
 ifeq	"$(YYDEBUG)" "y"
 	CF_ALL += -DYY_DEBUG
 endif
@@ -41,7 +41,7 @@ TGT_LIB	        =
 APP             =
 CLEAN           =
 PKG_CLEAN       =
-
+SHAREDOBJ       = libpegdf.so
 COMMON_HEADERS := *.h
 #######
 
@@ -77,10 +77,13 @@ realclean : clean
 	- @rm $(GLYPH_NAME_TO_UNI) $(LIB_CRYTO)
 	- @rm $(PKG_CLEAN)
 	$(MAKE) -C peg spotless
+
 .PHONY    : all
-all       :  $(APP)
+
+all       : $(APP) $(OBJ_DIR)/$(SHAREDOBJ)
 
 .PHONY    : install
+
 $(INSTALL_DIR)/% : $(BIN_DIR)/%
 	cp -p $< $@
 	strip $@
@@ -88,4 +91,10 @@ $(INSTALL_DIR)/% : $(BIN_DIR)/%
 install   : $(INSTALL_DIR)/picker $(INSTALL_DIR)/pedal $(INSTALL_DIR)/readpdf
 
 check-syntax:
-	gcc -o nul -S ${CHK_SOURCES}
+	$(CC) -o nul -S ${CHK_SOURCES}
+
+
+$(OBJ_DIR)/$(SHAREDOBJ) : $(TGT_LIB)
+	@echo -n "Making shared object: "
+	@echo $<
+	$(CC) -shared -o $@ -Wl,--whole-archive $^ -Wl,--no-whole-archive

@@ -5,7 +5,7 @@
 #include "pdfread.h"
 #include "pdffilter.h"
 #include "pdffont.h"
-#include "pdfencodingtable.c"
+#include "pdfencodingtables.h"
 #include "glyph_name_to_uni.c"
 #include "pdfcrypto.h"
 #include "pdfdoc.h"
