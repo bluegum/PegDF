@@ -31,6 +31,7 @@ MAKE            = make
 #
 vpath           %.h . src pkgs/zlib
 #
+SHAREDOBJ       = libpegdf.so
 OBJ_DIR         = obj
 DEPS_DIR        = deps
 BIN_DIR         = bin
@@ -39,9 +40,8 @@ INSTALL_DIR     = /usr/local/bin
 LIB_CRYPTO      = pkgs/openssl/libcrypto.a
 TGT_LIB	        =
 APP             =
-CLEAN           =
+CLEAN           = $(OBJ_DIR)/$(SHAREDOBJ)
 PKG_CLEAN       =
-SHAREDOBJ       = libpegdf.so
 COMMON_HEADERS := *.h
 #######
 
@@ -94,7 +94,7 @@ check-syntax:
 	$(CC) -o nul -S ${CHK_SOURCES}
 
 
-$(OBJ_DIR)/$(SHAREDOBJ) : $(TGT_LIB)
+$(OBJ_DIR)/$(SHAREDOBJ) : $(TGT_LIB) $(LIB_CRYPTO)
 	@echo -n "Making shared object: "
 	@echo $<
-	$(CC) -shared -o $@ -Wl,--whole-archive $^ -Wl,--no-whole-archive
+	$(CC) -shared -o $@ -Wl,--whole-archive $(TGT_LIB) -Wl,--no-whole-archive $(LIB_CRYPTO)
