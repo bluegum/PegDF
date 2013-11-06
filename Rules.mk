@@ -15,10 +15,7 @@ $(BIN_DIR) :
 
 # Subdirectories, in random order
 
-include         pdfread/module.mk
-include         pdfdoc/module.mk
-include         pdfdraw/module.mk
-include         zlib/module.mk
+include         src/module.mk
 include         utils/module.mk
 include         pkgs/module.mk
 
@@ -42,7 +39,7 @@ $(BIN_DIR)/% : $(OBJ_DIR)/%.o $(TGT_LIB) $(LIB_CRYPTO) | $(BIN_DIR)
 # Per directory rules
 $(OBJ_DIR)/%.o : utils/%.c | $(OBJ_DIR)
 	$(CC) -c $(INCLUDE_ALL) -o $@ $< $(CF_ALL)
-$(OBJ_DIR)/%.o : pdfread/%.c | $(OBJ_DIR)
+$(OBJ_DIR)/%.o : src/%.c | $(OBJ_DIR)
 	echo $(CF_ALL)
 	$(CC) -c $(INCLUDE_ALL) -o $@ $< $(CF_ALL)
 

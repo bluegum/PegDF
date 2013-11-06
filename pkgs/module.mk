@@ -25,3 +25,5 @@ $(LIBOPENJPEG) :
 	cd ../..
 
 PKG_CLEAN := $(PKGCLEAN) $(LIBJPEG) $(LIBOPENJPEG)
+
+include         pkgs/zlib/module.mk

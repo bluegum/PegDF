@@ -1,6 +1,6 @@
 APP        += $(addprefix $(BIN_DIR)/, readpdf picker pedal)
 d	       := utils
-HEADERS    := include/pdf.h pdfdoc/pdfdoc.h
+HEADERS    := include/pdf.h src/pdfdoc.h
 
 $(OBJ_DIR)/%.o: $(d)/%.c
 
@@ -12,7 +12,7 @@ $(BIN_DIR)/readpdf : $(OBJ_DIR)/readpdf.o  $(TGT_LIB)
 $(BIN_DIR)/picker  : $(OBJ_DIR)/picker.o  $(TGT_LIB)
 $(BIN_DIR)/pedal   : $(OBJ_DIR)/pedal.o  $(TGT_LIB)
 
-$(OBJ_DIR)/readpdf.o : pdfread/pdfread.h $(HEADERS)
+$(OBJ_DIR)/readpdf.o : src/pdfread.h $(HEADERS)
 $(OBJ_DIR)/picker.o  : $(HEADERS)
 $(OBJ_DIR)/pedal.o  : $(HEADERS)
 
