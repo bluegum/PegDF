@@ -112,6 +112,16 @@ pdf_obj_full_copy(pdf_obj *o)
             out->value.k = p;
             break;
         }
+        case eArray:
+            if (o->value.a.len)
+            {
+                out->value.a.items = pdf_malloc(sizeof(pdf_obj)*(o->value.a.len));
+                memcpy(out->value.a.items, o->value.a.items, (sizeof(pdf_obj)*(o->value.a.len)));
+            }
+            break;
+        case eDict:
+            out->value.d.dict = dict_copy(o->value.d.dict);
+            break;
         default:
             break;
     }

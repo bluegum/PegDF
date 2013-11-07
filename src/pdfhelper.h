@@ -70,7 +70,7 @@ pdf_to_name(pdf_obj *o)
     pdf_obj_resolve(o);
     if (!o || (o->t != eKey && o->t != eName))
         return 0;
-    return o->value.k;
+    return (char*)o->value.k;
 }
 
 static inline pdf_obj*
