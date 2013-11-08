@@ -75,5 +75,6 @@ extern void entry_no_free(void *e);
 extern void entry_name_free(void *e);
 extern dict* dict_copy(dict *d);
 extern void dict_each(dict *d, void (*call()), void *a);
+extern void pdf_dict_insert_string(dict *d, char *k, char *s, int n);
 
 #endif

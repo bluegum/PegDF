@@ -2,6 +2,7 @@
 #include <sys/types.h>
 #ifdef __unix__
 #include <unistd.h>
+#include <libgen.h>
 #endif
 #include <stdio.h>
 #include <string.h>
@@ -176,6 +177,7 @@ void
 pdf_catalog_write(pdf_doc *doc, pdf_xref_internal *x, pdf_stream *o, pdfcrypto_priv *decrypto, unsigned long flags)
 {
     pdf_obj tmp;
+    pdf_obj *ocptmp = 0;
     dict *d = dict_new(11);
 
     if (!d)
@@ -188,13 +190,29 @@ pdf_catalog_write(pdf_doc *doc, pdf_xref_internal *x, pdf_stream *o, pdfcrypto_p
     bpt_insert(x->entry, doc->root_ref, 2);
     bpt_insert(x->entry, 2, 2);
     bpt_insert(x->entry, 1, 1);
-#if 0
-    if (doc->pages_ref)
-        bpt_insert(x->entry, doc->pages_ref, 1);
-#endif
+
     if (doc->ocproperties && (flags & WRITE_CATALOG_OCPROPERTIES))
     {
-        pdf_obj_scan(doc->ocproperties->ocgs, x);
+        pdf_ocproperties *oc = doc->ocproperties;
+        if (doc->ocproperties->ocgs)
+            pdf_obj_scan(doc->ocproperties->ocgs, x);
+        if (doc->ocproperties->has_defaults)
+        {
+            if (oc->d.on)
+                pdf_obj_scan(oc->d.on, x);
+            if (oc->d.off)
+                pdf_obj_scan(oc->d.off, x);
+            if (oc->d.intent)
+                pdf_obj_scan(oc->d.intent, x);
+            if (oc->d.as)
+                pdf_obj_scan(oc->d.as, x);
+            if (oc->d.order)
+                pdf_obj_scan(oc->d.order, x);
+            if (oc->d.rbgroups)
+                pdf_obj_scan(oc->d.rbgroups, x);
+            if (oc->d.locked)
+                pdf_obj_scan(oc->d.locked, x);
+        }
     }
     if (doc->metadata && doc->metadata->t == eRef && (flags & WRITE_CATALOG_METADATA))
     {
@@ -275,8 +293,87 @@ pdf_catalog_write(pdf_doc *doc, pdf_xref_internal *x, pdf_stream *o, pdfcrypto_p
     }
     if (doc->ocproperties && (flags & WRITE_CATALOG_OCPROPERTIES))
     {
-        pdf_obj *t = pdf_obj_copy(doc->ocproperties);
-        dict_insert(d, "OCProperties", t);
+        if (doc->ocproperties->ocgs || doc->ocproperties->has_defaults || doc->ocproperties->configs)
+        {
+            pdf_ocproperties *ocp = doc->ocproperties;;
+            dict *d;
+            ocptmp = pdf_dict_new(1);
+            d = ocptmp->value.d.dict;
+            if (doc->ocproperties->ocgs)
+            {
+                dict_insert(d, "OCGs", pdf_obj_full_copy(doc->ocproperties->ocgs));
+            }
+            if (doc->ocproperties->has_defaults)
+            {
+                dict *df;
+                pdf_obj *dftmp = pdf_dict_new(1);
+                df = dftmp->value.d.dict;
+                if (ocp->d.name)
+                {
+                    dict_insert(df, "Name", ocp->d.name);
+                }
+                if (ocp->d.creator)
+                {
+                    dict_insert(df, "Creator", ocp->d.creator);
+                }
+                if (ocp->d.basestate)
+                {
+                    dict_insert(df, "BaseState", ocp->d.basestate);
+                }
+                if (ocp->d.on)
+                {
+                    dict_insert(df, "ON", pdf_obj_full_copy(ocp->d.on));
+                }
+                if (ocp->d.off)
+                {
+                    dict_insert(df, "OFF", pdf_obj_full_copy(ocp->d.off));
+                }
+                if (ocp->d.intent)
+                {
+                    if (ocp->d.intent->t == eArray)
+                        dict_insert(df, "Intent", pdf_obj_full_copy(ocp->d.intent));
+                    else
+                        dict_insert(df, "Intent", ocp->d.intent);
+                }
+#if 0
+                if (ocp->d.as)
+                {
+                    int i;
+                    pdf_obj *as_arr = pdf_obj_full_copy(ocp->d.as);
+                    for (i = 0; i < as_arr->value.a.len; i++)
+                    {
+                        pdf_obj *tt = pdf_obj_full_copy(&as_arr->value.a.items[i]);
+                        as_arr->value.a.items[i] = *tt;
+                    }
+                    dict_insert(df, "AS", as_arr);
+                }
+#endif
+                if (ocp->d.order)
+                {
+                    dict_insert(df, "Order", pdf_obj_full_copy(ocp->d.order));
+                }
+                if (ocp->d.listmode)
+                {
+                    dict_insert(df, "ListMode", ocp->d.listmode);
+                }
+                if (ocp->d.rbgroups)
+                {
+                    dict_insert(df, "RBGroups", pdf_obj_full_copy(ocp->d.rbgroups));
+                }
+                if (ocp->d.locked)
+                {
+                    dict_insert(df, "Locked", pdf_obj_full_copy(ocp->d.locked));
+                }
+                dict_insert(d, "D", dftmp);
+
+            }
+            // TODO: write /configs
+            // Reason not doing it now is those entries are not
+            // scanned, means not in the writer's object tree
+        }
+        if (ocptmp)
+            dict_insert(d, "OCProperties", ocptmp);
+
     }
     pdf_obj_full_write(&tmp, 2, 0, x, o, decrypto, 0);
     pdf_obj_delete(&tmp);
@@ -500,10 +597,10 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, int n, int g, pdf
                                 case '(':
                                 case '\\':
                                     pdf_stream_putc('\\', f);
-                                    pdf_stream_putc(o->value.s.buf[i], f);
+                                    pdf_stream_putc(c, f);
                                     break;
                                 default:
-                                    pdf_stream_putc(o->value.s.buf[i], f);
+                                    pdf_stream_putc(c, f);
                                     break;
                             }
                         }
@@ -1225,6 +1322,12 @@ pdf_page_obj_write(pdf_page *page, int pgidx, unsigned long write_flag, pdf_xref
 	    }
         dict_insert(d, "Contents", cont);
     }
+
+    if (page->rotate)
+    {
+        pdf_dict_insert_int(d, "Rotate", page->rotate);
+    }
+
     pdf_obj_full_write(tmp, x->xref->cur-1, 0, x, out, crypto, 0);
 
   error_content:
@@ -1509,7 +1612,6 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, pdf_writer_options *optio
         unsigned char idstring[16];
         char user_str[32], owner_str[32];
         pdfcrypto_priv *encrypto = 0;
-        int encrypt_num;
 
 
         s = pdf_stream_file_open(ofile);
@@ -1529,8 +1631,6 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, pdf_writer_options *optio
 
         if (options->encrypt == eRC4 || options->encrypt == eAESV2)
         {
-            pdf_stream *cipher_s = 0;
-
             encrypto = pdf_crypto_create(options->encrypt,
                                          4, // revision number
                                          16, // key length
@@ -1538,20 +1638,7 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, pdf_writer_options *optio
                                          idstring, owner_str, user_str
                 );
 
-#if 0
-            if (options->encrypt == eRC4)
-                encrypto->algo = eRC4;
-            else if (options->encrypt == eAESV2)
-                encrypto->algo = eAESV2;
-
-            if (cipher_s)
-            {
-                pdf_stream_chain(cipher_s, s);
-                s = cipher_s;
-            }
-#endif
         }
-
 
         pdf_magic_write(s, options);
 	    // scan pages

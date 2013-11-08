@@ -377,5 +377,6 @@ extern void pdf_path_add(pdf_extgstate *gs, e_path_kind t, float a, float b, flo
 extern pdf_err pdf_path_paint(pdf_device *dev, pdf_extgstate *gs, int stroke, int even_odd);
 extern void pdf_update_brush(pdf_page *p);
 extern pdf_obj *pdf_info_create(pdf_info *);
+extern void pdf_id_create(char *filename, int filesize, pdf_obj *info, char *out);
 
 #endif
