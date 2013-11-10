@@ -698,7 +698,7 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, int n, int g, pdf
             int filter_flag = 0;
             pdf_filterkind filter_array[16];
             int keep_orig = 0;
-
+            pdf_obj *filters = 0;
 
             filter_array[0] = Limit;
             if (strm)
@@ -721,6 +721,7 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, int n, int g, pdf
                 }
                 else if (l->key[0] == 'F' && strcmp(l->key, "Filter")==0 && strm)
                 {
+                    filters = &l->val;
                     pdf_filter_str_to_enum(&l->val, filter_array);
                     switch (filter_array[0])
                     {
@@ -823,7 +824,11 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, int n, int g, pdf
                     if (filter_flag || !inflate || keep_orig)
                     {
                         pdf_key_write("Filter", x, f, 0);
-                        pdf_stream_putc('[', f);
+                        if (inflate || filter_array[0] != Limit)
+                        {
+                            if (!(!inflate && filters->t == eKey && filter_array[0] == FlateDecode))
+                                pdf_stream_putc('[', f);
+                        }
                         if (!inflate)
                         {
                             pdf_key_write("FlateDecode", x, f, 0);
@@ -842,7 +847,11 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, int n, int g, pdf
                             }
                             i++;
                         }
-                        pdf_stream_putc(']', f);
+                        if (inflate || filter_array[0] != Limit)
+                        {
+                            if (!(!inflate && filters->t == eKey && filter_array[0] == FlateDecode))
+                                pdf_stream_putc(']', f);
+                        }
                     }
                     pdf_stream_puts(">> ", f);
                     // write out stream
@@ -960,10 +969,7 @@ pdf_page_contents_write(pdf_obj *content, unsigned long write_flag, pdf_xref_int
     {
         pdf_dict_insert_int(cobj->value.d.dict, "PEGDF_INFLATE_CONTENT", 1);
     }
-    else
-    {
-        pdf_dict_insert_name(cobj->value.d.dict, "Filter", "FlateDecode");
-    }
+
     pdf_obj_full_write(cobj, x->xref->cur, 0, x, out, crypto, encrypto);
     x->xref->offsets[x->xref->cur] = off;
     x->xref->cur++;
