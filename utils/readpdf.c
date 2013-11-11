@@ -333,7 +333,7 @@ int main(int argc, char **argv)
 	    if (inflate)
             wo.flags |= WRITE_PDF_CONTENT_INFLATE;
 	    if (doc->encrypt)
-            wo.flags |= WRITE_PDF_CONTENT_INFLATE;
+            wo.flags |= WRITE_PDF_DECIPHER;
 	    if (separation)
             wo.flags |= WRITE_PDF_PAGE_SEPARATION;
 	    if (outf)
