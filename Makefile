@@ -1,3 +1,6 @@
+# Environment
+DEBUG ?= 0
+
 ### Build flags for all targets
 #
 PKGS_DIR       := pkgs
@@ -7,19 +10,23 @@ LF_ALL          = -lm -lcrypto -L openssl -ldl
 LL_ALL          =
 OPENSSL_DEBUG   =
 INSTALL         = /usr/bin/install -c
+
 ifeq	"$(YYDEBUG)" "y"
 	CF_ALL += -DYY_DEBUG
 endif
+
 ifeq    "$(DEBUG_STM)" "y"
 	DEBUG := "y"
 endif
-ifeq	"$(DEBUG)" "y"
+
+ifeq	($(DEBUG), 1)
 	CF_ALL += -pg -g -DDEBUG
 	OPENSSL_DEBUG = -d
 	LF_ALL += -pg
 else
 	CF_ALL += -O3
 endif
+
 ### Build tools
 #
 CC              = gcc
@@ -52,7 +59,7 @@ all :
 # General dir rules
 include Rules.mk
 
-$(APP) : $(targets)
+#$(APP) : $(targets)
 
 
 test	:	$(APP)
@@ -98,3 +105,9 @@ $(OBJ_DIR)/$(SHAREDOBJ) : $(TGT_LIB) $(LIB_CRYPTO)
 	@echo -n "Making shared object: "
 	@echo $<
 	$(CC) -shared -o $@ -Wl,--whole-archive $(TGT_LIB) -Wl,--no-whole-archive $(LIB_CRYPTO)
+
+
+debug   : 	CF_ALL += -DDEBUG -pg -g
+debug   : 	OPENSSL_DEBUG = -d
+debug   : 	LF_ALL += -pg
+debug   :   $(APP)
