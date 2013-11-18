@@ -30,9 +30,11 @@
 
 extern pdf_parser *parser_inst;
 
-#define malloc pdf_malloc
-#define free pdf_free
-#define realloc pdf_realloc
+#ifdef DEBUG
+ #define malloc pdf_malloc
+ #define free pdf_free
+ #define realloc pdf_realloc
+#endif
 
 #define YY_INPUT(buf, result, max)                      \
       {                                                 \

@@ -726,6 +726,8 @@ pdf_obj_write(pdf_obj* o, pdf_xref_internal *x, pdf_stream *f, int n, int g, pdf
                     switch (filter_array[0])
                     {
                         case DCTDecode:
+                        case JPXDecode:
+                        case JBIG2Decode:
                             inflate = 1;
                             keep_orig = 1;
                             break;
