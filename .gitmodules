@@ -1,0 +1,3 @@
+[submodule "pkgs/openssl"]
+	path = pkgs/openssl
+	url = https://github.com/openssl/openssl
