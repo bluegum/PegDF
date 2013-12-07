@@ -3,6 +3,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 #include "pdftypes.h"
 
 typedef enum pdfcrypto_algorithm_e pdfcrypto_algorithm;
@@ -12,6 +13,8 @@ typedef enum pdfcrypto_algorithm_e pdfcrypto_algorithm;
 #define WRITE_PDF_CONTENT_INFLATE      0x10
 #define WRITE_PDF_DECIPHER             0x20
 #define WRITE_PDF_PAGE_SEPARATION      0x40
+#define WRITE_PDF_STREAM_INFLATE       0x80
+
 
 #define WRITE_CATALOG_ANNONTATION      0x01
 #define WRITE_CATALOG_STRUCTTREEROOT   0x02

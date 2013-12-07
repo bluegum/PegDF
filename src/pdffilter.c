@@ -338,6 +338,132 @@ pdf_rawfilter_write(pdf_filter *f, unsigned char *obuf, int request)
     return fwrite(obuf, 1, request, of);
 }
 
+///////////////////////////////////////////
+// ASCIIHexDecode
+///////////////////////////////////////////
+static int asciihex_class[] = {
+0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 0, 0, 3, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
+ 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+};
+
+static int asciihex_to_int[] =
+{
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 0, 0, 0, 0, 0,
+ 0, 10, 11, 12, 13, 14, 15,  0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 0, 10, 11, 12, 13, 14, 15,  0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+};
+
+
+pdf_err
+pdf_ahex_close(pdf_filter *f)
+{
+    if (!f)
+        return 0;
+    pdf_free(f);
+    return pdf_ok;
+}
+
+static int
+pdf_ahex_read(pdf_filter *f, unsigned char *obuf, int request)
+{
+    int len = request * 2;
+    pdf_filter *up = f->next;
+    int i, l, o, m = 0;
+
+    if (!up)
+        return 0;
+
+    if (len > PDF_FILTER_BUF_SIZE)
+        len = PDF_FILTER_BUF_SIZE;
+
+    l = (up->read)(up, f->buf, len);
+
+    if (l)
+    {
+        unsigned char *op = obuf;
+        int tmp;
+
+        o = 0;
+
+      do_more:
+        for (i= 0; i < l; i++)
+        {
+            if (asciihex_class[f->buf[i]] == 1)
+            {
+                if (o%2)
+                {
+                    *op++ = asciihex_to_int[f->buf[i]] + tmp;
+                }
+                else
+                {
+                    tmp = asciihex_to_int[f->buf[i]] << 4;
+                }
+                o++;
+            }
+            else if (asciihex_class[f->buf[i]] == 3)
+            {
+                // more to read
+                m++;
+            }
+            else
+            {
+                // error
+                // should produce error message
+                break;
+            }
+        }
+
+        if (m && (o%2))
+        {
+            l = (up->read)(up, f->buf, m);
+            m = 0;
+            goto do_more;
+        }
+    }
+
+    return o/2;
+}
+
+pdf_err
+pdf_ahex_new(pdf_filter **f)
+{
+    *f = pdf_malloc(sizeof(pdf_filter));
+    if (!(*f))
+        return pdf_mem_err;
+    memset(*f, 0, sizeof(pdf_filter));
+    (*f)->close = pdf_ahex_close;
+    (*f)->read = pdf_ahex_read;
+    (*f)->flush = pdf_filter_base_flush;
+    return pdf_ok;
+}
+
 /////////////////////////////////////////// ASCII85Decode
 struct pdf_a85d_s
 {
@@ -551,6 +677,9 @@ pdf_filter_new(pdf_filterkind t, pdf_filter* last)
     {
         case FlateDecode:
             pdf_flated_new(&f);
+            break;
+        case ASCIIHexDecode:
+            pdf_ahex_new(&f);
             break;
         case ASCII85Decode:
             pdf_a85d_new(&f);

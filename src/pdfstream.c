@@ -782,6 +782,7 @@ pdf_istream_filtered_load(pdf_obj* o, void *crypto, int numobj, int numgen)
             case FlateDecode:
             case ASCII85Decode:
             case LZWDecode:
+            case ASCIIHexDecode:
                 f = pdf_filter_new(t, last);
                 if (!f)
                 {

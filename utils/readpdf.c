@@ -52,10 +52,12 @@ Options:\n\
  -s : separate page\n\
  -c : compression method\n\
  -d : decompress content streams\n\
+ -d1: decompress all flate encoded streams\n\
  -e : encrypt output file\n\
  -O : new owner password\n\
  -U : new user password\n\
  -i : print file information\n\
+ --dd   : inflate all streams\n\
  --help : print this\n\
 \n\
 Example#1: to extract each and every page and write into a sequence of pdf files with inflated content stream,\n\
@@ -174,7 +176,7 @@ int main(int argc, char **argv)
 
     while (1)
     {
-        c = getopt_long(argc, argv, "idsc:e:p:x:O:U:",
+        c = getopt_long(argc, argv, "isd::c:e:p:x:O:U:",
                         long_options, &option_index);
         if (c == -1)
             break;
@@ -229,6 +231,8 @@ int main(int argc, char **argv)
                 break;
             case 'd':
                 inflate = 1;
+                if (optarg)
+                    inflate = atoi(optarg) + 1;
                 break;
             case 'i':
                 info = 1;
@@ -289,6 +293,9 @@ int main(int argc, char **argv)
         wo.nr = i;
         if (inflate)
             wo.flags |= WRITE_PDF_CONTENT_INFLATE;
+        if (inflate == 2)
+            wo.flags |= WRITE_PDF_STREAM_INFLATE;
+
         wo.compression = compression;
         wo.encrypt = encrypt;
         strncpy(wo.upass, upasswd, 32);
@@ -332,6 +339,8 @@ int main(int argc, char **argv)
         wo.flags = 0;
 	    if (inflate)
             wo.flags |= WRITE_PDF_CONTENT_INFLATE;
+        if (inflate == 2)
+            wo.flags |= WRITE_PDF_STREAM_INFLATE;
 	    if (doc->encrypt)
             wo.flags |= WRITE_PDF_DECIPHER;
 	    if (separation)

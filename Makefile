@@ -16,16 +16,15 @@ ifeq	"$(YYDEBUG)" "y"
 endif
 
 ifeq    "$(DEBUG_STM)" "y"
-	DEBUG := "y"
+	DEBUG := "1"
 endif
 
 ifeq	($(DEBUG), 1)
 	CF_ALL += -pg -g -DDEBUG
 	OPENSSL_DEBUG = -d
 	LF_ALL += -pg
-else
-	CF_ALL += -O3
 endif
+
 
 ### Build tools
 #
@@ -50,11 +49,16 @@ APP             =
 CLEAN           = $(OBJ_DIR)/$(SHAREDOBJ)
 PKG_CLEAN       =
 COMMON_HEADERS := *.h
+
 #######
 
-.PHONY : all realclean clean
+.PHONY : all realclean clean release
 
-all :
+release: all
+release: CF_ALL += -O3
+
+all    :
+
 # sub dirs
 # General dir rules
 include Rules.mk
@@ -111,3 +115,4 @@ debug   : 	CF_ALL += -DDEBUG -pg -g
 debug   : 	OPENSSL_DEBUG = -d
 debug   : 	LF_ALL += -pg
 debug   :   $(APP)
+debug   :   DEBUG = 1
