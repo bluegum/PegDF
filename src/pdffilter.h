@@ -5,6 +5,16 @@
 
 typedef enum pdf_filterkind_e pdf_filterkind;
 typedef struct pdf_filter_s pdf_filter;
+typedef struct decode_params_s decode_params;
+
+struct decode_params_s
+{
+    int predictor;
+    int colors;
+    int bitspercomponent;
+    int columns;
+    int earlychange;
+};
 
 enum pdf_filterkind_e
 {
@@ -56,5 +66,6 @@ extern const char* pdf_filter_to_string(pdf_filterkind k);
 extern pdf_err pdf_filter_rc4_e_new(pdf_filter **f, int n, int g, void *priv);
 extern pdf_err pdf_filter_aes_e_new(pdf_filter **f, int n, int g, void *priv);
 extern pdf_filter* pdf_rawfilter_new(sub_stream *ss);
+extern pdf_filter* pdf_filter_predictor_new(decode_params *params, pdf_filter* last);
 
 #endif

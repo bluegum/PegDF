@@ -861,7 +861,7 @@ objstream_read(pdf_obj *o, int num, int gen, pdfcrypto_priv *crypto)
 
     objs = pdf_malloc(sizeof(*objs)*n);
     // construct filter chain and stream interface
-    s = pdf_istream_filtered_load(o, crypto, num, gen);
+    err = pdf_istream_filtered_load(o, crypto, num, gen, &s);
     if (!s)
         goto fail1;
     // construct parser

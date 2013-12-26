@@ -13,7 +13,7 @@ typedef struct pdf_stream_s pdf_stream;
 	/* apis */                     \
 	int    (*close)(pdf_stream*); \
     int    (*flush)(pdf_stream *s); \
-    size_t (*write)(char *ptr, size_t size, pdf_stream *s); \
+    size_t (*write)(void *ptr, size_t size, pdf_stream *s); \
     size_t (*read)(void *ptr, size_t size, pdf_stream *s);  \
     int    (*getc)(pdf_stream *s);  \
     int    (*tell)(pdf_stream *s); \
@@ -55,7 +55,7 @@ extern pdf_stream* pdf_istream_filted_open(pdf_filterkind);
 extern pdf_stream* pdf_ostream_filted_open(pdf_filterkind, void *);
 extern pdf_stream* pdf_stream_buffer_open();
 extern pdf_err pdf_stream_free(pdf_stream *s, int flag); // flag: for in_mem stream, 1 to free
-pdf_stream*
-pdf_istream_filtered_load(pdf_obj* o, void *crypto, int numobj, int numgen);
+extern pdf_err pdf_istream_filtered_load(pdf_obj* o, void *crypto, int numobj, int numgen, pdf_stream**);
+extern pdf_stream* pdf_rawstream_new(sub_stream *ss);
 
 #endif

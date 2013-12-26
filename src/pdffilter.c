@@ -382,7 +382,7 @@ static int asciihex_to_int[] =
 
 
 pdf_err
-pdf_ahex_close(pdf_filter *f)
+pdf_ahex_close(pdf_filter *f, int flag)
 {
     if (!f)
         return 0;
@@ -473,7 +473,7 @@ struct pdf_a85d_s
 };
 
 pdf_err
-pdf_a85d_close(pdf_filter *f)
+pdf_a85d_close(pdf_filter *f, int flag)
 {
     if (!f)
         return 0;
@@ -617,7 +617,7 @@ pdf_a85d_new(pdf_filter **f)
 ///////////////////////////////////
 
 static pdf_err
-pdf_lzw_d_close(pdf_filter *f)
+pdf_lzw_d_close(pdf_filter *f, int flags)
 {
     int ret;
     if (!f)
@@ -689,6 +689,11 @@ pdf_filter_new(pdf_filterkind t, pdf_filter* last)
             break;
         default:
             return NULL;
+    }
+
+    if (f)
+    {
+        f->next = last;
     }
     return f;
 }
@@ -822,7 +827,7 @@ struct aes_state_s
 
 
 pdf_err
-pdf_filter_aes_close(pdf_filter *f)
+pdf_filter_aes_close(pdf_filter *f, int flags)
 {
     if (f)
     {
@@ -1179,4 +1184,219 @@ pdf_filter_rc4_e_new(pdf_filter **f, int n, int g, void *priv)
     (*f)->eof   = 0;
 
     return pdf_ok;
+}
+
+typedef struct pdf_predictor_s pdf_predictor;
+
+struct pdf_predictor_s
+{
+    int   predictor;
+    int   bpc;
+    int   components;
+    int   byte_per_pix;
+    int   columns;
+    int   stride;
+    byte *row;
+    byte *last_row;
+};
+
+
+#define I_ABS(a) \
+    (a) < 0 ? -(a) : (a)
+
+static inline byte
+paeth(byte a, byte b, byte c)
+{
+    int p = a + b - c;
+    int pa = I_ABS(p-a);
+    int pb = I_ABS(p-b);
+    int pc = I_ABS(p-c);
+
+    if (pa <= pb && pa <= pc)
+        return a;
+    else if (pb <= pc)
+        return b;
+    else
+        return c;
+}
+
+static void
+filter_png(int predictor, int stride, byte *in, byte *out)
+{
+    int i;
+
+    switch (predictor)
+    {
+        case 0:
+            memcpy(out, in, stride);
+            break;
+        case 1:
+            *out = *in;
+            for (i = 1; i < stride; i++)
+            {
+                out[i] = out[i-1] + in[i];
+            }
+            break;
+        case 2:
+            for (i = 0; i < stride; i++)
+            {
+                out[i] = out[i] + in[i];
+            }
+            break;
+        case 3:
+            *out = *in;
+            for (i = 1; i < stride; i++)
+            {
+                out[i] = (out[i] + in[i-1])/2 + in[i];
+            }
+            break;
+        case 4:
+        {
+            byte t[2]; // rolling window
+
+            t[0] = in[0] + paeth(0, out[0], 0);
+            for (i = 1; i < stride; i++)
+            {
+                byte tt = in[i] + paeth(in[i-1], out[i], out[i-1]);
+                out[i-1] = t[0];
+                t[0] = t[1];
+                t[1] = tt;
+            }
+        }
+            break;
+        default:
+            fprintf(stderr, "PNG predictor algorithm is illegal");
+            break;
+    }
+}
+
+static int
+pdf_predictor_read(pdf_filter *f, unsigned char *obuf, int request)
+{
+    int l, ret, in = 0;
+    pdf_filter *up = f->next; // upstream
+    pdf_predictor *p = (pdf_predictor*)f->state;
+    int row = p->stride;
+    byte *ptr = p->row;
+    int remained;
+    int stride = p->stride;
+
+
+    if (f->eof && f->ptr == f->end)
+        return 0;
+
+  read_buffered:
+    remained = f->end - f->ptr;
+    if (f->ptr < f->end)
+    {
+        if  (request >= remained)
+        {
+            memcpy(obuf, f->ptr, remained);
+            f->ptr = f->end;
+            return remained;
+        }
+        else
+        {
+            memcpy(obuf, f->ptr, request);
+            f->ptr += request;
+            return request;
+        }
+    }
+
+    assert(f->ptr == f->end);
+
+    // +1 for png embedded predictor per row
+    if (p->predictor >= 10 && p->predictor <= 15)
+        row += 1;
+
+    do
+    {
+        l = (up->read)(up, ptr, row);
+        ptr += l;
+        row -= l;
+    } while (row && l);
+
+    if (l == 0 && row)
+    {
+        f->eof = 1;
+        stride -= row;
+    }
+
+    switch (p->predictor)
+    {
+        case 1:
+            fprintf(stderr, "Error, should reach here\n");
+            break;
+        case 2:
+            fprintf(stderr, "TIFF predictor is not implemented\n");
+            break;
+        case 10: case 11: case 12: case 13: case 14: case 15:
+            filter_png(p->row[0], stride, p->row + 1, p->last_row);
+            f->ptr = p->last_row;
+            if (row)
+                f->end = f->ptr + stride;
+            break;
+        default:
+            break;
+    }
+
+    if (f->ptr < f->end)
+        goto read_buffered;
+
+    return 0;
+}
+
+static
+pdf_err
+pdf_predictor_close(pdf_filter *f, int flag)
+{
+    if (f && f->state)
+    {
+        pdf_predictor *state = (pdf_predictor*) f->state;;
+
+        pdf_free(state->row);
+        pdf_free(state->last_row);
+        pdf_free(state);
+        pdf_free(f);
+   }
+
+    return pdf_ok;
+}
+
+
+pdf_filter*
+pdf_filter_predictor_new(decode_params *params, pdf_filter* last)
+{
+    pdf_predictor *state;
+    pdf_filter *f = (pdf_filter *)pdf_malloc(sizeof(pdf_filter));
+
+    if (!f)
+        return NULL;
+
+    memset(f, 0, sizeof(pdf_filter));
+
+    state = pdf_malloc(sizeof(pdf_predictor));
+
+    state->predictor = params->predictor;
+    state->bpc = params->bitspercomponent;
+    state->columns = params->columns;
+    state->components = params->colors;
+
+    state->stride = (state->bpc * state->components * state->columns + 7)/8;
+    state->byte_per_pix = ((state->bpc + 7)/8 * state->components);
+    state->row = pdf_malloc(state->stride + 1); // +1 for extra
+                                                // predictor byte at
+                                                // head of row
+    state->last_row = pdf_malloc(state->stride + 1);
+    memset(state->last_row, 0, state->stride + 1);
+
+
+    f->ptr = f->end = state->last_row + state->stride;
+    f->read = pdf_predictor_read;
+    f->close = pdf_predictor_close;
+    f->state = state;
+    f->next = last;
+
+
+    return f;
 }

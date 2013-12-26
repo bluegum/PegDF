@@ -484,7 +484,7 @@ typedef struct pdf_stream_filtered_s
 
 
 static size_t
-pdf_ostream_filtered_write(char *ptr, size_t size, pdf_stream *sf)
+pdf_ostream_filtered_write(void *ptr, size_t size, pdf_stream *sf)
 {
     pdf_stream_filtered *s = (pdf_stream_filtered*)sf;
     pdf_filter *f = s->filter;
@@ -653,37 +653,64 @@ pdf_istream_filtered_open(pdf_filterkind f)
     return 0;
 }
 
-
-pdf_stream*
-pdf_istream_filtered_load(pdf_obj* o, void *crypto, int numobj, int numgen)
+decode_params *
+pdf_decode_params_load(pdf_obj *obj)
 {
+    decode_params *dp = pdf_malloc(sizeof(decode_params));
+
+    if (!obj)
+        return 0;
+    if (!dp)
+        return 0;
+    memset(dp, 0, sizeof(decode_params));
+
+    dp->predictor = pdf_to_int(pdf_dict_get(obj, "Predictor"));
+    dp->colors = pdf_to_int(pdf_dict_get(obj, "Colors"));
+    dp->bitspercomponent = pdf_to_int(pdf_dict_get(obj, "BitsPerComponent"));
+    dp->columns = pdf_to_int(pdf_dict_get(obj, "Columns"));
+    dp->earlychange = pdf_to_int(pdf_dict_get(obj, "EarlyChange"));
+
+    return dp;
+}
+
+pdf_err
+pdf_istream_filtered_load(pdf_obj* o, void *crypto, int numobj, int numgen, pdf_stream **stm)
+{
+    pdf_err    e = pdf_ok;
     pdf_filter *last = NULL, *raw = NULL, *crypt = NULL;
     pdf_stream *s = 0;
     sub_stream *ss;
     pdf_obj *x, *xx;
     int m, mm;
+    decode_params *dp = 0;
 
+    *stm = 0;
 
-    if (o && o->t == eRef) {
+    if (o && o->t == eRef)
+    {
         numobj = o->value.r.num;
         numgen = o->value.r.gen;
     }
-    else if (o->t != eDict) {
-        return NULL;
+    else if (o->t != eDict && o->t != eString)
+    {
+        return pdf_not_ok;
     }
+
     pdf_obj_resolve(o);
     if (!o) {
-        return NULL;
+        return pdf_not_ok;
     }
     // fill stream info
     if (o->t == eDict)
     {
         int length;
         pdf_obj *len_obj = pdf_dict_get(o, "Length");
+        pdf_obj *_decode_params = 0;
+
         if (!len_obj)
         {
             fprintf(stderr, "%s\n", "Invalid stream.");
-            return NULL;
+            return pdf_not_ok;
         }
         length = pdf_to_int(len_obj);
         s = pdf_malloc(sizeof(pdf_stream));
@@ -693,7 +720,7 @@ pdf_istream_filtered_load(pdf_obj* o, void *crypto, int numobj, int numgen)
         s->length = length;
         if (length == 0)
         { // zero lenght stream, just return
-            return s;
+            return pdf_stream_zero_length;
         }
         // make raw filter
         /// internal struct. raw stream object
@@ -701,6 +728,12 @@ pdf_istream_filtered_load(pdf_obj* o, void *crypto, int numobj, int numgen)
         if (!ss)
             goto fail;
         ss->len = s->length;
+
+        _decode_params = pdf_dict_get(o, "DecodeParms");
+        if (_decode_params)
+        {
+            dp = pdf_decode_params_load(_decode_params);
+        }
     }
     else if (o->t == eString)
     {
@@ -780,8 +813,8 @@ pdf_istream_filtered_load(pdf_obj* o, void *crypto, int numobj, int numgen)
         switch (t)
         {
             case FlateDecode:
-            case ASCII85Decode:
             case LZWDecode:
+            case ASCII85Decode:
             case ASCIIHexDecode:
                 f = pdf_filter_new(t, last);
                 if (!f)
@@ -790,9 +823,14 @@ pdf_istream_filtered_load(pdf_obj* o, void *crypto, int numobj, int numgen)
                         pdf_free(s);
                     if (crypt)
                         PDF_FILTER_CLOSE(crypt, 0); // do not free in_mem stream
-                    return NULL;
+                    return pdf_io_err;
                 }
-                // train them
+                /* chain decoding params filter */
+                if (dp && dp->predictor > 1 && (t == FlateDecode || t == LZWDecode))
+                {
+                    f = pdf_filter_predictor_new(dp, f);
+                }
+                // make the header of chain
                 if (!last)
                 {
                     last = f;
@@ -800,15 +838,20 @@ pdf_istream_filtered_load(pdf_obj* o, void *crypto, int numobj, int numgen)
                 }
                 else
                 {
+#if 0
                     f->next = last;
+#endif
                     last = f;
                 }
                 break;
             default:
                 fprintf(stderr, "filter type: %s is not implemented\n", xx->value.k);
+                e = pdf_not_ok;
                 break;
         }
     }
+    if (dp)
+        pdf_free(dp);
   done:
     s->ffilter = last;
     s->close = pdf_istream_filtered_close;
@@ -819,14 +862,16 @@ pdf_istream_filtered_load(pdf_obj* o, void *crypto, int numobj, int numgen)
     s->flush = pdf_stream_base_flush;
     s->seekp = pdf_stream_base_seekp;
     s->seekg = pdf_stream_base_seekg;
-
-    return s;
+    *stm = s;
+    return e;
   fail:
     if (s)
         pdf_free(s);
     if (raw)
         raw->close(raw, 1);
-    return NULL;
+    if (dp)
+        pdf_free(dp);
+    return pdf_not_ok;
 }
 
 
@@ -844,3 +889,24 @@ pdf_stream_free(pdf_stream *s, int flag)
     return pdf_ok;
 }
 
+pdf_stream*
+pdf_rawstream_new(sub_stream *ss)
+{
+    pdf_filter *raw;
+    pdf_stream *s;
+
+    raw = pdf_rawfilter_new(ss);
+    s = pdf_malloc(sizeof(pdf_stream));
+    s->ffilter = raw;
+
+    s->close = pdf_istream_filtered_close;
+    s->write = pdf_istream_filtered_write;
+    s->read  = pdf_istream_filtered_read;
+    s->getc  = pdf_istream_filtered_getc;
+    s->tell  = pdf_istream_filtered_tell;
+    s->flush = pdf_stream_base_flush;
+    s->seekp = pdf_stream_base_seekp;
+    s->seekg = pdf_stream_base_seekg;
+
+    return s;
+}

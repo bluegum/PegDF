@@ -98,6 +98,9 @@ s_eof(buffer_stream *s)
 static int
 s_get_char(buffer_stream *s)
 {
+    pdf_err e = pdf_ok;
+
+
     assert(s);
     if (s->p != s->e)
     {
@@ -138,7 +141,10 @@ s_get_char(buffer_stream *s)
             }
             else
             {
-                pdf_stream_free(s->s, 1);
+                if (e == pdf_ok)
+                {
+                    pdf_stream_free(s->s, 1);
+                }
                 if (s->n > 1)
                 {
                     if (s->content->value.a.items[s->i].t == eRef)
@@ -146,10 +152,12 @@ s_get_char(buffer_stream *s)
                         int num = s->content->value.a.items[s->i].value.r.num;
                         int gen = s->content->value.a.items[s->i].value.r.gen;
                         pdf_stream *ss;
-                        ss = pdf_istream_filtered_load(&s->content->value.a.items[s->i], s->encrypt, num, gen);
-                        s->s = ss;
-                        if (ss->length == 0)
+                        e = pdf_istream_filtered_load(&s->content->value.a.items[s->i], s->encrypt, num, gen, &ss);
+                        if (e == pdf_stream_zero_length || (ss && ss->length == 0))
+                        {
                             goto next_filt;
+                        }
+                        s->s = ss;
                         s->f = ss->ffilter;
                         s->p = &s->buf[0];
                         s->e = s->p;
@@ -188,6 +196,8 @@ s_buffer_stream_open(pdf_obj *contents, pdfcrypto_priv * encrypt, pdf_stream *ss
     pdf_obj *cs = contents;
     int i, n = 0;
     int num, gen;
+    pdf_err e;
+
 
     if (cs->t == eRef) {
         pdf_obj *csa = pdf_obj_deref(cs);
@@ -215,7 +225,8 @@ s_buffer_stream_open(pdf_obj *contents, pdfcrypto_priv * encrypt, pdf_stream *ss
     s = pdf_malloc(sizeof(buffer_stream));
     if (!s)
         return 0;
-    ss = pdf_istream_filtered_load(cs, encrypt, num, gen);
+
+    e = pdf_istream_filtered_load(cs, encrypt, num, gen, &ss);
 
     if (!ss)
     {
@@ -405,7 +416,7 @@ pdf_lex_string(buffer_stream *s, unsigned char* buf, int max)
     return pdf_syntax_err;
 }
 
-static pdf_err
+static int
 pdf_lex_hexstring(buffer_stream *s, unsigned char* buf, int max)
 {
     int c;
@@ -413,19 +424,21 @@ pdf_lex_hexstring(buffer_stream *s, unsigned char* buf, int max)
 
     while ((c = mGETCHAR(s)) != EOF)
     {
-        if (c == '>')
+        if (isxdigit(c))
+        {
+            *buf++ = c;
+            i++;
+        }
+        else if (c == '>')
         {
             *buf = 0;
-            return pdf_ok;
+            return i;
         }
-        else
-        {
-            *buf ++ = c;
-        }
-        if (++i >= max)
+
+        if (i >= max)
             break;
     }
-    return pdf_syntax_err;
+    return i;
 }
 
 static pdf_err
@@ -582,9 +595,8 @@ pdf_lex_obj(buffer_stream *s, pdf_obj *o)
             else
             {
                 mUNGETCHAR(s);
-                ON_ERROR(pdf_lex_hexstring(s, tokenbuf, LEX_BUF_LEN));
                 o->t = eHexString;
-                o->value.s.len = strlen((char*)tokenbuf);
+                o->value.s.len = (pdf_lex_hexstring(s, tokenbuf, LEX_BUF_LEN));
                 o->value.s.buf = pdf_malloc(o->value.s.len);
                 strncpy(o->value.s.buf, (char*)tokenbuf, o->value.s.len);
             }
@@ -847,8 +859,8 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                     else
                     {
                         mUNGETCHAR(b);
-                        ON_ERROR(pdf_lex_hexstring(b, buf, LEX_BUF_LEN));
                         t.t = eHexString;
+                        t.value.s.len = (pdf_lex_hexstring(b, buf, LEX_BUF_LEN));
                         t.value.s.len = strlen((char*)buf);
                         t.value.s.buf = pdf_malloc(o->value.s.len);
                         strncpy(t.value.s.buf, (char*)buf, o->value.s.len);
@@ -1195,6 +1207,12 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                                 case TWO_HASH('W', '*'):
                                 {
                                     // x_Wstar();
+                                }
+                                // hack to fit some pdf files
+                                case TWO_HASH('Q', 'q'):
+                                {
+                                    x_popgs(p);
+                                    x_pushgs(p);
                                 }
                                 break;
                                 ///
