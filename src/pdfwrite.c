@@ -1632,7 +1632,11 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, pdf_writer_options *optio
 	    }
 	    if (err || (!S_ISDIR(s.st_mode)))
 	    {
+#ifdef _WIN32
+	      err = _mkdir(odir);
+#else
             err = mkdir(odir, S_IRWXU | S_IRWXG);
+#endif
             if (err != 0)
             {
                 e = pdf_file_err;

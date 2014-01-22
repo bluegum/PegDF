@@ -4,9 +4,9 @@ DEBUG ?= 0
 ### Build flags for all targets
 #
 PKGS_DIR       := pkgs
-INCLUDE_ALL     = -I . -I include -I src -I $(PKGS_DIR)/openssl/include -I $(PKGS_DIR)/openssl/include/openssl -I $(PKGS_DIR)/openssl -I $(PKGS_DIR)/pkgs/zlib
+INCLUDE_ALL     = -I . -I include -I src -I $(PKGS_DIR)/openssl/include -I $(PKGS_DIR)/openssl/include/openssl -I $(PKGS_DIR)/openssl -I $(PKGS_DIR)/zlib
 CF_ALL          = -Wall -fPIC -I . $(INCLUDE_ALL)
-LF_ALL          = -lm -lcrypto -L openssl -ldl
+LF_ALL          = -lm -lcrypto -L pkgs/openssl -ldl
 LL_ALL          =
 OPENSSL_DEBUG   =
 INSTALL         = /usr/bin/install -c
