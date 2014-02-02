@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <ctype.h>
 #define _GNU_SOURCE
+#ifdef _WIN32
+/* to expose tree structure */
+#define _SEARCH_PRIVATE
+#endif
 #include <search.h>
 #include "pdftypes.h"
 #include "pdfindex.h"
@@ -329,6 +333,30 @@ tounicode_free(void *v)
 	    pdf_free(a->hex);
     pdf_free(a);
 }
+
+#if defined _WIN32
+/* Because minGW is strictly POSIX */
+static void
+tdestroy_recurse(node_t* root, void (*free_node)(void *))
+{
+  if (root->llink != NULL)
+    tdestroy_recurse(root->llink, free_node);
+  if (root->rlink != NULL)
+    tdestroy_recurse(root->rlink, free_node);
+
+  (*free_node)((void *)root->key);
+  /* Free the node */
+  free(root);
+}
+
+void
+tdestroy(void *root, void(*free_node)(void *nodep))
+{
+
+  if (root)
+    tdestroy_recurse(root, free_node);
+}
+#endif
 
 void
 pdf_tounicode_free(pdf_tounicode *u)

@@ -13,8 +13,8 @@ $(BIN_DIR)/picker    : $(OBJ_DIR)/picker.o  $(TGT_LIB)
 $(BIN_DIR)/pedal     : $(OBJ_DIR)/pedal.o  $(TGT_LIB)
 
 # dynamically linked example
-$(BIN_DIR)/readpdfsh : $(OBJ_DIR)/readpdf.o  $(OBJ_DIR)/$(SHAREDOBJ)
-	$(CC) -o $@ -L $(OBJ_DIR) -lm -ldl $^
+$(BIN_DIR)/readpdfsh : $(OBJ_DIR)/readpdf.o  $(SO_TARGETS)
+	$(CC) $(LL_ALL) -o $@ -L $(OBJ_DIR) -lm -ldl $^ -l$(SHARED_OBJS)
 
 $(OBJ_DIR)/readpdf.o : src/pdfread.h $(HEADERS)
 $(OBJ_DIR)/picker.o  : $(HEADERS)

@@ -1,5 +1,6 @@
 # Environment
 DEBUG ?= 0
+SYSTEM := $(shell uname -s)
 
 ### Build flags for all targets
 #
@@ -10,6 +11,16 @@ LF_ALL          = -lm -lcrypto -L pkgs/openssl -ldl
 LL_ALL          =
 OPENSSL_DEBUG   =
 INSTALL         = /usr/bin/install -c
+SO_ALL          =
+SO_SUFFIX       =
+
+ifneq (, $(findstring MINGW, $(SYSTEM)))
+	LF_ALL += -lgdi32
+	SO_ALL += -lgdi32
+	SO_SUFFIX := .dll
+else
+	SO_SUFFIX := .so
+endif
 
 ifeq	"$(YYDEBUG)" "y"
 	CF_ALL += -DYY_DEBUG
@@ -23,6 +34,7 @@ ifeq	($(DEBUG), 1)
 	CF_ALL += -pg -g -DDEBUG
 	OPENSSL_DEBUG = -d
 	LF_ALL += -pg
+	LL_ALL += -pg
 endif
 
 
@@ -30,15 +42,16 @@ endif
 #
 CC              = gcc
 COMP            = $(CC) $(CF_ALL) $(CF_TGT) -o $@ -c $<
-LINK            = $(CC) -o $@ $^  $(LL_ALL) $(LF_ALL)
-COMPLINK        = $(CC) $(CF_ALL) $(CF_TGT) $(LF_ALL) $(LF_TGT) -o $@ $< $(LL_TGT) $(LL_ALL)
+LINK            = $(CC) -o $@ $^  $(LF_ALL)
+COMPLINK        = $(CC) $(CF_ALL) $(CF_TGT) $(LF_ALL) $(LF_TGT) -o $@ $< $(LL_TGT)
 ARCHIVE         = $(AR) $(ARFLAGS) $@ $^
 MAKE            = make
 #
 vpath           %.h . src pkgs/zlib
 #
-SHAREDOBJ       = libpegdf.so
-OBJ_DIR         = obj
+SO_TGT          =
+SHARED_OBJS    := pegdf
+OBJ_DIR        := obj
 DEPS_DIR        = deps
 BIN_DIR         = bin
 INSTALL_DIR     = /usr/local/bin
@@ -46,10 +59,15 @@ INSTALL_DIR     = /usr/local/bin
 LIB_CRYPTO      = pkgs/openssl/libcrypto.a
 TGT_LIB	        =
 APP             =
-CLEAN           = $(OBJ_DIR)/$(SHAREDOBJ)
+CLEAN           = $(SO_TGT)
 PKG_CLEAN       =
 COMMON_HEADERS := *.h
 
+
+SO_TGT         += $(addprefix $(OBJ_DIR)/,$(addprefix lib,$(addsuffix $(SO_SUFFIX),$(SHARED_OBJS))))
+
+
+CLEAN          += $(SO_TGT)
 #######
 
 .PHONY : all realclean clean release
@@ -64,7 +82,6 @@ all    :
 include Rules.mk
 
 #$(APP) : $(targets)
-
 
 test	:	$(APP)
 	@bin/readpdf examples/simpledict.pdf
@@ -91,7 +108,7 @@ realclean : clean
 
 .PHONY    : all
 
-all       : $(APP) $(OBJ_DIR)/$(SHAREDOBJ)
+all       : $(APP) $(SO_TGT)
 
 .PHONY    : install
 
@@ -105,14 +122,16 @@ check-syntax:
 	$(CC) -o nul -S ${CHK_SOURCES}
 
 
-$(OBJ_DIR)/$(SHAREDOBJ) : $(TGT_LIB) $(LIB_CRYPTO)
+$(SO_TGT) : $(TGT_LIB) $(LIB_CRYPTO)
 	@echo -n "Making shared object: "
 	@echo $<
-	$(CC) -shared -o $@ -Wl,--whole-archive $(TGT_LIB) -Wl,--no-whole-archive $(LIB_CRYPTO)
+	$(CC) -shared -o $@ $(LL_ALL) -Wl,--whole-archive $(TGT_LIB) -Wl,--no-whole-archive $(LIB_CRYPTO)  $(SO_ALL) 
 
+$(APP)  : $(SO_TGT)
 
 debug   : 	CF_ALL += -DDEBUG -pg -g
 debug   : 	OPENSSL_DEBUG = -d
 debug   : 	LF_ALL += -pg
-debug   :   $(APP)
-debug   :   DEBUG = 1
+debug   : 	LL_ALL += -pg -lgmon
+debug   :       $(SO_TGT) $(APP)
+debug   :       DEBUG = 1
