@@ -2,6 +2,17 @@
 DEBUG ?= 0
 SYSTEM := $(shell uname -s)
 
+
+#
+LIB_TGT         =
+OBJ_DIR        := obj
+OUT_DIR         = bin
+BIN_DIR         = /usr/local/bin
+LIB_DIR         = /usr/local/lib
+DEPS_DIR        = deps
+LIB_OBJS       := pegdf
+OBJS           :=
+
 ### Build flags for all targets
 #
 PKGS_DIR       := pkgs
@@ -11,15 +22,18 @@ LF_ALL          = -lm -lcrypto -L pkgs/openssl -ldl
 LL_ALL          =
 OPENSSL_DEBUG   =
 INSTALL         = /usr/bin/install -c
-SO_ALL          =
-SO_SUFFIX       =
+LIB_ALL         =
+LIB_SUFFIX      =
+LIB_PREFIX      =
 
 ifneq (, $(findstring MINGW, $(SYSTEM)))
 	LF_ALL += -lgdi32
-	SO_ALL += -lgdi32
-	SO_SUFFIX := .dll
+	LIB_ALL += -lgdi32
+	LIB_SUFFIX := .dll
+	LIB_DIR := /c/Windows/System32
 else
-	SO_SUFFIX := .so
+	LIB_SUFFIX := .so
+	LIB_PREFIX := lib
 endif
 
 ifeq	"$(YYDEBUG)" "y"
@@ -48,40 +62,65 @@ ARCHIVE         = $(AR) $(ARFLAGS) $@ $^
 MAKE            = make
 #
 vpath           %.h . src pkgs/zlib
-#
-SO_TGT          =
-SHARED_OBJS    := pegdf
-OBJ_DIR        := obj
-DEPS_DIR        = deps
-BIN_DIR         = bin
-INSTALL_DIR     = /usr/local/bin
 # GLOBALS TARGETS
 LIB_CRYPTO      = pkgs/openssl/libcrypto.a
-TGT_LIB	        =
+LIBS	       :=
 APP             =
-CLEAN           = $(SO_TGT)
+CLEAN          :=
 PKG_CLEAN       =
 COMMON_HEADERS := *.h
 
 
-SO_TGT         += $(addprefix $(OBJ_DIR)/,$(addprefix lib,$(addsuffix $(SO_SUFFIX),$(SHARED_OBJS))))
+LIB_TGT         += $(addprefix $(OBJ_DIR)/,$(addprefix $(LIB_PREFIX),$(addsuffix $(LIB_SUFFIX),$(LIB_OBJS))))
 
-
-CLEAN          += $(SO_TGT)
+CLEAN          += $(LIB_TGT)
 #######
 
-.PHONY : all realclean clean release
+
+
+
+# Standard stuff
+
+.SUFFIXES:
+.SUFFIXES:      .c .o
+
+#
+
+
+
+
+
+.PHONY    : all
+
+all       : $(APP) $(LIB_TGT)
+
+
+.PHONY    :  realclean clean release
 
 release: all
 release: CF_ALL += -O3
 
-all    :
-
-# sub dirs
-# General dir rules
+# General rules
 include Rules.mk
 
-#$(APP) : $(targets)
+# Subdirectories, in random order
+
+include         src/module.mk
+include         utils/module.mk
+include         pkgs/module.mk
+
+
+$(OBJ_DIR)  :
+	mkdir -p $(OBJ_DIR)
+$(DEPS_DIR) :
+	mkdir -p $(DEPS_DIR)
+$(BIN_DIR) :
+	mkdir -p $(BIN_DIR)
+
+
+
+
+$(APP) : $(targets)
 
 test	:	$(APP)
 	@bin/readpdf examples/simpledict.pdf
@@ -106,32 +145,35 @@ realclean : clean
 	- @rm $(PKG_CLEAN)
 	$(MAKE) -C peg spotless
 
-.PHONY    : all
-
-all       : $(APP) $(SO_TGT)
 
 .PHONY    : install
 
-$(INSTALL_DIR)/% : $(BIN_DIR)/%
+$(INSTALL_DIR)/% : $(OUT_DIR)/%
 	cp -p $< $@
 	strip $@
 
 install   : $(INSTALL_DIR)/picker $(INSTALL_DIR)/pedal $(INSTALL_DIR)/readpdf
 
+.PHONY    : clean
+
+clean:
+	- rm -f $(CLEAN)
+	- rm -rf $(DEPS_DIR)
+
 check-syntax:
 	$(CC) -o nul -S ${CHK_SOURCES}
 
 
-$(SO_TGT) : $(TGT_LIB) $(LIB_CRYPTO)
+$(LIB_TGT) : $(LIBS) $(LIB_CRYPTO)
 	@echo -n "Making shared object: "
 	@echo $<
-	$(CC) -shared -o $@ $(LL_ALL) -Wl,--whole-archive $(TGT_LIB) -Wl,--no-whole-archive $(LIB_CRYPTO)  $(SO_ALL) 
+	$(CC) -shared -o $@ $(LL_ALL) -Wl,--whole-archive $(LIBS) -Wl,--no-whole-archive $(LIB_CRYPTO)  $(LIB_ALL) 
 
-$(APP)  : $(SO_TGT)
+$(APP)  : $(LIB_TGT)
 
 debug   : 	CF_ALL += -DDEBUG -pg -g
 debug   : 	OPENSSL_DEBUG = -d
 debug   : 	LF_ALL += -pg
 debug   : 	LL_ALL += -pg -lgmon
-debug   :       $(SO_TGT) $(APP)
+debug   :       $(LIB_TGT) $(APP)
 debug   :       DEBUG = 1

@@ -24,13 +24,15 @@ OBJS_$(d)	:= $(addprefix $(OBJ_DIR)/, $(SRCS_$(d):%.c=%.o))
 
 DEPS_$(d)	:= $(addprefix $(DEPS_DIR)/,$(SRCS_$(d):%.c=%.d))
 
-include 	$(DEPS_$(d))
+ifneq ($(MAKECMDGOALS), clean)
+	-include 	$(DEPS_$(d))
+endif
 
 HDRS_$(d)	:= $(wildcard $(d)/*.h)
 
-CLEAN		:= $(CLEAN) $(OBJS_$(d)) $(DEPS_$(d))
+CLEAN		+= $(OBJS_$(d)) $(DEPS_$(d))
 
-TGT_LIB		:= $(TGT_LIB) $(LOCAL_LIB)
+LIBS		+= $(LOCAL_LIB)
 
 $(LOCAL_LIB) : $(OBJS_$(d))
 	@echo $^
