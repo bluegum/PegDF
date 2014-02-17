@@ -8,7 +8,7 @@ LIB_TGT         =
 OBJ_DIR        := obj
 OUT_DIR         = bin
 BIN_DIR         = /usr/local/bin
-LIB_DIR         = /usr/local/lib
+LIB_DIR         = /usr/lib
 DEPS_DIR        = deps
 LIB_OBJS       := pegdf
 OBJS           :=
@@ -56,7 +56,7 @@ endif
 #
 CC              = gcc
 COMP            = $(CC) $(CF_ALL) $(CF_TGT) -o $@ -c $<
-LINK            = $(CC) -o $@ $^  $(LF_ALL)
+LINK            = $(CC) -o $@ $< $(LIBS)  $(LF_ALL)
 COMPLINK        = $(CC) $(CF_ALL) $(CF_TGT) $(LF_ALL) $(LF_TGT) -o $@ $< $(LL_TGT)
 ARCHIVE         = $(AR) $(ARFLAGS) $@ $^
 MAKE            = make
@@ -70,6 +70,7 @@ CLEAN          :=
 PKG_CLEAN       =
 COMMON_HEADERS := *.h
 
+LIBS           += $(LIB_CRYPTO)
 
 LIB_TGT         += $(addprefix $(OBJ_DIR)/,$(addprefix $(LIB_PREFIX),$(addsuffix $(LIB_SUFFIX),$(LIB_OBJS))))
 
@@ -92,7 +93,7 @@ CLEAN          += $(LIB_TGT)
 
 .PHONY    : all
 
-all       : $(APP) $(LIB_TGT)
+all       :
 
 
 .PHONY    :  realclean clean release
@@ -109,13 +110,14 @@ include         src/module.mk
 include         utils/module.mk
 include         pkgs/module.mk
 
+all         : $(APP) $(LIB_TGT)
 
 $(OBJ_DIR)  :
 	mkdir -p $(OBJ_DIR)
 $(DEPS_DIR) :
 	mkdir -p $(DEPS_DIR)
-$(BIN_DIR) :
-	mkdir -p $(BIN_DIR)
+$(OUT_DIR) :
+	mkdir -p $(OUT_DIR)
 
 
 
@@ -135,7 +137,7 @@ test	:	$(APP)
 
 ## openssl/libcrypto.a
 $(LIB_CRYPTO) :  $(PKGS_DIR)/openssl/include/openssl/evp.h
-	@cd $(PKGS_DIR)/openssl; ./config $(OPENSSL_DEBUG); $(MAKE) build_crypto; cd ..;
+	@cd $(PKGS_DIR)/openssl; ./config -dshared $(OPENSSL_DEBUG); $(MAKE) clean; $(MAKE) depend; $(MAKE) build_crypto; cd ..;
 $(PKGS_DIR)/openssl/include/openssl/evp.h :
 	@cd openssl; ./config $(OPENSSL_DEBUG); $(MAKE) build_crypto; cd ..;
 
@@ -146,13 +148,21 @@ realclean : clean
 	$(MAKE) -C peg spotless
 
 
-.PHONY    : install
+.PHONY    : install install_strip
 
-$(INSTALL_DIR)/% : $(OUT_DIR)/%
-	cp -p $< $@
-	strip $@
+$(BIN_DIR)/% : $(OUT_DIR)/%
+	$(INSTALL)
 
-install   : $(INSTALL_DIR)/picker $(INSTALL_DIR)/pedal $(INSTALL_DIR)/readpdf
+install :: $(LIB_TGT)
+	$(INSTALL) $^ $(LIB_DIR)
+
+install :: $(addprefix $(OUT_DIR)/, $(notdir $(APP)))
+	$(INSTALL) $^ $(BIN_DIR)
+
+install_strip   : $(addprefix $(OUT_DIR)/, $(notdir $(APP)))
+	$(INSTALL) $^ $(BIN_DIR)
+	strip $^
+
 
 .PHONY    : clean
 
@@ -166,7 +176,7 @@ check-syntax:
 
 $(LIB_TGT) : $(LIBS) $(LIB_CRYPTO)
 	@echo -n "Making shared object: "
-	@echo $<
+	@echo $@
 	$(CC) -shared -o $@ $(LL_ALL) -Wl,--whole-archive $(LIBS) -Wl,--no-whole-archive $(LIB_CRYPTO)  $(LIB_ALL) 
 
 $(APP)  : $(LIB_TGT)
@@ -174,6 +184,9 @@ $(APP)  : $(LIB_TGT)
 debug   : 	CF_ALL += -DDEBUG -pg -g
 debug   : 	OPENSSL_DEBUG = -d
 debug   : 	LF_ALL += -pg
-debug   : 	LL_ALL += -pg -lgmon
+debug   : 	LL_ALL += -pg
 debug   :       $(LIB_TGT) $(APP)
 debug   :       DEBUG = 1
+
+
+
