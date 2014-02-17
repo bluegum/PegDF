@@ -56,7 +56,7 @@ $(d)/pdf_parse.c $(d)/pdf_parse.o:	$(d)/pdf.c
 $(d)/pdf.c  : $(d)/pdf.peg peg/peg
 	peg/peg -v -o $(@) $(<)
 peg/peg    :
-	$(MAKE) -C peg
+	$(MAKE) -C peg peg
 
 $(KEYWORDS_HASH) : $(KEYWORDS_HASH_OUT)
 

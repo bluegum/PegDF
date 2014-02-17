@@ -137,9 +137,9 @@ test	:	$(APP)
 
 ## openssl/libcrypto.a
 $(LIB_CRYPTO) :  $(PKGS_DIR)/openssl/include/openssl/evp.h
-	@cd $(PKGS_DIR)/openssl; ./config -dshared $(OPENSSL_DEBUG); $(MAKE) clean; $(MAKE) depend; $(MAKE) build_crypto; cd ..;
+	@cd $(PKGS_DIR)/openssl; $(MAKE) clean; ./config shared $(OPENSSL_DEBUG);  $(MAKE) depend; $(MAKE) build_crypto; cd ..;
 $(PKGS_DIR)/openssl/include/openssl/evp.h :
-	@cd openssl; ./config $(OPENSSL_DEBUG); $(MAKE) build_crypto; cd ..;
+	@cd openssl; ./config shared $(OPENSSL_DEBUG); $(MAKE) build_crypto; cd ..;
 
 realclean : clean
 	- @cd $(PKGS_DIR)/openssl; if test -e Makefile ; then $(MAKE) clean; rm -f Makefile; rm crypto/opensslconf.h; rm include/openssl/evp.h; fi; cd ..;
