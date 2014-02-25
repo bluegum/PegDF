@@ -190,8 +190,8 @@ pdf_cmap_bfrange_parse(pdf_stream *s, int n, pdf_font *f)
                     {
                         touni->cid = from_cid;
                         touni->n = to_cid - from_cid + 1;
-                        touni->hex = pdf_malloc(strlen(tokenbuf));
-                        strncpy(touni->hex, tokenbuf, strlen(tokenbuf));
+                        touni->hex = pdf_malloc(strlen(tokenbuf)+1);
+                        memcpy(touni->hex, tokenbuf, strlen(tokenbuf)+1);
                         v = tsearch(touni, &f->tounicode, cmap_touni_cmp);
                     }
                 }
@@ -206,8 +206,8 @@ pdf_cmap_bfrange_parse(pdf_stream *s, int n, pdf_font *f)
                         touni->n = to_cid - from_cid;
                         if ((tok = pdf_cmap_lex(s, tokenbuf)) == eHEXSTR)
                         {
-                            touni->hex = pdf_malloc(strlen(tokenbuf));
-                            strcpy(touni->hex, tokenbuf);
+                            touni->hex = pdf_malloc(strlen(tokenbuf)+1);
+                            memcpy(touni->hex, tokenbuf, strlen(tokenbuf)+1);
                             v = tsearch(touni, &f->tounicode, cmap_touni_cmp);
                         }
                     }

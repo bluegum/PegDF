@@ -49,9 +49,11 @@ struct pdf_font_encoding_s
       const char * (*get_glyph_name)(pdf_font_encoding *e, unsigned int code);
 };
 
+#define FONTNAME_MAX 256
+
 struct pdf_font_descriptor_s
 {
-      char fontname[256];
+      char fontname[FONTNAME_MAX];
       char *fontfamily;
       pdf_obj *fontstretch;
       int fontweight;
