@@ -20,4 +20,4 @@ CLEAN          += $(addprefix $(OUT_DIR)/, $(LOCAL_APPS))
 
 $(OUT_DIR)/% : $(d)/%.o $(LIBS) $(LIB_CRYPTO) | $(OUT_DIR)
 	@echo $(LIBS)
-	$(LINK)
+	$(LINK) $(LIBS)

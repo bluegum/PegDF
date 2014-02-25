@@ -375,7 +375,7 @@ YY_ACTION(void) yy_1_STARTXREF(yycontext *ctx, char *yytext, int yyleng)
 #define yypos ctx->pos
 #define yythunkpos ctx->thunkpos
   yyprintf((stderr, "do yy_1_STARTXREF\n"));
-  xref_start(pop().value.i);;
+  pdf_obj t = pop(); xref_start(t.value.i);;
 #undef yythunkpos
 #undef yypos
 #undef yy
@@ -397,7 +397,7 @@ YY_ACTION(void) yy_3_XREFTAB(yycontext *ctx, char *yytext, int yyleng)
 #define yypos ctx->pos
 #define yythunkpos ctx->thunkpos
   yyprintf((stderr, "do yy_3_XREFTAB\n"));
-  xref_append(pop().value.i, pop().value.i, pop());;
+  pdf_obj t, t1; t = pop(); t1 = pop(); xref_append(t.value.i, t1.value.i, pop());;
 #undef yythunkpos
 #undef yypos
 #undef yy
@@ -430,7 +430,7 @@ YY_ACTION(void) yy_2_XREF(yycontext *ctx, char *yytext, int yyleng)
 #define yypos ctx->pos
 #define yythunkpos ctx->thunkpos
   yyprintf((stderr, "do yy_2_XREF\n"));
-  xref_new(pop().value.i, atoi(yytext));;
+  pdf_obj t; t = pop(); xref_new(t.value.i, atoi(yytext));;
 #undef yythunkpos
 #undef yypos
 #undef yy
@@ -452,7 +452,7 @@ YY_ACTION(void) yy_1_REF(yycontext *ctx, char *yytext, int yyleng)
 #define yypos ctx->pos
 #define yythunkpos ctx->thunkpos
   yyprintf((stderr, "do yy_1_REF\n"));
-   int n, g; g = pop().value.i, n = pop().value.i; push_ref(eRef, n, g);;
+   pdf_obj t; int n, g; t = pop(); g = t.value.i; t = pop(); n = t.value.i; push_ref(eRef, n, g);;
 #undef yythunkpos
 #undef yypos
 #undef yy
