@@ -1599,28 +1599,65 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, pdf_writer_options *optio
     }
     if (options->flags & WRITE_PDF_PAGE_SEPARATION)
     {
-	    char base[128];
+	    char base[1024];
 	    char *b, *b1;
 	    // make output directory
-#ifdef __unix__
+#if defined(_MSC_VER)
+        {
+            char drive[2];
+            char dir[1024];
+            char fname[1024];
+            char ext[1024];
+
+            _splitpath_s(ofile,
+                         drive, 2,
+                         dir, 1024,
+                         fname, 1024,
+                         ext, 1024);
+            if (dir)
+            {
+                if (strlen(dir)<1024)
+                {
+                    memcpy(base, dir, strlen(dir)+1);
+                }
+                else
+                {
+                    memcpy(base, dir, 1023);
+                    base[1024] = 0;
+                }
+            }
+        }
+#else
+        // use current dir as base
 	    b1 = basename(ofile);
-#endif
 	    b = strchr(b1, '.');
 	    if (b || b1)
 	    {
+            // strip extension
             if (b)
             {
                 memcpy(base, b1, b-b1);
                 base[b-b1] = 0;
             }
             else
-                strcpy(base, b1);
+            {
+                if (strlen(b1) < 1024)
+                {
+                    memcpy(base, b1, strlen(b1)+1);
+                }
+                else
+                {
+                    memcpy(base, b1, 1023);
+                    base[1024] = 0;
+                }
+            }
 	    }
 	    else
 	    {
             memcpy(base, infile, strlen(infile));
             base[strlen(infile)] = 0;
 	    }
+#endif
 	    odir = base;
 	    if ((err = stat(odir, &s)) == 0)
 	    {
@@ -1633,7 +1670,7 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, pdf_writer_options *optio
 	    if (err || (!S_ISDIR(s.st_mode)))
 	    {
 #ifdef _WIN32
-	      err = _mkdir(odir);
+            err = _mkdir(odir);
 #else
             err = mkdir(odir, S_IRWXU | S_IRWXG);
 #endif
@@ -1683,7 +1720,9 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, pdf_writer_options *optio
             }
         }
 	    if (crypto)
+        {
             pdf_crypto_destroy(crypto);
+        }
     }
     else
     {

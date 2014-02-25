@@ -60,10 +60,12 @@ make_key(pdf_obj *o, char *s)
     char buf[1024];
     int len;
 
-    if (strchr(s, '#')) {
+    if (strchr(s, '#'))
+    {
         char *p = s;
         char *d = buf;
-        while (*p) {
+        while (*p)
+        {
             if (*p == '#' && isxdigit(p[1]) && isxdigit(p[2])) {
                 *d++ = asciihex2byte(p+1);
                 p += 3;
@@ -75,9 +77,18 @@ make_key(pdf_obj *o, char *s)
         *d = 0;
         len = d - buf;
     }
-    else {
-        strcpy(buf, s);
-        len = strlen(buf);
+    else
+    {
+        if (strlen(s) < 1024)
+        {
+            memcpy(buf, s, strlen(s)+1);
+            len = strlen(s);
+        }
+        else
+        {
+            fprintf(stderr, "Keyword %s is too long, abort!\n", s);
+            return 0;
+        }
     }
 
     if (k = pdf_keyword_find(buf, len))

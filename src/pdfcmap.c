@@ -155,7 +155,7 @@ pdf_cmap_bfchar_parse(pdf_stream *s, int n, pdf_font *f)
                     touni->cid = cid;
                     touni->n = 1;
                     touni->hex = pdf_malloc(strlen(tokenbuf)+1); // plus one to terminate string
-                    strcpy(touni->hex, tokenbuf);
+                    memcpy(touni->hex, tokenbuf, strlen(tokenbuf)+1);
                     v = tsearch(touni, &f->tounicode, cmap_touni_cmp);
                 }
             }

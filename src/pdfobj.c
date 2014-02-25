@@ -108,7 +108,7 @@ pdf_obj_full_copy(pdf_obj *o)
         case eName:
         {
             char *p = pdf_malloc(strlen(o->value.k)+1);
-            strcpy(p, o->value.k);
+            memcpy(p, o->value.k, strlen(o->value.k)+1);
             out->value.k = p;
             break;
         }
