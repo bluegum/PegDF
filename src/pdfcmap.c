@@ -198,7 +198,7 @@ pdf_cmap_bfrange_parse(pdf_stream *s, int n, pdf_font *f)
                 else if (tok = eARRAY)
                 {
                     int i, n;
-                    n = to_cid - - from_cid;
+                    n = to_cid - from_cid;
                     for (i = 0; i < to_cid - from_cid; i++)
                     {
                         pdf_tounicode *touni = (pdf_tounicode*) pdf_malloc(sizeof(pdf_tounicode));
@@ -334,7 +334,15 @@ tounicode_free(void *v)
     pdf_free(a);
 }
 
-#if defined _WIN32
+#if defined(_WIN32)
+#if defined (_MSC_VER)
+typedef struct __node_s
+{
+	struct __node_s *llink, *rlink;
+	void *key;
+
+} node_t;
+#endif
 /* Because minGW is strictly POSIX */
 static void
 tdestroy_recurse(node_t* root, void (*free_node)(void *))

@@ -440,9 +440,10 @@ int xref_append(int off, int gen, pdf_obj o)
 
 int xref_delete()
 {
+	xreftab *x = parser_inst->xref;
+
     if (!parser_inst || !parser_inst->xref)
 	    return;
-    xreftab *x = parser_inst->xref;
     while (x)
     {
         xreftab *t = x->next;

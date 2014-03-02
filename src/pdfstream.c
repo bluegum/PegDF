@@ -499,7 +499,7 @@ pdf_ostream_filtered_write(void *ptr, size_t size, pdf_stream *sf)
     do
     {
         size -= written;
-        osize = f->write(f, ptr + written, size, &written);
+        osize = f->write(f, (unsigned char*)ptr + written, size, &written);
         if (osize && s->next)
         {
             pdf_stream_write(f->buf, osize, s->next);

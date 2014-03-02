@@ -1058,6 +1058,15 @@ int
 pdf_doc_page_count(pdf_doc *doc)
 {return doc->count;}
 
+static void info_concat_string(char *k, void *val, void *b)
+{
+	dict_entry *e = (dict_entry*)val;
+	pdf_obj *o = e->v;
+	if (o->t == eString)
+	{
+		strncat(b, o->value.s.buf, o->value.s.len);
+	}
+}
 
 void
 pdf_id_create(char *filename, int filesize, pdf_obj *info, char *out)
@@ -1077,15 +1086,6 @@ pdf_id_create(char *filename, int filesize, pdf_obj *info, char *out)
 
     if (info && info->t == eDict)
     {
-        void info_concat_string(char *k, void *val, void *b)
-        {
-            dict_entry *e = (dict_entry*) val;
-            pdf_obj *o = e->v;
-            if (o->t == eString)
-            {
-                strncat(b, o->value.s.buf, o->value.s.len);
-            }
-        }
 
         dict_each(info->value.d.dict, info_concat_string, msg);
     }

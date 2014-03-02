@@ -1305,7 +1305,7 @@ pdf_page_obj_write(pdf_page *page, int pgidx, pdf_xref_internal *x, pdfcrypto_pr
     int content_ref_arr[1024];
     pdf_obj *tmp, *mediabox;
     dict *d;
-    pdf_obj *contents;
+    pdf_obj *contents = 0;
 
     if (!page)
         return;
@@ -1383,7 +1383,7 @@ pdf_page_obj_write(pdf_page *page, int pgidx, pdf_xref_internal *x, pdfcrypto_pr
     {
         pdf_dict_insert_ref(d, "Contents", content_ref_orig, 0);
     }
-    else
+	else if (contents)
     {
 	    int i;
         pdf_obj *cont = pdf_array_build(content_num);
@@ -1701,6 +1701,8 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, pdf_writer_options *optio
                 {
 #ifdef __unix__
                     b = basename(infile);
+#else
+					b = strrchr(infile, '/');
 #endif
                     b1 = strchr(b, '.');
                     if (b1)
