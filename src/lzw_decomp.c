@@ -1,6 +1,8 @@
 #include <stddef.h>
 #include <string.h>
+#if !defined(_MSC_VER)
 #include <unistd.h>
+#endif
 #include "lzw_decomp.h"
 
 #define BITS       12                   /* Setting the number of bits to 12, 13*/
@@ -82,7 +84,13 @@ code_to_string(lzw_dict_entry *dict, unsigned int code, unsigned char *buf)
     }
 }
 
-static inline unsigned int
+static
+#ifdef _MSC_VER
+_inline
+#else
+inline
+#endif
+unsigned int
 lzw_get_code(lzw_decompress *d)
 {
     unsigned int code;

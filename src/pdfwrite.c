@@ -18,6 +18,13 @@
 #include "pdfhelper.h"
 #include "pdfstream.h"
 
+
+#ifndef S_IFDIR
+#ifdef _S_IFDIR
+#define S_IFDIR _S_IFDIR
+#endif
+#endif
+
 #define MARK_BLACK -1
 #define MARK_GRAY  -2
 // We borrow the term "Mark&Sweep" as 2 stages
@@ -1661,13 +1668,13 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, pdf_writer_options *optio
 	    odir = base;
 	    if ((err = stat(odir, &s)) == 0)
 	    {
-            if ((!(S_ISDIR(s.st_mode))) && (S_ISREG(s.st_mode)))
+            if ((!((s.st_mode & S_IFDIR))) && ((s.st_mode & S_IFREG)))
             {
                 e = pdf_file_err;
                 goto done;
             }
 	    }
-	    if (err || (!S_ISDIR(s.st_mode)))
+	    if (err || (!(s.st_mode & S_IFDIR)))
 	    {
 #ifdef _WIN32
             err = _mkdir(odir);
@@ -1681,7 +1688,7 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, pdf_writer_options *optio
             }
 
 	    }
-	    else if (err == 0 && (!S_ISDIR(s.st_mode)))
+	    else if (err == 0 && (!(s.st_mode & S_IFDIR)))
 	    {
             e = pdf_file_err;
             goto done;

@@ -6,6 +6,8 @@
   #include "evp.h"
 #else
   #include "md5.h"
+#include "arc4.h"
+#include "aes.h"
 #endif
 
 #include "pdftypes.h"
@@ -73,6 +75,7 @@ pdf_compute_key(int r, unsigned int n, char *password, int pwlen, unsigned char 
     unsigned char digest[16];
     unsigned int digest_len;
 
+#if defined (USE_OPENSSL)
     EVP_MD_CTX ctx;
     const EVP_MD *md = EVP_md5();
 
@@ -134,6 +137,9 @@ pdf_compute_key(int r, unsigned int n, char *password, int pwlen, unsigned char 
         digest[i] = 0;
     for (i = 0; i < 32; i ++) /* can't trust libc's memset */
         pw[i] = 0;
+
+#else
+#endif
     #ifdef DEBUG
     printf("key=%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X\n",
            key[0], key[1], key[2], key[3], key[4], key[5], key[6], key[7],
@@ -201,9 +207,10 @@ pdf_crypto_destroy(pdfcrypto_priv *crypto)
 void
 pdf_crypto_encrypt_arc4(pdfcrypto_algorithm algo, int len, unsigned char *key, unsigned char *str, unsigned char *outbuf, int *outlen)
 {
-    EVP_CIPHER_CTX ctx;
+	int tmplen;
+#if defined (USE_OPENSSL)
+	EVP_CIPHER_CTX ctx;
     const EVP_CIPHER *rc4;
-    int tmplen;
 
     if (algo == eRC4 && len == 40)
     {
@@ -232,6 +239,8 @@ pdf_crypto_encrypt_arc4(pdfcrypto_algorithm algo, int len, unsigned char *key, u
     }
 
     EVP_CIPHER_CTX_cleanup(&ctx);
+#else
+#endif
 }
 
 void
@@ -252,13 +261,15 @@ pdf_compute_user_password(pdfcrypto_priv* c, unsigned char id1[16], unsigned cha
     }
     else if (c->rev == 3 || c->rev == 4)
     {
-        EVP_MD_CTX ctx;
-        const EVP_MD *md = EVP_md5();
         int n = c->len/8;
         unsigned char digest[16], out[32], xor[16];
         int x, olen;
         unsigned int digest_len;
-        /* Step 0 - init md5 */
+#if defined (USE_OPENSSL)
+		EVP_MD_CTX ctx;
+		const EVP_MD *md = EVP_md5();
+
+		/* Step 0 - init md5 */
         EVP_MD_CTX_init (&ctx);
         EVP_DigestInit(&ctx, md);
         EVP_DigestUpdate(&ctx, pdf_key_padding, 32);
@@ -281,6 +292,8 @@ pdf_compute_user_password(pdfcrypto_priv* c, unsigned char id1[16], unsigned cha
            o[8], o[9], o[10], o[11], o[12], o[13], o[14], o[15]);
 #endif
         }
+#else
+#endif
         memcpy(o + 16, pdf_key_padding, 16);
     }
     else if (c->rev == 5)
@@ -299,9 +312,12 @@ pdf_compute_user_password(pdfcrypto_priv* c, unsigned char id1[16], unsigned cha
 pdf_err
 pdf_rc4_close(void *s, int flag)
 {
+#if defined (USE_OPENSSL)
     EVP_CIPHER_CTX *ctx = (EVP_CIPHER_CTX *)s;
     EVP_CIPHER_CTX_cleanup(ctx);
     pdf_free(ctx);
+#else
+#endif
     return pdf_ok;
 }
 
@@ -309,8 +325,8 @@ pdf_rc4_close(void *s, int flag)
 int
 pdf_rc4_read(void *ctx, unsigned char *in, unsigned char *obuf, int request)
 {
-    int tmplen;
-
+    int tmplen = 0;
+#if defined (USE_OPENSSL)
     if (request == 0)
     {
         if (!EVP_DecryptFinal(ctx, obuf, &tmplen))
@@ -327,6 +343,8 @@ pdf_rc4_read(void *ctx, unsigned char *in, unsigned char *obuf, int request)
     {
         return request;
     }
+#else
+#endif
     return 0;
 }
 
@@ -352,19 +370,24 @@ pdf_aes_priv_new()
 }
 
 pdf_err
-pdf_aes_close(EVP_CIPHER_CTX *ctx)
+pdf_aes_close(void* _ctx)
 {
+#if defined (USE_OPENSSL)
+	EVP_CIPHER_CTX *ctx = _ctx;
     if (ctx)
     {
         EVP_CIPHER_CTX_cleanup(ctx);
         pdf_free(ctx);
     }
-    return pdf_ok;
+#else
+#endif
+	return pdf_ok;
 }
 
 void*
 pdf_aes_e_new(char *final_key, int key_len, unsigned char *iv)
 {
+#if defined (USE_OPENSSL)
     EVP_CIPHER_CTX *ctx; // cipher state
     const EVP_CIPHER *aes128 = EVP_aes_128_cbc();
     const EVP_CIPHER *aes256 = EVP_aes_256_cbc();
@@ -381,6 +404,11 @@ pdf_aes_e_new(char *final_key, int key_len, unsigned char *iv)
     }
 
     return (void*)ctx;
+#else
+
+
+#endif
+
 }
 
 
@@ -389,6 +417,7 @@ pdf_crypto_obj_key_compute(pdfcrypto_priv *crypto, int num, int gen, char *final
 {
     int n = keylen;
     unsigned char key[256];
+#if defined (USE_OPENSSL)
     EVP_MD_CTX ctx;
     const EVP_MD *md = EVP_md5();
 
@@ -408,7 +437,9 @@ pdf_crypto_obj_key_compute(pdfcrypto_priv *crypto, int num, int gen, char *final
         EVP_DigestUpdate(&ctx, (unsigned char *)"sAlT", 4);
     EVP_DigestFinal(&ctx, final_key, &keylen);
     EVP_MD_CTX_cleanup (&ctx);
+#else
 
+#endif
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -448,6 +479,7 @@ pdf_compute_owner_password(pdfcrypto_priv *crypto, char *pwo, int pwolen, char *
     int  i;
     char pw[32];
     char key[16];
+#if defined (USE_OPENSSL)
     EVP_MD_CTX    dctx;
     const EVP_MD *md;
 
@@ -555,7 +587,8 @@ pdf_compute_owner_password(pdfcrypto_priv *crypto, char *pwo, int pwolen, char *
 
     // clean up
     EVP_MD_CTX_cleanup (&dctx);
-
+#else
+#endif
 }
 
 
@@ -611,6 +644,7 @@ void
 pdf_digest_md5(char *s, size_t len, unsigned char *digest)
 {
     int n;
+#if defined (USE_OPENSSL)
     EVP_MD_CTX ctx;
     const EVP_MD *md = EVP_md5();
 
@@ -624,15 +658,17 @@ pdf_digest_md5(char *s, size_t len, unsigned char *digest)
     assert(n==16);
 
     EVP_MD_CTX_cleanup (&ctx);
-
+#else
+#endif
 }
 
 // return number of bytes read
 int
-pdf_aes_final_read(EVP_CIPHER_CTX *ctx, char *out, int len)
+pdf_aes_final_read(void *_ctx, char *out, int len)
 {
     int tmplen;
-
+#if defined (USE_OPENSSL)
+	EVP_CIPHER_CTX *ctx = _ctx;
     if (!EVP_DecryptFinal(ctx, out, &tmplen))
     {
         return 0;
@@ -641,16 +677,18 @@ pdf_aes_final_read(EVP_CIPHER_CTX *ctx, char *out, int len)
     {
         return tmplen;
     }
+#else
+#endif
     return 0;
 }
 
 // return number of bytes read
 int
-pdf_aes_read(EVP_CIPHER_CTX *ctx, char *in, char *out, int req)
+pdf_aes_read(void *ctx, char *in, char *out, int req)
 {
-    int tmplen;
+    int tmplen = 0;
     int e;
-
+#if defined (USE_OPENSSL)
     if (req == 0)
     {
         return pdf_aes_final_read(ctx, out, req);
@@ -665,14 +703,17 @@ pdf_aes_read(EVP_CIPHER_CTX *ctx, char *in, char *out, int req)
         }
         return tmplen;
     }
-
+#else
+#endif
     return 0;
 }
 
 int
 pdf_aes_flush(void *_ctx, char *out)
 {
-    int tmplen;
+    int tmplen = 0;
+#if defined (USE_OPENSSL)
+
     EVP_CIPHER_CTX *ctx = (EVP_CIPHER_CTX*)_ctx;
 
     if(!EVP_EncryptFinal(ctx, out, &tmplen))
@@ -680,15 +721,19 @@ pdf_aes_flush(void *_ctx, char *out)
         /* Error */
         return 0;
     }
-    return tmplen;
+#else
+#endif
+	return tmplen;
 }
 
 // return number of bytes written
 int
 pdf_aes_write(void *_ctx, char *in, char *out, int req)
 {
+
     int tmplen = 0;
-    EVP_CIPHER_CTX *ctx = (EVP_CIPHER_CTX*)_ctx;
+#if defined (USE_OPENSSL)
+	EVP_CIPHER_CTX *ctx = (EVP_CIPHER_CTX*)_ctx;
 
     if (req)
     {
@@ -698,12 +743,15 @@ pdf_aes_write(void *_ctx, char *in, char *out, int req)
             return 0;
         }
     }
+#else
+#endif
     return tmplen;
 }
 
 void *
 pdf_aes_new(int len, char *key, char *iv)
 {
+#if defined (USE_OPENSSL)
     EVP_CIPHER_CTX *ctx; // cipher state
     const EVP_CIPHER *aes128 = EVP_aes_128_cbc();
     const EVP_CIPHER *aes256 = EVP_aes_256_cbc();
@@ -724,11 +772,19 @@ pdf_aes_new(int len, char *key, char *iv)
         }
     }
     return ctx;
+#else
+
+
+
+
+
+#endif
 }
 
 void *
 pdf_rc4_new(int len, char *key)
 {
+#if defined (USE_OPENSSL)
     EVP_CIPHER_CTX *ctx; // cipher state
     const EVP_CIPHER *rc4 = EVP_rc4();
 
@@ -745,20 +801,24 @@ pdf_rc4_new(int len, char *key)
 	    EVP_CipherInit_ex(ctx, NULL, NULL, key, NULL, 0);
     }
     return ctx;
+#else
+#endif
 }
 
 
 int
 pdf_rc4_flush(void *_ctx, char *out)
 {
-    int tmplen;
-    EVP_CIPHER_CTX *ctx = (EVP_CIPHER_CTX*)_ctx;
+    int tmplen = 0;
+#if defined (USE_OPENSSL)
+	EVP_CIPHER_CTX *ctx = (EVP_CIPHER_CTX*)_ctx;
 
     if(!EVP_EncryptFinal(ctx, out, &tmplen))
     {
         /* Error */
         return 0;
     }
+#endif
     return tmplen;
 }
 
@@ -768,6 +828,8 @@ int
 pdf_rc4_write(void *_ctx, char *in, char *out, int req)
 {
     int tmplen = 0;
+#if defined (USE_OPENSSL)
+
     EVP_CIPHER_CTX *ctx = (EVP_CIPHER_CTX*)_ctx;
 
     if (req)
@@ -778,6 +840,8 @@ pdf_rc4_write(void *_ctx, char *in, char *out, int req)
             return 0;
         }
     }
-    return tmplen;
+#else
+#endif
+	return tmplen;
 }
 
