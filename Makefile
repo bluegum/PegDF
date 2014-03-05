@@ -51,6 +51,7 @@ ifeq	($(DEBUG), 1)
 	LL_ALL += -pg
 endif
 
+CF_ALL += -DUSE_OPENSSL
 
 ### Build tools
 #

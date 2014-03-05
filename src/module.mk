@@ -19,7 +19,7 @@ SRCS_$(d)	:= pdfdoc.c pdfpage.c pdfcatalog.c pdffilter.c pdfcontentstream.c pdfc
 		lzw_decomp.c \
 	    pdfobj.c \
 		pdfdevicehtml.c pdfpaint.c gxdraw.c \
-		\
+		md5.c aes.c arc4.c \
 		pdfread.c bplustree.c dict.c tst.c tst_compact.c pdfindex.c pdfmem.c substream.c $(KEYWORDS_HASH)
 
 OBJS_$(d)	:= $(addprefix $(OBJ_DIR)/, $(SRCS_$(d):%.c=%.o))

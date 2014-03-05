@@ -1,7 +1,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include "evp.h"
+
+#if defined (USE_OPENSSL)
+  #include "evp.h"
+#else
+  #include "md5.h"
+#endif
+
 #include "pdftypes.h"
 #include "pdfread.h"
 #include "pdffilter.h"
