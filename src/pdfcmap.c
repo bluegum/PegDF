@@ -29,6 +29,33 @@ enum pdf_cmap_token_type_e
     eNONE
 };
 
+
+typedef struct cmap_range_entry_s cmap_range_entry;
+typedef struct cmap_range_node_s cmap_range_node;
+
+struct cmap_range_entry_s
+{
+    int low, hi;
+};
+
+
+struct cmap_range_node_s
+{
+    int offset;
+    int n;
+
+    union
+    {
+        cmap_range_entry *entry;
+        cmap_range_node  *node;
+    } *childen;
+
+};
+
+
+
+
+
 pdf_cmap_token_type
 pdf_cmap_lex(pdf_stream *s, unsigned char *tokenbuf)
 {
@@ -135,6 +162,9 @@ cmap_touni_cmp(const void *pa, const void *pb)
 	    return 0;
 }
 
+/*
+ * For base font cid mapping
+ */
 void
 pdf_cmap_bfchar_parse(pdf_stream *s, int n, pdf_font *f)
 {
@@ -166,6 +196,9 @@ pdf_cmap_bfchar_parse(pdf_stream *s, int n, pdf_font *f)
     }
 }
 
+/*
+ * For base font cid mapping
+ */
 void
 pdf_cmap_bfrange_parse(pdf_stream *s, int n, pdf_font *f)
 {
@@ -219,6 +252,7 @@ pdf_cmap_bfrange_parse(pdf_stream *s, int n, pdf_font *f)
             break;
     }
 }
+
 static void
 cmap_skip_dict(pdf_stream *s)
 {
@@ -335,7 +369,7 @@ tounicode_free(void *v)
 }
 
 #if defined(_WIN32)
-#if defined (_MSC_VER)
+#if !defined (_MSC_VER)
 typedef struct __node_s
 {
 	struct __node_s *llink, *rlink;
@@ -343,6 +377,7 @@ typedef struct __node_s
 
 } node_t;
 #endif
+
 /* Because minGW is strictly POSIX */
 static void
 tdestroy_recurse(node_t* root, void (*free_node)(void *))
