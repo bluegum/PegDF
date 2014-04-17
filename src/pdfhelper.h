@@ -25,21 +25,21 @@ pdf_rect_get(pdf_obj *o)
         return r;
     // should handle floating point value as well.
     if (o->value.a.items[0].t == eInt)
-	    r.x0 = o->value.a.items[0].value.i;
+	    r.x0 = (float)o->value.a.items[0].value.i;
     else if (o->value.a.items[0].t == eReal)
-	    r.x0 = o->value.a.items[0].value.f;
+	    r.x0 = (float)o->value.a.items[0].value.f;
     if (o->value.a.items[1].t == eInt)
-	    r.y0 = o->value.a.items[1].value.i;
+	    r.y0 = (float)o->value.a.items[1].value.i;
     else if (o->value.a.items[1].t == eReal)
-	    r.y0 = o->value.a.items[1].value.f;
+	    r.y0 = (float)o->value.a.items[1].value.f;
     if (o->value.a.items[2].t == eInt)
-	    r.x1 = o->value.a.items[2].value.i;
+	    r.x1 = (float)o->value.a.items[2].value.i;
     else if (o->value.a.items[2].t == eReal)
-	    r.x1 = o->value.a.items[2].value.f;
+	    r.x1 = (float)o->value.a.items[2].value.f;
     if (o->value.a.items[3].t == eInt)
-	    r.y1 = o->value.a.items[3].value.i;
+	    r.y1 = (float)o->value.a.items[3].value.i;
     else if (o->value.a.items[3].t == eReal)
-	    r.y1 = o->value.a.items[3].value.f;
+	    r.y1 = (float)o->value.a.items[3].value.f;
     return r;
 }
 
@@ -50,9 +50,9 @@ pdf_to_float(pdf_obj *o)
     if (!o || (o->t != eInt && o->t != eReal))
         return 0; // should be NAN
     if (o->t == eInt)
-        return o->value.i;
+        return (float)o->value.i;
     else
-        return o->value.f;
+        return (float)o->value.f;
 }
 
 static inline char*
@@ -139,9 +139,9 @@ pdf_to_float_array(pdf_obj *o, float *a)
     for (i = 0; i < n; i++, a++)
     {
         if (o->value.a.items[i].t == eInt)
-            *a = o->value.a.items[i].value.i;
+            *a = (float)o->value.a.items[i].value.i;
         else if (o->value.a.items[i].t == eReal)
-            *a = o->value.a.items[i].value.f;
+            *a = (float)o->value.a.items[i].value.f;
     }
     return n;
 }

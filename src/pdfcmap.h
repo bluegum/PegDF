@@ -32,6 +32,6 @@ struct pdf_tounicode_s
       char *hex;
 };
 
-extern void pdf_tounicode_free(pdf_tounicode *u);
+extern void pdf_tounicode_free(void *u);
 
 #endif // PDFCMAP_H

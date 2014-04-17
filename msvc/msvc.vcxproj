@@ -1,0 +1,199 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{C4EF2065-1AC2-4BC9-BB76-6B81A5C52496}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>msvc</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;MSVC_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>../include;C:\Users\dliu\PegDF\pkgs\zlib</AdditionalIncludeDirectories>
+      <AdditionalUsingDirectories>
+      </AdditionalUsingDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;MSVC_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\include\pdf.h" />
+    <ClInclude Include="..\pkgs\zlib\crc32.h" />
+    <ClInclude Include="..\pkgs\zlib\deflate.h" />
+    <ClInclude Include="..\pkgs\zlib\gzguts.h" />
+    <ClInclude Include="..\pkgs\zlib\inffast.h" />
+    <ClInclude Include="..\pkgs\zlib\inffixed.h" />
+    <ClInclude Include="..\pkgs\zlib\inflate.h" />
+    <ClInclude Include="..\pkgs\zlib\inftrees.h" />
+    <ClInclude Include="..\pkgs\zlib\trees.h" />
+    <ClInclude Include="..\pkgs\zlib\zconf.h" />
+    <ClInclude Include="..\pkgs\zlib\zlib.h" />
+    <ClInclude Include="..\pkgs\zlib\zutil.h" />
+    <ClInclude Include="..\src\aes.h" />
+    <ClInclude Include="..\src\arc4.h" />
+    <ClInclude Include="..\src\bplustree.h" />
+    <ClInclude Include="..\src\crypto.h" />
+    <ClInclude Include="..\src\dict.h" />
+    <ClInclude Include="..\src\gsdraw.h" />
+    <ClInclude Include="..\src\lzw_decomp.h" />
+    <ClInclude Include="..\src\md5.h" />
+    <ClInclude Include="..\src\pdfcatalog.h" />
+    <ClInclude Include="..\src\pdfcmap.h" />
+    <ClInclude Include="..\src\pdfcmds.h" />
+    <ClInclude Include="..\src\pdfcrypto.h" />
+    <ClInclude Include="..\src\pdfdevice.h" />
+    <ClInclude Include="..\src\pdfdoc.h" />
+    <ClInclude Include="..\src\pdfencodingtables.h" />
+    <ClInclude Include="..\src\pdffilter.h" />
+    <ClInclude Include="..\src\pdffont.h" />
+    <ClInclude Include="..\src\pdfhelper.h" />
+    <ClInclude Include="..\src\pdfindex.h" />
+    <ClInclude Include="..\src\pdfinterp.h" />
+    <ClInclude Include="..\src\pdfmem.h" />
+    <ClInclude Include="..\src\pdfoc.h" />
+    <ClInclude Include="..\src\pdfpage.h" />
+    <ClInclude Include="..\src\pdfpaint.h" />
+    <ClInclude Include="..\src\pdfread.h" />
+    <ClInclude Include="..\src\pdfresource.h" />
+    <ClInclude Include="..\src\pdfstream.h" />
+    <ClInclude Include="..\src\pdftypes.h" />
+    <ClInclude Include="..\src\radix-trie.h" />
+    <ClInclude Include="..\src\tst.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="targetver.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\pkgs\zlib\adler32.c" />
+    <ClCompile Include="..\pkgs\zlib\compress.c" />
+    <ClCompile Include="..\pkgs\zlib\crc32.c" />
+    <ClCompile Include="..\pkgs\zlib\deflate.c" />
+    <ClCompile Include="..\pkgs\zlib\infback.c" />
+    <ClCompile Include="..\pkgs\zlib\inffast.c" />
+    <ClCompile Include="..\pkgs\zlib\inflate.c" />
+    <ClCompile Include="..\pkgs\zlib\inftrees.c" />
+    <ClCompile Include="..\pkgs\zlib\trees.c" />
+    <ClCompile Include="..\pkgs\zlib\uncompr.c" />
+    <ClCompile Include="..\pkgs\zlib\zutil.c" />
+    <ClCompile Include="..\src\aes.c" />
+    <ClCompile Include="..\src\arc4.c" />
+    <ClCompile Include="..\src\bplustree.c" />
+    <ClCompile Include="..\src\dict.c" />
+    <ClCompile Include="..\src\gxdraw.c" />
+    <ClCompile Include="..\src\keywords_hash.c" />
+    <ClCompile Include="..\src\lzw_decomp.c" />
+    <ClCompile Include="..\src\md5.c" />
+    <ClCompile Include="..\src\pdf.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\src\pdfcatalog.c" />
+    <ClCompile Include="..\src\pdfcmap.c" />
+    <ClCompile Include="..\src\pdfcmds.c" />
+    <ClCompile Include="..\src\pdfcolorspace.c" />
+    <ClCompile Include="..\src\pdfcontentstream.c" />
+    <ClCompile Include="..\src\pdfcrypto.c" />
+    <ClCompile Include="..\src\pdfdevice.c" />
+    <ClCompile Include="..\src\pdfdevicehtml.c" />
+    <ClCompile Include="..\src\pdfdevicetxt.c" />
+    <ClCompile Include="..\src\pdfdoc.c" />
+    <ClCompile Include="..\src\pdfencodingtable.c" />
+    <ClCompile Include="..\src\pdffilter.c" />
+    <ClCompile Include="..\src\pdffont.c" />
+    <ClCompile Include="..\src\pdfindex.c" />
+    <ClCompile Include="..\src\pdfmem.c" />
+    <ClCompile Include="..\src\pdfobj.c" />
+    <ClCompile Include="..\src\pdfoc.c" />
+    <ClCompile Include="..\src\pdfpage.c" />
+    <ClCompile Include="..\src\pdfpaint.c" />
+    <ClCompile Include="..\src\pdfread.c" />
+    <ClCompile Include="..\src\pdfstream.c" />
+    <ClCompile Include="..\src\pdfwrite.c" />
+    <ClCompile Include="..\src\pdf_parse.c" />
+    <ClCompile Include="..\src\radix-trie.c" />
+    <ClCompile Include="..\src\substream.c" />
+    <ClCompile Include="..\src\tst.c" />
+    <ClCompile Include="..\src\tst_compact.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="dllmain.cpp">
+      <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</CompileAsManaged>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </PrecompiledHeader>
+      <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</CompileAsManaged>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="msvc.cpp" />
+    <ClCompile Include="stdafx.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+    </ClCompile>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

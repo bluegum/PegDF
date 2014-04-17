@@ -111,13 +111,13 @@ int push(e_pdf_kind t, double n, char *s)
     switch (t)
     {
         case eInt:
-            parser_inst->stack[parser_inst->stackp].value.i = n;
+            parser_inst->stack[parser_inst->stackp].value.i = (int)n;
             break;
         case eReal:
             parser_inst->stack[parser_inst->stackp].value.f = n;
             break;
         case eBool:
-            parser_inst->stack[parser_inst->stackp].value.i = n;
+            parser_inst->stack[parser_inst->stackp].value.i = (int)n;
             break;
         case eKey:
             make_key(&parser_inst->stack[parser_inst->stackp], s);
@@ -443,7 +443,7 @@ int xref_delete()
 	xreftab *x = parser_inst->xref;
 
     if (!parser_inst || !parser_inst->xref)
-	    return;
+	    return !0;
     while (x)
     {
         xreftab *t = x->next;

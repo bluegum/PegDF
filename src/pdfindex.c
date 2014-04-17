@@ -66,6 +66,8 @@ pdf_map_find(int gen)
 	    else
 		  m = m->next;
       }
+
+	  return m;
 }
 
 int

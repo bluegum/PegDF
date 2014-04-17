@@ -53,9 +53,9 @@ struct cmap_range_node_s
 };
 
 
-
-
-
+/*
+ * tokenbuf will be NULL terminated
+ */
 pdf_cmap_token_type
 pdf_cmap_lex(pdf_stream *s, unsigned char *tokenbuf)
 {
@@ -175,10 +175,16 @@ pdf_cmap_bfchar_parse(pdf_stream *s, int n, pdf_font *f)
     {
 	    if (tok == eHEXSTR)
 	    {
-            unsigned int cid = asciihex2int(tokenbuf);
+			unsigned int cid = asciihex2int(tokenbuf);
             if ((tok = pdf_cmap_lex(s, tokenbuf)) == eHEXSTR)
             {
-                void *v;
+#ifdef _MSC_VER
+				int gid;
+
+				gid = asciihex2int(tokenbuf);
+				f->tounicode = radix_trie_insert(f->tounicode, cid, 32, (void*)gid);
+#else
+				void *v;
                 pdf_tounicode *touni = (pdf_tounicode*) pdf_malloc(sizeof(pdf_tounicode));
                 if (touni)
                 {
@@ -188,7 +194,8 @@ pdf_cmap_bfchar_parse(pdf_stream *s, int n, pdf_font *f)
                     memcpy(touni->hex, tokenbuf, strlen(tokenbuf)+1);
                     v = tsearch(touni, &f->tounicode, cmap_touni_cmp);
                 }
-            }
+#endif
+			}
 	    }
 	    else if (tok == eKEYWORD &&
                  strcmp(tokenbuf, "endbfchar") == 0)
@@ -204,7 +211,6 @@ pdf_cmap_bfrange_parse(pdf_stream *s, int n, pdf_font *f)
 {
     char tokenbuf[1024];
     pdf_cmap_token_type tok;
-    void *v;
 
     while ((tok = pdf_cmap_lex(s, tokenbuf)) != eNONE)
     {
@@ -218,7 +224,20 @@ pdf_cmap_bfrange_parse(pdf_stream *s, int n, pdf_font *f)
                 tok = pdf_cmap_lex(s, tokenbuf);
                 if (tok == eHEXSTR)
                 {
-                    pdf_tounicode *touni = (pdf_tounicode*) pdf_malloc(sizeof(pdf_tounicode));
+#ifdef _MSC_VER
+					int range = to_cid - from_cid + 1;
+					int i;
+					int	key;
+
+					key = asciihex2int(tokenbuf);
+
+					for (i = 0; i < range; i++)
+					{
+						f->tounicode = radix_trie_insert(f->tounicode, from_cid + i, 32, (void*)(key + i));
+					}
+#else
+					void *v;
+					pdf_tounicode *touni = (pdf_tounicode*)pdf_malloc(sizeof(pdf_tounicode));
                     if (touni)
                     {
                         touni->cid = from_cid;
@@ -227,14 +246,24 @@ pdf_cmap_bfrange_parse(pdf_stream *s, int n, pdf_font *f)
                         memcpy(touni->hex, tokenbuf, strlen(tokenbuf)+1);
                         v = tsearch(touni, &f->tounicode, cmap_touni_cmp);
                     }
+#endif
                 }
                 else if (tok = eARRAY)
                 {
-                    int i, n;
+                    unsigned int i, n;
                     n = to_cid - from_cid;
                     for (i = 0; i < to_cid - from_cid; i++)
                     {
-                        pdf_tounicode *touni = (pdf_tounicode*) pdf_malloc(sizeof(pdf_tounicode));
+#ifdef _MSC_VER
+						int key = asciihex2int(tokenbuf);
+						for (i = 0; i <= n; i++)
+						{
+							f->tounicode = radix_trie_insert(f->tounicode, from_cid + i, 32, (void*)(key + i));
+						}
+
+#else
+						void *v;
+						pdf_tounicode *touni = (pdf_tounicode*)pdf_malloc(sizeof(pdf_tounicode));
                         touni->cid = from_cid;
                         touni->n = to_cid - from_cid;
                         if ((tok = pdf_cmap_lex(s, tokenbuf)) == eHEXSTR)
@@ -243,6 +272,7 @@ pdf_cmap_bfrange_parse(pdf_stream *s, int n, pdf_font *f)
                             memcpy(touni->hex, tokenbuf, strlen(tokenbuf)+1);
                             v = tsearch(touni, &f->tounicode, cmap_touni_cmp);
                         }
+#endif
                     }
                 }
             }
@@ -326,7 +356,17 @@ unicode_get_cmap(pdf_font *f, unsigned int c, unsigned char *uni)
 	    return 1;
     }
     u.cid = c;
-    val = tfind(&u, &f->tounicode, cmap_touni_cmp);
+#ifdef _MSC_VER
+	if (radix_trie_find(f->tounicode, c, 32, &val))
+	{
+		return (int)val;
+	}
+	else
+	{
+		return 0;
+	}
+#else
+	val = tfind(&u, &f->tounicode, cmap_touni_cmp);
     if (val)
     {
 	    int i;
@@ -357,6 +397,7 @@ unicode_get_cmap(pdf_font *f, unsigned int c, unsigned char *uni)
     {
 	    return 0;
     }
+#endif
 }
 
 static void
@@ -378,6 +419,7 @@ typedef struct __node_s
 } node_t;
 #endif
 
+#ifndef _MSC_VER
 /* Because minGW is strictly POSIX */
 static void
 tdestroy_recurse(node_t* root, void (*free_node)(void *))
@@ -400,13 +442,18 @@ tdestroy(void *root, void(*free_node)(void *nodep))
     tdestroy_recurse(root, free_node);
 }
 #endif
+#endif
 
 void
-pdf_tounicode_free(pdf_tounicode *u)
+pdf_tounicode_free(void *u)
 {
     if (u)
     {
-	    tdestroy(u, tounicode_free);
+#ifdef _MSC_VER
+		radix_trie_delete_all((nod*)u);
+#else
+		tdestroy(u, tounicode_free);
+#endif
     }
 }
 
