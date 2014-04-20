@@ -2,6 +2,10 @@
 #include <stdlib.h>
 #include "pdfmem.h"
 
+#ifdef _DEBUG
+#define DEBUG
+#endif
+
 #ifdef DEBUG
 
 static int all_mem = 0;

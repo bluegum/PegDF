@@ -462,6 +462,7 @@ typedef enum
     no,
     yes
 } Bool;
+
 #define kNumUTF8Sequences        7
 #define kMaxUTF8Bytes            4
 
