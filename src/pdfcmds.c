@@ -494,6 +494,8 @@ pdf_err x_gs(pdf_page *p, pdf_obj o)
     pdf_extgstate* g = NULL;
     if (!obj_is_name(&o))
 	    return pdf_ok;
+	if (!r)
+		return pdf_syntax_err;
     // find it in resources
     extg = r->extgstate;
     thisg = pdf_dict_get(extg, o.value.k);

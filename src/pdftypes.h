@@ -44,6 +44,7 @@ typedef enum pdf_error_e
 {
     pdf_ok,
     pdf_syntax_err,
+	pdf_doc_err,
     pdf_mem_err,
     pdf_io_err,
     pdf_file_err,

@@ -25,6 +25,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "pdftypes.h"
+#include "pdf.h"
 #include "pdfread.h"
 #include "pdfindex.h"
 #include "dict.h"
@@ -1414,8 +1415,11 @@ pdf_open(char *in, pdf_doc **doc)
                 pdf_crypto_destroy(crypto);
         }
         *doc = pdf_doc_load(doctrailer);
-        if (!*doc && doctrailer)
-            pdf_trailer_free();
+		if (!*doc && doctrailer)
+		{
+			err = pdf_doc_err;
+			pdf_trailer_free();
+		}
     }
     else
     {
@@ -1427,7 +1431,7 @@ pdf_open(char *in, pdf_doc **doc)
 	    parser_free();
     if (objstms)
         objstream_mark_free(objstms);
-    return pdf_ok;
+    return err;
 }
 
 pdf_err
