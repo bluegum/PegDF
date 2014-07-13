@@ -138,7 +138,7 @@ test	:	$(APP)
 
 ## openssl/libcrypto.a
 $(LIB_CRYPTO) :  $(PKGS_DIR)/openssl/include/openssl/evp.h
-	@cd $(PKGS_DIR)/openssl; $(MAKE) clean; ./config shared $(OPENSSL_DEBUG);  $(MAKE) depend; $(MAKE) build_crypto; cd ..;
+	@cd $(PKGS_DIR)/openssl; $(MAKE) clean; ./config shared no-dso $(OPENSSL_DEBUG);  $(MAKE) depend; $(MAKE) build_crypto; cd ..;
 $(PKGS_DIR)/openssl/include/openssl/evp.h :
 	@cd openssl; ./config shared $(OPENSSL_DEBUG); $(MAKE) build_crypto; cd ..;
 
@@ -178,7 +178,7 @@ check-syntax:
 $(LIB_TGT) : $(LIBS) $(LIB_CRYPTO)
 	@echo -n "Making shared object: "
 	@echo $@
-	$(CC) -shared -o $@ $(LL_ALL) -Wl,--whole-archive $(LIBS) -Wl,--no-whole-archive $(LIB_CRYPTO)  $(LIB_ALL) 
+	$(CC) -shared -o $@ $(LL_ALL) -Wl,--whole-archive $(LIBS) -Wl,--no-whole-archive $(LIB_CRYPTO)  $(LIB_ALL) -lm
 
 $(APP)  : $(LIB_TGT)
 
