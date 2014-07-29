@@ -3,7 +3,7 @@
 #include "hash_map.h"
 #include "pdfmem.h"
 
-//#define DEBUG_HASH
+#define DEBUG_HASH
 
 #ifdef DEBUG_HASH
 #define P_HASH(var, ...) printf(var, ##__VA_ARGS__)
@@ -591,8 +591,58 @@ fnv_hash ( unsigned char *p, int len )
     for ( i = 0; i < len; i++ )
       h = ( h * 16777619 ) ^ p[i];
 
-   return h;
+    h >>= 8;
+
+    return h;
  }
+
+unsigned long
+pseudorandom_hash(unsigned char *p, int len)
+{
+    unsigned long val = 1234567890;
+    union {
+        unsigned char *cbuf;
+        unsigned long *lbuf;
+    } buff;
+
+    buff.cbuf = p;
+    do
+    {
+        switch (len)
+        {
+            case 0:
+                break;
+            case 1:
+            {
+                val *= *buff.cbuf;
+                len = 0;
+                break;
+            }
+            case 2:
+                val *= (buff.cbuf[0] << 8) + buff.cbuf[1];
+                len = 0;
+                break;
+            case 3:
+                val *= (buff.cbuf[0] << 16) + (buff.cbuf[1] << 8) + (buff.cbuf[2]);
+                len = 0;
+               break;
+            default:
+                val *= (buff.lbuf[0]);
+                buff.lbuf++;
+                len -= 4;
+                break;
+        }
+
+        val = ((val * 1103515245) + 12345);
+
+    } while(len);
+
+    val >>= 8;
+
+    return val;
+}
+
+
 /* map */
 typedef unsigned long (*hash_fn)(unsigned char *, int);
 
@@ -607,11 +657,15 @@ hash_map* hash_map_new(int n)
 {
     hash_map *h;
     int i;
-
+    int nn = n;
 
     if (!n)
     {
         n = primes[0]; /* 2 entries */
+    }
+    else if (n <= 8)
+    {
+        n = 8;
     }
     else
     {
@@ -631,7 +685,11 @@ hash_map* hash_map_new(int n)
     memset(h->entries, 0, (sizeof(*h->entries) * n));
     h->n_entries = n;
 
-    if (n <= 16)
+    if (n <= 8)
+    {
+        h->h = pseudorandom_hash;
+    }
+    else if (n <= 16)
     {
         h->h = xor_hash;
     }
