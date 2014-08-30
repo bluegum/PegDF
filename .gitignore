@@ -1,5 +1,7 @@
 *.[doa]
 *~
+*.so
+*.so.*
 lib
 pdfread/pdf.c
 readpdf

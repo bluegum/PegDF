@@ -3,7 +3,7 @@
 #include "hash_map.h"
 #include "pdfmem.h"
 
-#define DEBUG_HASH
+//#define DEBUG_HASH
 
 #ifdef DEBUG_HASH
 #define P_HASH(var, ...) printf(var, ##__VA_ARGS__)
@@ -570,7 +570,8 @@ floating_hash(unsigned char *s, int len)
     return t.i;
 }
 
-unsigned long sax_hash ( unsigned char *key, int len )
+static unsigned long
+sax_hash ( unsigned char *key, int len )
   {
     unsigned char *p = key;
     unsigned long h = 0;
@@ -582,10 +583,10 @@ unsigned long sax_hash ( unsigned char *key, int len )
    return h;
  }
 
-unsigned long
+static unsigned long
 fnv_hash ( unsigned char *p, int len )
  {
-    unsigned long h = 2166136261;
+    unsigned long h = 2166136261L;
     int i;
 
     for ( i = 0; i < len; i++ )
@@ -596,7 +597,7 @@ fnv_hash ( unsigned char *p, int len )
     return h;
  }
 
-unsigned long
+static unsigned long
 pseudorandom_hash(unsigned char *p, int len)
 {
     unsigned long val = 1234567890;
@@ -784,6 +785,37 @@ hash_map_find(hash_map *h, unsigned char *k, int key_len)
     return NULL;
 }
 
+typedef void (*free_hash_map_entry)(void*);
+
+void
+hash_map_delete(hash_map *h, unsigned char *k, int key_len, free_hash_map_entry fn)
+{
+    int i;
+    struct hash_map_entry *e, **last;
+
+    if (!h)
+        return;
+
+    // hash function is a modulus on the first byte key
+    i = (h->h)(k, key_len) % h->n_entries;
+    e = h->entries[i];
+    last = &e;
+    while (e)
+    {
+        if (e->k &&
+            strlen(e->k) == key_len &&
+            strncmp(e->k, (char*)k, key_len) == 0)
+        {
+            // Only removed the entry from the hashmap
+            // keys and values are not freed yet
+            (*last)->next = e->next;
+            break;
+        }
+        last = &e;
+        e = e->next;
+    }
+}
+
 void
 hash_map_copy(hash_map *in, hash_map *out, void (*fn)() )
 {
@@ -816,16 +848,11 @@ hash_map_free(hash_map *h)
 }
 
 
-
-
-
 struct hash_map_iterator_s
 {
     int bucket;
     struct hash_map_entry *x;
-
     hash_map *h;
-
     void (*reset)(hash_map_iterator*);
     void (*next)(hash_map_iterator*);
     int (*at_end)(hash_map_iterator*);
