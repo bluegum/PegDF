@@ -938,3 +938,9 @@ hash_map_front(hash_map *h)
     }
     return itr;
 }
+
+void
+hash_map_iterator_free(hash_map_iterator *itr)
+{
+    pdf_free(itr);
+}

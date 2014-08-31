@@ -21,6 +21,7 @@ extern void hash_map_iterator_next(hash_map_iterator* itr);
 extern int hash_map_iterator_at_end(hash_map_iterator* itr);
 extern struct hash_map_entry *hash_map_iterator_get(hash_map_iterator* itr);
 extern hash_map_iterator *hash_map_front(hash_map *h);
+extern void hash_map_iterator_free(hash_map_iterator *itr);
 
 
 #endif

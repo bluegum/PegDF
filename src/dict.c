@@ -269,8 +269,14 @@ dict_entry_copy(char *k, void *v, void *a)
     }
     else
     {
-        p = pdf_malloc(strlen(k)+1);
-        memcpy(p, k, strlen(k)+1);
+        p = pdfname_search(k);
+
+        if (!p)
+        {
+            // memory leak
+            p = pdf_malloc(strlen(k)+1);
+            memcpy(p, k, strlen(k)+1);
+        }
     }
 #else
     if (pdf_keyword_find(e->k, strlen(e->k)))
@@ -302,6 +308,7 @@ dict* dict_copy(dict *d)
         dict_entry_copy(e->k, e->v, out);
         hash_map_iterator_next(i);
     }
+    hash_map_iterator_free(i);
     return out;
 #elif defined(TSTC)
     tstc_call(d->dict, 0, dict_entry_copy, out);
@@ -332,9 +339,8 @@ void  dict_free(dict* d)
                 pdf_free(e->v);
                 hash_map_iterator_next(i);
             }
-
+            hash_map_iterator_free(i);
             hash_map_free(d->dict);
-            pdf_free(i);
 #else
             tst_print_reset(1);
             tst_traverse(d->dict, dict_free_val, NULL);
@@ -424,7 +430,7 @@ dict_to_list(dict *d)
 
             hash_map_iterator_next(i);
         }
-
+        hash_map_iterator_free(i);
 #else
 	    tst_print_reset(1);
 	    tst_traverse(d->dict, (tst_hook)dict_list_append, l);
