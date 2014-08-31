@@ -17,7 +17,7 @@
   of the object that it belongs.
 */
 
-#define DEBUG_HASH
+//#define DEBUG_HASH
 
 #ifdef DEBUG_HASH
 #define P_HASH(var, ...) printf(var, ##__VA_ARGS__)
@@ -265,7 +265,7 @@ hashtable_delete_entry(hashtable *ht, hashtable_entry *ent)
 }
 
 void
-hashtable_print(hashtable *ht)
+hashtable_stat(hashtable *ht)
 {
     int i;
     int x = 0;
@@ -322,16 +322,19 @@ hashtable_print(hashtable *ht)
  * as well as content streams to access some particular resource as needed.
  *
  */
+static hashtable *g_names;
 
 hashtable *
 pdfname_new()
 {
-    return hashtable_new();
+    g_names = hashtable_new();
+    return g_names;
 }
 
 char*
-pdfname_search(hashtable *ht, char *string)
+pdfname_search(char *string)
 {
+    hashtable *ht = g_names;
     hashtable_entry e, *p;
     e.str = (unsigned char*)string;
     e.next = NULL;
@@ -341,7 +344,9 @@ pdfname_search(hashtable *ht, char *string)
 }
 
 void
-pdfname_free(hashtable *ht)
+pdfname_free()
 {
+    hashtable *ht = g_names;
+    //hashtable_stat(ht);
     hashtable_free(ht);
 }

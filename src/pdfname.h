@@ -30,10 +30,10 @@ extern void hashtable_free(hashtable *ht);
 extern hashtable_entry *hashtable_search(hashtable*, hashtable_entry *);
 extern hashtable_entry* hashtable_delete_entry(hashtable *ht, hashtable_entry*);
 
-extern void hashtable_print(hashtable *ht);
+extern void hashtable_stat(hashtable *ht);
 extern hashtable *pdfname_new();
-extern char* pdfname_search(hashtable *ht, char *string);
-extern void pdfname_free(hashtable *ht);
+extern char* pdfname_search(char *string);
+extern void pdfname_free();
 
 
 #endif

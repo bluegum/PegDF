@@ -36,6 +36,7 @@
 #include "pdfmem.h"
 #include "pdfcrypto.h"
 #include "pdfhelper.h"
+#include "pdfname.h"
 #include "pdf.h"
 
 extern const char * pdf_keyword_find (register const char *str, register unsigned int len);
@@ -98,9 +99,18 @@ make_key(pdf_obj *o, char *s)
     }
     else
     {
+        char *namestr = pdfname_search(buf);
+        if (namestr)
+        {
+            o->value.k = namestr;
+        }
+        else
+        {
+            // memory leak happens here
+            o->value.k = pdf_malloc(len + 1);
+            memcpy(o->value.k, buf, len + 1);
+        }
         o->t = eName;
-        o->value.k = pdf_malloc(len + 1);
-        memcpy(o->value.k, buf, len + 1);
     }
     return o;
 }
@@ -1200,6 +1210,8 @@ pdf_open(char *in, pdf_doc **doc)
     parser_inst = parser_new(inf, f_getchar); // large stack size for large array, ouch!
     if (!parser_inst)
         return -1;
+    // setup names hashtable
+    pdfname_new();
     // configure parser
     init_filestream_parser_instance(parser_inst);
 
@@ -1463,6 +1475,7 @@ pdf_finish(pdf_doc *doc)
     }
     if (parser_inst)
         pdf_free(parser_inst);
+    pdfname_free();
 #ifdef DEBUG
     print_mem_tracking();
 #endif

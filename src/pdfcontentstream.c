@@ -12,6 +12,7 @@
 #include "pdfcmds.h"
 #include "dict.h"
 #include "pdfhelper.h"
+#include "pdfname.h"
 
 extern const char * pdf_keyword_find (register const char *str, register unsigned int len);
 
@@ -612,9 +613,18 @@ pdf_lex_obj(buffer_stream *s, pdf_obj *o)
             }
             else
             {
+                char *namestr = pdfname_search(tokenbuf);
+                if (namestr)
+                {
+                    o->value.k = namestr;
+                }
+                else
+                {
+                    // memory leak happens here
+                    o->value.k = pdf_malloc(strlen((char*)tokenbuf)+1);
+                    memcpy(o->value.k, tokenbuf, (strlen((char*)tokenbuf)+1));
+                }
                 o->t = eName;
-                o->value.k = pdf_malloc(strlen((char*)tokenbuf)+1);
-                memcpy(o->value.k, tokenbuf, (strlen((char*)tokenbuf)+1));
             }
             mUNGETCHAR(s);
             break;
@@ -879,9 +889,17 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                 }
                 else
                 {
+                    char *namestr = pdfname_search(buf);
+                    if (namestr)
+                    {
+                        t.value.k = namestr;
+                    }
+                    else
+                    {
+                        t.value.k = pdf_malloc(strlen((char*)buf)+1);
+                        memcpy(t.value.k, buf, (strlen((char*)buf)+1));
+                    }
                     t.t = eName;
-                    t.value.k = pdf_malloc(strlen((char*)buf)+1);
-                    memcpy(t.value.k, buf, (strlen((char*)buf)+1));
                 }
                 PUSH_O(t);
                 mUNGETCHAR(b);

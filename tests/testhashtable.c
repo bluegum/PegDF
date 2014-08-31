@@ -1,4 +1,6 @@
+#include <stdio.h>
 #include "pdfname.h"
+#include "pdfmem.h"
 
 static char* sequentials1[] =
 {
@@ -12,19 +14,66 @@ const static char *sequentials2[] =
 
 int main(int argc, char **argv)
 {
-    hashtable ht = hashtable_new();
+    hashtable *ht = hashtable_new();
+    hashtable_entry e;
     int i;
+    char *filename = NULL;
 
-    for (i = 0; i < sizeof(sequentials1); i++)
+    e.next = 0;
+
+    if (argc > 1)
+        filename = argv[1];
+
+    if (filename)
     {
-        hashtable_search(sequentials1[i]);
+        int bufsize = 1024;
+        char buf[1024];
+        FILE *fd = fopen(filename, "r");
+        if (!fd)
+            return 0;
+
+        while (fgets(buf, bufsize, fd))
+        {
+            e.str = buf;
+            hashtable_search(ht, &e);
+        }
+        hashtable_stat(ht);
+        fclose(fd);
+        return 0;
     }
 
-    for (i = 0; i < sizeof(sequentials2); i++)
+    printf("Inserting the first 512 entries...\n");
+    for (i = 0; i < 512; i++)
     {
-        hashtable_search(sequentials2[i]);
+        e.str = (unsigned char*)sequentials1[i];
+        hashtable_search(ht, &e);
     }
+
+    hashtable_stat(ht);
+
+    printf("Inserting the 256 more entries...\n");
+    for (i = 0; i < 256; i++)
+    {
+        e.str = (unsigned char*)sequentials2[i];
+        hashtable_search(ht, &e);
+    }
+
+    hashtable_stat(ht);
+
+    printf("Deleting the first 512 entries...\n");
+    for (i = 0; i < 512; i++)
+    {
+        hashtable_entry *ent;
+        e.str = (unsigned char*)sequentials1[i];
+        ent = hashtable_delete_entry(ht, &e);
+        if (ent)
+            pdf_free(ent);
+    }
+
+    hashtable_stat(ht);
+
 
     hashtable_free(ht);
+
     return 0;
 }

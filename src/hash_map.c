@@ -927,9 +927,14 @@ hash_map_front(hash_map *h)
         if (itr->h->entries[i])
             break;
     }
-
-    itr->bucket = i;
-    itr->x = &itr->h->entries[i][0];
-
+    if (i == itr->h->n_entries)
+    {
+        itr->x = NULL;
+    }
+    else
+    {
+        itr->bucket = i;
+        itr->x = &itr->h->entries[i][0];
+    }
     return itr;
 }
