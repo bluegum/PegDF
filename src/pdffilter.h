@@ -46,7 +46,7 @@ struct pdf_filter_s
     pdf_err (*close)(pdf_filter*, int flag);
     int (*read)(pdf_filter*, unsigned char *, int);
     int (*write)(pdf_filter*, unsigned char *, int, int *);
-    int (*flush)(pdf_filter*, unsigned char *, int*);
+    pdf_err (*flush)(pdf_filter*, unsigned char *, int*);
     ///
     unsigned char buf[PDF_FILTER_BUF_SIZE]; // holds input buffer for upstream output
     unsigned char *ptr, *end; // end is at one byte beyond input buffer

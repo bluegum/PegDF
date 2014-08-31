@@ -1,6 +1,7 @@
 .PHONY: make_libjpeg_turbo make_libopenjpeg
 
-include/pdf.h : make_libjpeg_turbo make_libopenjpeg
+#include/pdf.h : make_libjpeg_turbo
+#include/pdf.h : make_libopenjpeg
 
 _pwd := $(PWD)
 

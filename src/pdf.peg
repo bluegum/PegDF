@@ -96,11 +96,11 @@ STREAM   <- DELIM NUM  NUM  'obj' DELIM   { push(eObjMarker, 0, NULL); }
 	    / 'stream' (CR/LF) (.) {pop_stream( parser_inst->file_position, -1);}
 	)
 
-REF	 <- NUM NUM 'R' DELIM { int n, g; g = pop().value.i, n = pop().value.i; push_ref(eRef, n, g);}
+REF	 <- NUM NUM 'R' DELIM { pdf_obj t; int n, g; t = pop(); g = t.value.i; t = pop(); n = t.value.i; push_ref(eRef, n, g);}
 XREF	 <- 'xref' DELIM
 	 (
 	 POSITIVE {push(eInt,atoi(yytext), NULL);}
-	 POSITIVE {xref_new(pop().value.i, atoi(yytext));}
+	 POSITIVE {pdf_obj t; t = pop(); xref_new(t.value.i, atoi(yytext));}
 	 DELIM
 	 XREFTAB*  DELIM
 	 )+
@@ -109,10 +109,10 @@ XREFTAB	 <- < [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9] > {push(eInt,at
 	    < [0-9][0-9][0-9][0-9][0-9] > {push(eInt,atoi(yytext), NULL);}
 	    ' '
 	    XREF_ENTRY_FLAG
-	    (SP CR/SP LF/CR LF) {xref_append(pop().value.i, pop().value.i, pop());}
+	    (SP CR/SP LF/CR LF) {pdf_obj t, t1; t = pop(); t1 = pop(); xref_append(t.value.i, t1.value.i, pop());}
 
 TRAILER	        <- 'trailer' DELIM DICT DELIM {read_trailer();}
-STARTXREF      	<- DELIM 'startxref' DELIM NUM DELIM {xref_start(pop().value.i);}
+STARTXREF      	<- DELIM 'startxref' DELIM NUM DELIM {pdf_obj t = pop(); xref_start(t.value.i);}
 
 GARBAGE		<- . !('startxref' / 'xref'/
 		      	NUM NUM 'obj' {pop();}

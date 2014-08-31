@@ -66,6 +66,8 @@ pdf_map_find(int gen)
 	    else
 		  m = m->next;
       }
+
+	  return m;
 }
 
 int
@@ -147,11 +149,13 @@ pdf_obj_delete(pdf_obj *o)
 void
 pdf_obj_free()
 {
-      if (!parser_inst && !parser_inst->map)
-	    return;
-      pdf_map * m = parser_inst->map;//&a_pdf_map;
+	  pdf_map * m = parser_inst->map;//&a_pdf_map;
       pdf_map *i = m;
-      for (; i!=0; i=i->next)
+
+	  if (!parser_inst && !parser_inst->map)
+		  return;
+
+	  for (; i != 0; i = i->next)
       {
             /* delete obj tree nodes */
             bpt_delete_node(i->head, (leaf_action)pdf_obj_delete);

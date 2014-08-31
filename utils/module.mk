@@ -1,23 +1,23 @@
-APP        += $(addprefix $(BIN_DIR)/, readpdf picker pedal readpdfsh)
+LOCAL_APPS := readpdf picker pedal readpdfsh
+APP        += $(addprefix $(OUT_DIR)/, $(LOCAL_APPS))
 d	       := utils
 HEADERS    := include/pdf.h src/pdfdoc.h
-
-$(OBJ_DIR)/%.o: $(d)/%.c
 
 $(DEPS_DIR)/%.d: $(d)/%.c
 	-@rm -f $@
 	$(CC) -MM -MT $(subst .c,.o,$(subst pdfdoc/, $(OBJ_DIR)/, $<)) $(INCLUDE_ALL) $< >> $@
 
-$(BIN_DIR)/readpdf   : $(OBJ_DIR)/readpdf.o  $(TGT_LIB)
-$(BIN_DIR)/picker    : $(OBJ_DIR)/picker.o  $(TGT_LIB)
-$(BIN_DIR)/pedal     : $(OBJ_DIR)/pedal.o  $(TGT_LIB)
+$(OUT_DIR)/readpdf   : $(d)/readpdf.o  $(LIBS)
+$(OUT_DIR)/picker    : $(d)/picker.o  $(LIBS)
+$(OUT_DIR)/pedal     : $(d)/pedal.o  $(LIBS)
 
 # dynamically linked example
-$(BIN_DIR)/readpdfsh : $(OBJ_DIR)/readpdf.o  $(OBJ_DIR)/$(SHAREDOBJ)
-	$(CC) -o $@ -L $(OBJ_DIR) -lm -ldl $^
+$(OUT_DIR)/readpdfsh : $(d)/readpdf.o  $(SO_TARGETS)
+	$(CC) $(LL_ALL) -o $@ -L $(OBJ_DIR) -L $(LIB_DIR) -lm -ldl $^ -l$(LIB_OBJS)
 
-$(OBJ_DIR)/readpdf.o : src/pdfread.h $(HEADERS)
-$(OBJ_DIR)/picker.o  : $(HEADERS)
-$(OBJ_DIR)/pedal.o  : $(HEADERS)
+CLEAN          += $(addprefix $(OUT_DIR)/, $(LOCAL_APPS))
 
-CLEAN          += $(APP) $(CLEAN) $(OBJ_DIR)/readpdf.o
+
+$(OUT_DIR)/% : $(d)/%.o $(LIBS) $(LIB_CRYPTO) | $(OUT_DIR)
+	@echo $(LIBS)
+	$(LINK) $(LIBS)

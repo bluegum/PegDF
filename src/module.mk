@@ -19,20 +19,23 @@ SRCS_$(d)	:= pdfdoc.c pdfpage.c pdfcatalog.c pdffilter.c pdfcontentstream.c pdfc
 		lzw_decomp.c \
 	    pdfobj.c \
 		pdfdevicehtml.c pdfpaint.c gxdraw.c \
-		\
+		md5.c aes.c arc4.c \
+		radix-trie.c \
 		pdfread.c bplustree.c dict.c tst.c tst_compact.c pdfindex.c pdfmem.c substream.c $(KEYWORDS_HASH)
 
 OBJS_$(d)	:= $(addprefix $(OBJ_DIR)/, $(SRCS_$(d):%.c=%.o))
 
 DEPS_$(d)	:= $(addprefix $(DEPS_DIR)/, $(SRCS_$(d):%.c=%.d))
 
--include 	$(DEPS_$(d))
+ifneq ($(MAKECMDGOALS), clean)
+	-include 	$(DEPS_$(d))
+endif
 
 HDRS_$(d)	:= $(wildcard $(d)/*.h)
 
-CLEAN		:= $(CLEAN) $(OBJS_$(d)) $(DEPS_$(d))
+CLEAN		+= $(OBJS_$(d)) $(DEPS_$(d)) $(LOCAL_LIB)
 
-TGT_LIB		:= $(TGT_LIB) $(LOCAL_LIB)
+LIBS		+= $(LOCAL_LIB)
 
 $(LOCAL_LIB) : $(OBJS_$(d)) $(d)/pdf_parse.o
 	@echo $^
@@ -45,7 +48,7 @@ $(GLYPH_NAME_TO_UNI) : $(GLYPH_NAME_TO_UNI_SRC)
 
 src/pdffont.c : $(GLYPH_NAME_TO_UNI)
 
-CLEAN		:= $(CLEAN) $(subst .c,.o,$(GLYPH_NAME_TO_UNI))
+CLEAN		+=  $(subst .c,.o,$(GLYPH_NAME_TO_UNI))
 
 
 ########## peg grammar files and extra rules
@@ -54,7 +57,7 @@ $(d)/pdf_parse.c $(d)/pdf_parse.o:	$(d)/pdf.c
 $(d)/pdf.c  : $(d)/pdf.peg peg/peg
 	peg/peg -v -o $(@) $(<)
 peg/peg    :
-	$(MAKE) -C peg
+	$(MAKE) -C peg peg
 
 $(KEYWORDS_HASH) : $(KEYWORDS_HASH_OUT)
 
@@ -63,3 +66,5 @@ $(KEYWORDS_HASH_OUT) : $(d)/keywords.txt
 
 $(d)/pdfread.c : $(KEYWORDS_HASH)
 
+
+OBJS           += OBJS_$(d)

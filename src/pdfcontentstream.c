@@ -578,7 +578,7 @@ pdf_lex_obj(buffer_stream *s, pdf_obj *o)
             o->t = eString;
             o->value.s.len = strlen((char*)tokenbuf);
             o->value.s.buf = pdf_malloc(o->value.s.len);
-            strncpy(o->value.s.buf, (char*)tokenbuf, o->value.s.len);
+            memcpy(o->value.s.buf, (char*)tokenbuf, o->value.s.len);
             break;
         case '[':
             ON_ERROR(pdf_lex_array(s, o));
@@ -598,7 +598,7 @@ pdf_lex_obj(buffer_stream *s, pdf_obj *o)
                 o->t = eHexString;
                 o->value.s.len = (pdf_lex_hexstring(s, tokenbuf, LEX_BUF_LEN));
                 o->value.s.buf = pdf_malloc(o->value.s.len);
-                strncpy(o->value.s.buf, (char*)tokenbuf, o->value.s.len);
+                memcpy(o->value.s.buf, (char*)tokenbuf, o->value.s.len);
             }
             break;
         case '/':
@@ -653,7 +653,7 @@ pdf_lex_obj(buffer_stream *s, pdf_obj *o)
             {
                 o->t = eId; // should not happen in content-stream context
                 o->value.id = pdf_malloc(strlen(tokenbuf)+1);
-                strcpy(o->value.id, tokenbuf);
+                memcpy(o->value.id, tokenbuf, strlen(tokenbuf)+1);
             }
             goto done;
         }
@@ -845,7 +845,7 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                 t.t = eString;
                 t.value.s.len = strlen((char*)buf);
                 t.value.s.buf = pdf_malloc(t.value.s.len);
-                strncpy(t.value.s.buf, (char*)buf, t.value.s.len);
+                memcpy(t.value.s.buf, (char*)buf, t.value.s.len);
                 PUSH_O(t);
                 break;
             case '<':
@@ -863,7 +863,7 @@ pdf_cs_parse(pdf_page *p, pdfcrypto_priv* encrypt, pdf_stream *s)
                         t.value.s.len = (pdf_lex_hexstring(b, buf, LEX_BUF_LEN));
                         t.value.s.len = strlen((char*)buf);
                         t.value.s.buf = pdf_malloc(o->value.s.len);
-                        strncpy(t.value.s.buf, (char*)buf, o->value.s.len);
+                        memcpy(t.value.s.buf, (char*)buf, o->value.s.len);
                         PUSH_O(t);
                     }
                 }

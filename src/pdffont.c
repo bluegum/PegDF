@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "pdftypes.h"
 #include "pdfindex.h"
 #include "dict.h"
@@ -340,7 +341,7 @@ pdf_font_descriptor_load(pdf_obj *a)
     d->fontname[0] = 0;
     if (obj_is_name(fontname))
     {
-	    strncpy(d->fontname, fontname->value.k, strlen(fontname->value.k)<256?strlen(fontname->value.k):256);
+	    memcpy(d->fontname, fontname->value.k, strlen(fontname->value.k)<FONTNAME_MAX?strlen(fontname->value.k):FONTNAME_MAX);
 	    if (strstr(d->fontname, "Monaco"))
 	    {
             d->fontname_id = eMonaco;

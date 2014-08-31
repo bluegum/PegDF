@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <ctype.h>
 #define _GNU_SOURCE
+#ifdef _WIN32
+/* to expose tree structure */
+#define _SEARCH_PRIVATE
+#endif
 #include <search.h>
 #include "pdftypes.h"
 #include "pdfindex.h"
@@ -25,6 +29,33 @@ enum pdf_cmap_token_type_e
     eNONE
 };
 
+
+typedef struct cmap_range_entry_s cmap_range_entry;
+typedef struct cmap_range_node_s cmap_range_node;
+
+struct cmap_range_entry_s
+{
+    int low, hi;
+};
+
+
+struct cmap_range_node_s
+{
+    int offset;
+    int n;
+
+    union
+    {
+        cmap_range_entry *entry;
+        cmap_range_node  *node;
+    } *childen;
+
+};
+
+
+/*
+ * tokenbuf will be NULL terminated
+ */
 pdf_cmap_token_type
 pdf_cmap_lex(pdf_stream *s, unsigned char *tokenbuf)
 {
@@ -131,6 +162,9 @@ cmap_touni_cmp(const void *pa, const void *pb)
 	    return 0;
 }
 
+/*
+ * For base font cid mapping
+ */
 void
 pdf_cmap_bfchar_parse(pdf_stream *s, int n, pdf_font *f)
 {
@@ -141,20 +175,27 @@ pdf_cmap_bfchar_parse(pdf_stream *s, int n, pdf_font *f)
     {
 	    if (tok == eHEXSTR)
 	    {
-            unsigned int cid = asciihex2int(tokenbuf);
+			unsigned int cid = asciihex2int(tokenbuf);
             if ((tok = pdf_cmap_lex(s, tokenbuf)) == eHEXSTR)
             {
-                void *v;
+#ifdef _MSC_VER
+				int gid;
+
+				gid = asciihex2int(tokenbuf);
+				f->tounicode = radix_trie_insert(f->tounicode, cid, 32, (void*)gid);
+#else
+				void *v;
                 pdf_tounicode *touni = (pdf_tounicode*) pdf_malloc(sizeof(pdf_tounicode));
                 if (touni)
                 {
                     touni->cid = cid;
                     touni->n = 1;
                     touni->hex = pdf_malloc(strlen(tokenbuf)+1); // plus one to terminate string
-                    strcpy(touni->hex, tokenbuf);
+                    memcpy(touni->hex, tokenbuf, strlen(tokenbuf)+1);
                     v = tsearch(touni, &f->tounicode, cmap_touni_cmp);
                 }
-            }
+#endif
+			}
 	    }
 	    else if (tok == eKEYWORD &&
                  strcmp(tokenbuf, "endbfchar") == 0)
@@ -162,12 +203,14 @@ pdf_cmap_bfchar_parse(pdf_stream *s, int n, pdf_font *f)
     }
 }
 
+/*
+ * For base font cid mapping
+ */
 void
 pdf_cmap_bfrange_parse(pdf_stream *s, int n, pdf_font *f)
 {
     char tokenbuf[1024];
     pdf_cmap_token_type tok;
-    void *v;
 
     while ((tok = pdf_cmap_lex(s, tokenbuf)) != eNONE)
     {
@@ -181,31 +224,55 @@ pdf_cmap_bfrange_parse(pdf_stream *s, int n, pdf_font *f)
                 tok = pdf_cmap_lex(s, tokenbuf);
                 if (tok == eHEXSTR)
                 {
-                    pdf_tounicode *touni = (pdf_tounicode*) pdf_malloc(sizeof(pdf_tounicode));
+#ifdef _MSC_VER
+					int range = to_cid - from_cid + 1;
+					int i;
+					int	key;
+
+					key = asciihex2int(tokenbuf);
+
+					for (i = 0; i < range; i++)
+					{
+						f->tounicode = radix_trie_insert(f->tounicode, from_cid + i, 32, (void*)(key + i));
+					}
+#else
+					void *v;
+					pdf_tounicode *touni = (pdf_tounicode*)pdf_malloc(sizeof(pdf_tounicode));
                     if (touni)
                     {
                         touni->cid = from_cid;
                         touni->n = to_cid - from_cid + 1;
-                        touni->hex = pdf_malloc(strlen(tokenbuf));
-                        strncpy(touni->hex, tokenbuf, strlen(tokenbuf));
+                        touni->hex = pdf_malloc(strlen(tokenbuf)+1);
+                        memcpy(touni->hex, tokenbuf, strlen(tokenbuf)+1);
                         v = tsearch(touni, &f->tounicode, cmap_touni_cmp);
                     }
+#endif
                 }
                 else if (tok = eARRAY)
                 {
-                    int i, n;
-                    n = to_cid - - from_cid;
+                    unsigned int i, n;
+                    n = to_cid - from_cid;
                     for (i = 0; i < to_cid - from_cid; i++)
                     {
-                        pdf_tounicode *touni = (pdf_tounicode*) pdf_malloc(sizeof(pdf_tounicode));
+#ifdef _MSC_VER
+						int key = asciihex2int(tokenbuf);
+						for (i = 0; i <= n; i++)
+						{
+							f->tounicode = radix_trie_insert(f->tounicode, from_cid + i, 32, (void*)(key + i));
+						}
+
+#else
+						void *v;
+						pdf_tounicode *touni = (pdf_tounicode*)pdf_malloc(sizeof(pdf_tounicode));
                         touni->cid = from_cid;
                         touni->n = to_cid - from_cid;
                         if ((tok = pdf_cmap_lex(s, tokenbuf)) == eHEXSTR)
                         {
-                            touni->hex = pdf_malloc(strlen(tokenbuf));
-                            strcpy(touni->hex, tokenbuf);
+                            touni->hex = pdf_malloc(strlen(tokenbuf)+1);
+                            memcpy(touni->hex, tokenbuf, strlen(tokenbuf)+1);
                             v = tsearch(touni, &f->tounicode, cmap_touni_cmp);
                         }
+#endif
                     }
                 }
             }
@@ -215,6 +282,7 @@ pdf_cmap_bfrange_parse(pdf_stream *s, int n, pdf_font *f)
             break;
     }
 }
+
 static void
 cmap_skip_dict(pdf_stream *s)
 {
@@ -288,7 +356,17 @@ unicode_get_cmap(pdf_font *f, unsigned int c, unsigned char *uni)
 	    return 1;
     }
     u.cid = c;
-    val = tfind(&u, &f->tounicode, cmap_touni_cmp);
+#ifdef _MSC_VER
+	if (radix_trie_find(f->tounicode, c, 32, &val))
+	{
+		return (int)val;
+	}
+	else
+	{
+		return 0;
+	}
+#else
+	val = tfind(&u, &f->tounicode, cmap_touni_cmp);
     if (val)
     {
 	    int i;
@@ -319,6 +397,7 @@ unicode_get_cmap(pdf_font *f, unsigned int c, unsigned char *uni)
     {
 	    return 0;
     }
+#endif
 }
 
 static void
@@ -330,12 +409,51 @@ tounicode_free(void *v)
     pdf_free(a);
 }
 
+#if defined(_WIN32)
+#if !defined (_MSC_VER)
+typedef struct __node_s
+{
+	struct __node_s *llink, *rlink;
+	void *key;
+
+} node_t;
+#endif
+
+#ifndef _MSC_VER
+/* Because minGW is strictly POSIX */
+static void
+tdestroy_recurse(node_t* root, void (*free_node)(void *))
+{
+  if (root->llink != NULL)
+    tdestroy_recurse(root->llink, free_node);
+  if (root->rlink != NULL)
+    tdestroy_recurse(root->rlink, free_node);
+
+  (*free_node)((void *)root->key);
+  /* Free the node */
+  free(root);
+}
+
 void
-pdf_tounicode_free(pdf_tounicode *u)
+tdestroy(void *root, void(*free_node)(void *nodep))
+{
+
+  if (root)
+    tdestroy_recurse(root, free_node);
+}
+#endif
+#endif
+
+void
+pdf_tounicode_free(void *u)
 {
     if (u)
     {
-	    tdestroy(u, tounicode_free);
+#ifdef _MSC_VER
+		radix_trie_delete_all((nod*)u);
+#else
+		tdestroy(u, tounicode_free);
+#endif
     }
 }
 
@@ -344,6 +462,7 @@ typedef enum
     no,
     yes
 } Bool;
+
 #define kNumUTF8Sequences        7
 #define kMaxUTF8Bytes            4
 

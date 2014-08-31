@@ -25,7 +25,7 @@ pdf_filter_base_write(pdf_filter *f, unsigned char *obuf, int request)
 }
 
 static pdf_err
-pdf_filter_base_flush(pdf_filter *f, char *buf, int *len)
+pdf_filter_base_flush(pdf_filter *f, unsigned char *buf, int *len)
 {
     *len = 0;
     return pdf_ok;
@@ -242,7 +242,7 @@ pdf_deflate_close(pdf_filter *f, int flag)
 }
 
 pdf_err
-pdf_deflate_flush(pdf_filter *f, char *buf, int *len)
+pdf_deflate_flush(pdf_filter *f, unsigned char *buf, int *len)
 {
     int ret = Z_OK;
     z_stream *z = (z_stream*) f->state;
@@ -619,7 +619,6 @@ pdf_a85d_new(pdf_filter **f)
 static pdf_err
 pdf_lzw_d_close(pdf_filter *f, int flags)
 {
-    int ret;
     if (!f)
         return pdf_ok;
     if (f->state)
@@ -939,7 +938,7 @@ pdf_filter_aes_read(pdf_filter *f, unsigned char *obuf, int request)
     int tmplen = 0, l;
     int max_request = PDF_FILTER_BUF_SIZE - 16; // seems buffer overflows(16 byte) from vpaes_cbc_encrypt
 
-    int e, req = request;
+    int req = request;
     struct aes_state_s *s;
 
     if (!f)
@@ -1064,7 +1063,6 @@ pdf_filter *
 pdf_cryptofilter_new(pdfcrypto_priv *crypto, int num, int gen, unsigned char *iv)
 {
     unsigned int n;
-    unsigned char key[256];
     unsigned char final_key[256];
     pdf_filter *f = (pdf_filter *)pdf_malloc(sizeof(pdf_filter));
 

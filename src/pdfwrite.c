@@ -18,6 +18,13 @@
 #include "pdfhelper.h"
 #include "pdfstream.h"
 
+
+#ifndef S_IFDIR
+#ifdef _S_IFDIR
+#define S_IFDIR _S_IFDIR
+#endif
+#endif
+
 #define MARK_BLACK -1
 #define MARK_GRAY  -2
 // We borrow the term "Mark&Sweep" as 2 stages
@@ -1305,7 +1312,7 @@ pdf_page_obj_write(pdf_page *page, int pgidx, pdf_xref_internal *x, pdfcrypto_pr
     int content_ref_arr[1024];
     pdf_obj *tmp, *mediabox;
     dict *d;
-    pdf_obj *contents;
+    pdf_obj *contents = 0;
 
     if (!page)
         return;
@@ -1383,7 +1390,7 @@ pdf_page_obj_write(pdf_page *page, int pgidx, pdf_xref_internal *x, pdfcrypto_pr
     {
         pdf_dict_insert_ref(d, "Contents", content_ref_orig, 0);
     }
-    else
+	else if (contents)
     {
 	    int i;
         pdf_obj *cont = pdf_array_build(content_num);
@@ -1599,40 +1606,81 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, pdf_writer_options *optio
     }
     if (options->flags & WRITE_PDF_PAGE_SEPARATION)
     {
-	    char base[128];
+	    char base[1024];
 	    char *b, *b1;
 	    // make output directory
-#ifdef __unix__
+#if defined(_MSC_VER)
+        {
+            char drive[2];
+            char dir[1024];
+            char fname[1024];
+            char ext[1024];
+
+            _splitpath_s(ofile,
+                         drive, 2,
+                         dir, 1024,
+                         fname, 1024,
+                         ext, 1024);
+            if (dir)
+            {
+                if (strlen(dir)<1024)
+                {
+                    memcpy(base, dir, strlen(dir)+1);
+                }
+                else
+                {
+                    memcpy(base, dir, 1023);
+                    base[1024] = 0;
+                }
+            }
+        }
+#else
+        // use current dir as base
 	    b1 = basename(ofile);
-#endif
 	    b = strchr(b1, '.');
 	    if (b || b1)
 	    {
+            // strip extension
             if (b)
             {
                 memcpy(base, b1, b-b1);
                 base[b-b1] = 0;
             }
             else
-                strcpy(base, b1);
+            {
+                if (strlen(b1) < 1024)
+                {
+                    memcpy(base, b1, strlen(b1)+1);
+                }
+                else
+                {
+                    memcpy(base, b1, 1023);
+                    base[1024] = 0;
+                }
+            }
 	    }
 	    else
 	    {
             memcpy(base, infile, strlen(infile));
             base[strlen(infile)] = 0;
 	    }
+#endif
 	    odir = base;
 	    if ((err = stat(odir, &s)) == 0)
 	    {
-            if ((!(S_ISDIR(s.st_mode))) && (S_ISREG(s.st_mode)))
+            if ((!((s.st_mode & S_IFDIR))) && ((s.st_mode & S_IFREG)))
             {
                 e = pdf_file_err;
                 goto done;
             }
 	    }
-	    if (err || (!S_ISDIR(s.st_mode)))
+	    if (err || (!(s.st_mode & S_IFDIR)))
 	    {
+#ifdef _WIN32
+            err = _mkdir(odir);
+#else
             err = mkdir(odir, S_IRWXU | S_IRWXG);
+#endif
             if (err != 0)
             {
                 e = pdf_file_err;
@@ -1640,7 +1688,7 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, pdf_writer_options *optio
             }
 
 	    }
-	    else if (err == 0 && (!S_ISDIR(s.st_mode)))
+	    else if (err == 0 && (!(s.st_mode & S_IFDIR)))
 	    {
             e = pdf_file_err;
             goto done;
@@ -1660,6 +1708,8 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, pdf_writer_options *optio
                 {
 #ifdef __unix__
                     b = basename(infile);
+#else
+					b = strrchr(infile, '/');
 #endif
                     b1 = strchr(b, '.');
                     if (b1)
@@ -1679,7 +1729,9 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, pdf_writer_options *optio
             }
         }
 	    if (crypto)
+        {
             pdf_crypto_destroy(crypto);
+        }
     }
     else
     {

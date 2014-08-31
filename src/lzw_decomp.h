@@ -1,6 +1,11 @@
 #ifndef LZW_DECOMP_H
 #define LZW_DECOMP_H
 
+#ifdef _MSC_VER
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
+
 typedef void * (*lzw_decomp_malloc)(size_t);
 typedef void (*lzw_decomp_free)(void *);
 typedef ssize_t (*lzw_decomp_src_read)(int up, void *buf, size_t count);

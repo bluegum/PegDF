@@ -6,6 +6,16 @@ extern "C" {
 
 #include "pdftypes.h"
 
+#ifdef MSVC_EXPORTS
+#define DllExport   __declspec( dllexport )
+#else
+#define DllExport
+#endif
+
+#ifdef _DEBUG
+#define DEBUG
+#endif
+
 typedef enum pdfcrypto_algorithm_e pdfcrypto_algorithm;
 
 #define WRITE_PDF_LINEARIZED           0x01
@@ -33,17 +43,17 @@ typedef struct pdf_doc_s pdf_doc;
 typedef struct pdf_writer_options_s pdf_writer_options;
 typedef enum   pdf_compression_e pdf_compression;
 
-extern pdfcrypto* pdf_crypto_load(pdf_doc *doc, char *pw);
-extern int pdf_doc_page_count(pdf_doc *doc);
-extern int pdf_doc_need_passwd(pdf_doc *doc);
-extern pdf_err pdf_open(char *in,  pdf_doc **doc);
-extern void pdf_doc_done(pdf_doc *d);
-extern void pdf_crypto_destroy(pdfcrypto *crypto);
-extern pdf_err pdf_finish(pdf_doc *doc);
-extern pdf_err pdf_write_pdf(pdf_doc *doc, char *infile, char *ofile, pdf_writer_options *options);
-extern pdf_err pdf_page_save(pdf_doc *doc, int i/* pg# */, pdfcrypto *crypto, char *outf, pdf_writer_options*);
-extern int pdf_doc_authenticate_user_password(pdf_doc *doc, char *pw);
-extern pdf_err pdf_doc_process_all(pdf_doc *doc, char *dev, FILE *outf, char *pw);
+extern DllExport pdfcrypto* pdf_crypto_load(pdf_doc *doc, char *pw);
+extern DllExport int pdf_doc_page_count(pdf_doc *doc);
+extern DllExport int pdf_doc_need_passwd(pdf_doc *doc);
+extern DllExport pdf_err pdf_open(char *in, pdf_doc **doc);
+extern DllExport void pdf_doc_done(pdf_doc *d);
+extern DllExport void pdf_crypto_destroy(pdfcrypto *crypto);
+extern DllExport pdf_err pdf_finish(pdf_doc *doc);
+extern DllExport pdf_err pdf_write_pdf(pdf_doc *doc, char *infile, char *ofile, pdf_writer_options *options);
+extern DllExport pdf_err pdf_page_save(pdf_doc *doc, int i/* pg# */, pdfcrypto *crypto, char *outf, pdf_writer_options*);
+extern DllExport int pdf_doc_authenticate_user_password(pdf_doc *doc, char *pw);
+extern DllExport pdf_err pdf_doc_process_all(pdf_doc *doc, char *dev, FILE *outf, char *pw);
 
 enum pdfcrypto_algorithm_e
 {

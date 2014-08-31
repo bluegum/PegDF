@@ -25,6 +25,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "pdftypes.h"
+#include "pdf.h"
 #include "pdfread.h"
 #include "pdfindex.h"
 #include "dict.h"
@@ -60,10 +61,12 @@ make_key(pdf_obj *o, char *s)
     char buf[1024];
     int len;
 
-    if (strchr(s, '#')) {
+    if (strchr(s, '#'))
+    {
         char *p = s;
         char *d = buf;
-        while (*p) {
+        while (*p)
+        {
             if (*p == '#' && isxdigit(p[1]) && isxdigit(p[2])) {
                 *d++ = asciihex2byte(p+1);
                 p += 3;
@@ -75,9 +78,18 @@ make_key(pdf_obj *o, char *s)
         *d = 0;
         len = d - buf;
     }
-    else {
-        strcpy(buf, s);
-        len = strlen(buf);
+    else
+    {
+        if (strlen(s) < 1024)
+        {
+            memcpy(buf, s, strlen(s)+1);
+            len = strlen(s);
+        }
+        else
+        {
+            fprintf(stderr, "Keyword %s is too long, abort!\n", s);
+            return 0;
+        }
     }
 
     if (k = pdf_keyword_find(buf, len))
@@ -100,13 +112,13 @@ int push(e_pdf_kind t, double n, char *s)
     switch (t)
     {
         case eInt:
-            parser_inst->stack[parser_inst->stackp].value.i = n;
+            parser_inst->stack[parser_inst->stackp].value.i = (int)n;
             break;
         case eReal:
             parser_inst->stack[parser_inst->stackp].value.f = n;
             break;
         case eBool:
-            parser_inst->stack[parser_inst->stackp].value.i = n;
+            parser_inst->stack[parser_inst->stackp].value.i = (int)n;
             break;
         case eKey:
             make_key(&parser_inst->stack[parser_inst->stackp], s);
@@ -429,9 +441,10 @@ int xref_append(int off, int gen, pdf_obj o)
 
 int xref_delete()
 {
+	xreftab *x = parser_inst->xref;
+
     if (!parser_inst || !parser_inst->xref)
-	    return;
-    xreftab *x = parser_inst->xref;
+	    return !0;
     while (x)
     {
         xreftab *t = x->next;
@@ -1402,8 +1415,11 @@ pdf_open(char *in, pdf_doc **doc)
                 pdf_crypto_destroy(crypto);
         }
         *doc = pdf_doc_load(doctrailer);
-        if (!*doc && doctrailer)
-            pdf_trailer_free();
+		if (!*doc && doctrailer)
+		{
+			err = pdf_doc_err;
+			pdf_trailer_free();
+		}
     }
     else
     {
@@ -1415,7 +1431,7 @@ pdf_open(char *in, pdf_doc **doc)
 	    parser_free();
     if (objstms)
         objstream_mark_free(objstms);
-    return pdf_ok;
+    return err;
 }
 
 pdf_err

@@ -253,7 +253,7 @@ dict_entry_copy(char *k, void *v, void *a)
     else
     {
         p = pdf_malloc(strlen(e->k)+1);
-        strcpy(p, e->k);
+        memcpy(p, e->k, strlen(e->k)+1);
     }
 
     dict_insert((dict*)a, p, val);

@@ -1,6 +1,10 @@
 #ifndef PDFCMAP_H
 #define PDFCMAP_H
+
 #include "pdftypes.h"
+#if defined (_MSC_VER)
+#include "radix-trie.h"
+#endif
 
 typedef struct pdf_cidsysteminfo_s pdf_cidsysteminfo;
 typedef struct pdf_cmap_s pdf_cmap;
@@ -28,6 +32,6 @@ struct pdf_tounicode_s
       char *hex;
 };
 
-extern void pdf_tounicode_free(pdf_tounicode *u);
+extern void pdf_tounicode_free(void *u);
 
 #endif // PDFCMAP_H
