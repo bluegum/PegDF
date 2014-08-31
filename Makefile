@@ -1,8 +1,8 @@
 # Environment
 DEBUG ?= 0
 SYSTEM := $(shell uname -s)
-
-
+# Makefile variables
+VPATH          :=
 #
 LIB_TGT         =
 OBJ_DIR        := obj
@@ -12,7 +12,7 @@ LIB_DIR         = /usr/lib
 DEPS_DIR        = deps
 LIB_OBJS       := pegdf
 OBJS           :=
-
+TEST_TGTS      :=
 ### Build flags for all targets
 #
 PKGS_DIR       := pkgs
@@ -79,39 +79,49 @@ CLEAN          += $(LIB_TGT)
 #######
 
 
+# General directory independent rules
 
+%.o:            %.c  | $(OBJ_DIR)
+	$(COMP)
+
+%:              %.o
+	$(LINK)
+
+%:              %.c
+	$(COMPLINK)
+
+%.a:    %.o
+	$(AR) r $% $*.o
+
+VPATH           := $(VPATH) tests utils src
+
+$(OBJ_DIR)/%.o:   %.c  | $(OBJ_DIR)
+	$(COMP)
+
+$(OUT_DIR)/% : %.o $(LIBS) | $(OUT_DIR)
+	@echo $(LIBS)
+	$(LINK) $(LIBS)
 
 # Standard stuff
-
 .SUFFIXES:
 .SUFFIXES:      .c .o
 
-#
-
-
-
-
-
+# PHONY Targets
 .PHONY    : all
-
+.PHONY    : realclean clean release
+.PHONY    : install install_strip
 all       :
-
-
-.PHONY    :  realclean clean release
-
 release: all
 release: CF_ALL += -O3
-
-# General rules
-include Rules.mk
 
 # Subdirectories, in random order
 
 include         src/module.mk
-include         utils/module.mk
 include         pkgs/module.mk
+include         utils/module.mk
+include         tests/module.mk
 
-all         : $(APP) $(LIB_TGT)
+all         : $(APP) $(LIB_TGT) $(TEST_TGTS)
 
 $(OBJ_DIR)  :
 	mkdir -p $(OBJ_DIR)
@@ -119,8 +129,6 @@ $(DEPS_DIR) :
 	mkdir -p $(DEPS_DIR)
 $(OUT_DIR) :
 	mkdir -p $(OUT_DIR)
-
-
 
 
 $(APP) : $(targets)
@@ -138,7 +146,7 @@ test	:	$(APP)
 
 ## openssl/libcrypto.a
 $(LIB_CRYPTO) :  $(PKGS_DIR)/openssl/include/openssl/evp.h
-	@cd $(PKGS_DIR)/openssl; $(MAKE) clean; ./config shared $(OPENSSL_DEBUG);  $(MAKE) depend; $(MAKE) build_crypto; cd ..;
+	@cd $(PKGS_DIR)/openssl; $(MAKE) clean; ./config shared no-dso $(OPENSSL_DEBUG);  $(MAKE) depend; $(MAKE) build_crypto; cd ..;
 $(PKGS_DIR)/openssl/include/openssl/evp.h :
 	@cd openssl; ./config shared $(OPENSSL_DEBUG); $(MAKE) build_crypto; cd ..;
 
@@ -148,8 +156,6 @@ realclean : clean
 	- @rm $(PKG_CLEAN)
 	$(MAKE) -C peg spotless
 
-
-.PHONY    : install install_strip
 
 $(BIN_DIR)/% : $(OUT_DIR)/%
 	$(INSTALL)
@@ -178,7 +184,7 @@ check-syntax:
 $(LIB_TGT) : $(LIBS) $(LIB_CRYPTO)
 	@echo -n "Making shared object: "
 	@echo $@
-	$(CC) -shared -o $@ $(LL_ALL) -Wl,--whole-archive $(LIBS) -Wl,--no-whole-archive $(LIB_CRYPTO)  $(LIB_ALL) 
+	$(CC) -shared -o $@ $(LL_ALL) -Wl,--whole-archive $(LIBS) -Wl,--no-whole-archive $(LIB_CRYPTO)  $(LIB_ALL) -lm
 
 $(APP)  : $(LIB_TGT)
 
@@ -186,8 +192,8 @@ debug   : 	CF_ALL += -DDEBUG -pg -g
 debug   : 	OPENSSL_DEBUG = -d
 debug   : 	LF_ALL += -pg
 debug   : 	LL_ALL += -pg
-debug   :       $(LIB_TGT) $(APP)
-debug   :       DEBUG = 1
+debug   :   $(LIB_TGT) $(APP) $(TEST_TGTS)
+debug   :   DEBUG = 1
 
 
 

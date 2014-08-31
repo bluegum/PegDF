@@ -62,7 +62,11 @@ dict* dict_new(int n)
     dict * d = pdf_malloc(sizeof(dict));
     if (d)
     {
+#if defined(HASHMAP)
+        d->dict = hash_map_new(n);
+#else
         d->dict = NULL;
+#endif
 	    d->n = 0;
 	    d->stream = 0;
     }
@@ -83,6 +87,9 @@ dict* dict_insert(dict* d, char *key, void *val)
 	    {
             d->dict = tstc_insert(NULL, key, ent);
 	    }
+#elif defined (HASHMAP)
+        d->dict = hash_map_insert(d->dict, key, strlen(key), val);
+
 #else
         if (d->dict)
         {
@@ -95,7 +102,7 @@ dict* dict_insert(dict* d, char *key, void *val)
 #endif
 	    d->n += 1;
     }
-    return NULL;
+    return d;
 }
 
 void*
@@ -109,6 +116,8 @@ dict_get(dict* d, char *key)
 	    return e->v;
     }
     return e;
+#elif defined (HASHMAP)
+    return hash_map_find(d->dict, key, strlen(key));
 #else
     return (void*) tst_search(d->dict, key);
 #endif
@@ -117,12 +126,10 @@ dict_get(dict* d, char *key)
 static void
 dict_free_val(char *key, void *val, void *x)
 {
-    pdf_obj *o = (pdf_obj*)val;
-    extern void pdf_obj_delete(void *o);
+    extern void pdf_obj_delete(void *);
     pdf_obj_delete(val);
     if (val)
         pdf_free(val);
-    //printf("dict_free_val on entry: %s\n", key);
 }
 
 #ifndef TSTC
@@ -224,6 +231,11 @@ dict_print_keyval(char *key, void *val, void *x)
 }
 #endif
 
+
+// shallow copying except when entry is a dictionary
+//
+// parameter: k: key, v: value, a: dictionary
+//
 static void
 dict_entry_copy(char *k, void *v, void *a)
 {
@@ -232,8 +244,12 @@ dict_entry_copy(char *k, void *v, void *a)
     char *p;
 
     val = pdf_malloc(sizeof(pdf_obj));
+#ifdef HASHMAP
+    *val = *(pdf_obj*)v;
+#else
     *val = *(pdf_obj*)(e->v);
-    switch (((pdf_obj*)(e->v))->t)
+#endif
+    switch (val->t)
     {
         case eDict:
             val->value.d.dict = dict_copy(((pdf_obj*)(e->v))->value.d.dict);
@@ -246,6 +262,23 @@ dict_entry_copy(char *k, void *v, void *a)
         default:
             break;
     }
+#ifdef HASHMAP
+    if (pdf_keyword_find(k, strlen(k)))
+    {
+        p = k;
+    }
+    else
+    {
+        p = pdfname_search(k);
+
+        if (!p)
+        {
+            // memory leak
+            p = pdf_malloc(strlen(k)+1);
+            memcpy(p, k, strlen(k)+1);
+        }
+    }
+#else
     if (pdf_keyword_find(e->k, strlen(e->k)))
     {
         p = e->k;
@@ -255,23 +288,36 @@ dict_entry_copy(char *k, void *v, void *a)
         p = pdf_malloc(strlen(e->k)+1);
         memcpy(p, e->k, strlen(e->k)+1);
     }
-
+#endif
     dict_insert((dict*)a, p, val);
 }
 
 dict* dict_copy(dict *d)
 {
-#ifdef TSTC
     dict *out;
     if (!d)
         return 0;
     out = dict_new(d->n);
+#if defined (HASHMAP)
+    hash_map_entry *e;
+    hash_map_iterator *i = hash_map_front(d->dict);
+
+    while (!hash_map_iterator_at_end(i))
+    {
+        e = hash_map_iterator_get(i);
+        dict_entry_copy(e->k, e->v, out);
+        hash_map_iterator_next(i);
+    }
+    hash_map_iterator_free(i);
+    return out;
+#elif defined(TSTC)
     tstc_call(d->dict, 0, dict_entry_copy, out);
     return out;
 #else
     return 0;
 #endif
 }
+
 void  dict_free(dict* d)
 {
     if (d)
@@ -281,6 +327,20 @@ void  dict_free(dict* d)
 #ifdef TSTC
             tstc_call(d->dict, 0, dict_entry_free, 0);
             tstc_free(d->dict);
+#elif defined (HASHMAP)
+            extern void pdf_obj_delete(void *);
+            hash_map_entry *e;
+            hash_map_iterator *i = hash_map_front(d->dict);
+
+            while (!hash_map_iterator_at_end(i))
+            {
+                e = hash_map_iterator_get(i);
+                pdf_obj_delete(e->v);
+                pdf_free(e->v);
+                hash_map_iterator_next(i);
+            }
+            hash_map_iterator_free(i);
+            hash_map_free(d->dict);
 #else
             tst_print_reset(1);
             tst_traverse(d->dict, dict_free_val, NULL);
@@ -306,6 +366,7 @@ void dict_dump(dict* d)
         {
 #ifdef TSTC
             tstc_print(d->dict);
+#elif defined (HASHMAP)
 #else
             tst_print_reset(1);
             tst_traverse(d->dict, dict_print_keyval, NULL);
@@ -328,7 +389,9 @@ dict_list_append(char *key, void *v, void *list)
 	    l = l->last;
     l->key = pdf_malloc(strlen(key)+1);
     memcpy(l->key, key, strlen(key)+1);
-#ifdef TSTC
+#if defined(HASHMAP)
+    l->val = *((pdf_obj*)v);
+#elif defined(TSTC)
     l->val = *(pdf_obj*)((dict_entry*)v)->v;
 #else
     l->val = *((pdf_obj*)v);
@@ -355,6 +418,19 @@ dict_to_list(dict *d)
 #ifdef TSTC
 	    char buf[1024];
 	    tstc_call(d->dict, buf, dict_list_append, l);
+#elif defined (HASHMAP)
+        hash_map_iterator *i = hash_map_front(d->dict);
+        hash_map_entry *e;
+
+        while (!hash_map_iterator_at_end(i))
+        {
+            e = hash_map_iterator_get(i);
+
+            dict_list_append((char*)e->k, e->v, l);
+
+            hash_map_iterator_next(i);
+        }
+        hash_map_iterator_free(i);
 #else
 	    tst_print_reset(1);
 	    tst_traverse(d->dict, (tst_hook)dict_list_append, l);
@@ -393,6 +469,8 @@ dict_array_append(char *key, void *v, dict_array* a)
     a->cur += 1;
 }
 #endif
+
+
 // returned object belongs to caller.
 dict_array*
 dict_to_array(dict *d)
@@ -406,8 +484,11 @@ dict_to_array(dict *d)
 	    return NULL;
     if (d && d->dict)
     {
-#ifdef TSTC
+#if defined (HASHMAP)
+        fprintf(stderr, "%s is not implemented", __FUNCTION__);
+#elif defined (TSTC)
 	    tstc_call(d->dict, 0, (tstc_f)dict_tstc_array_append, (void*)a);
+
 #else
 	    tst_print_reset(1);
 	    tst_traverse(d->dict, (tst_hook)dict_array_append, a);
@@ -432,7 +513,7 @@ pdf_dict_insert_int(dict *d, char *k, int v)
     pdf_obj key = pdf_key_to_obj(k);
 
     val = pdf_int_to_obj(v);
-    dict_insert(d, key.value.k, (void*)val);
+    dict_insert(d, (char*)key.value.k, (void*)val);
 }
 
 void
@@ -441,7 +522,7 @@ pdf_dict_insert_ref(dict *d, char *k, int n, int g)
     pdf_obj *val;
     pdf_obj key = pdf_key_to_obj(k);
     val = pdf_ref_to_obj_new(n, g);
-    dict_insert(d, key.value.k, (void*)val);
+    dict_insert(d, (char*)key.value.k, (void*)val);
 }
 
 void
@@ -453,7 +534,7 @@ pdf_dict_insert_name(dict *d, char *k, char *n)
     val = pdf_malloc(sizeof(pdf_obj));
     val->t = eKey;
     *val = pdf_key_to_obj(n);
-    dict_insert(d, key.value.k, (void*)val);
+    dict_insert(d, (char*)key.value.k, (void*)val);
 }
 
 void
@@ -463,7 +544,7 @@ pdf_dict_insert_string(dict *d, char *k, char *s, int n)
     pdf_obj key = pdf_key_to_obj(k);
 
     val = pdf_string_new(s, n);
-    dict_insert(d, key.value.k, (void*)val);
+    dict_insert(d, (char*)key.value.k, (void*)val);
 }
 
 void
@@ -474,7 +555,7 @@ pdf_dict_insert_hstring(dict *d, char *k, char *s, int n)
 
     val = pdf_string_new(s, n);
     val->t = eHexString;
-    dict_insert(d, key.value.k, (void*)val);
+    dict_insert(d, (char*)key.value.k, (void*)val);
 }
 
 
@@ -483,7 +564,7 @@ pdf_dict_insert_obj(dict *d, char *k, pdf_obj* o)
 {
     pdf_obj key = pdf_key_to_obj(k);
 
-    dict_insert(d, key.value.k, (void*)pdf_obj_full_copy(o));
+    dict_insert(d, (char*)key.value.k, (void*)pdf_obj_full_copy(o));
 }
 
 
@@ -494,6 +575,7 @@ dict_each(dict *d, void (*call()), void *a)
     {
 #ifdef TSTC
 	    tstc_call(d->dict, 0, call, a);
+#elif defined (HASHMAP)
 #else
 	    tst_traverse(d->dict, call, a);
 #endif

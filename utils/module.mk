@@ -16,8 +16,3 @@ $(OUT_DIR)/readpdfsh : $(d)/readpdf.o  $(SO_TARGETS)
 	$(CC) $(LL_ALL) -o $@ -L $(OBJ_DIR) -L $(LIB_DIR) -lm -ldl $^ -l$(LIB_OBJS)
 
 CLEAN          += $(addprefix $(OUT_DIR)/, $(LOCAL_APPS))
-
-
-$(OUT_DIR)/% : $(d)/%.o $(LIBS) $(LIB_CRYPTO) | $(OUT_DIR)
-	@echo $(LIBS)
-	$(LINK) $(LIBS)

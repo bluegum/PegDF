@@ -136,8 +136,10 @@ pdf_obj_delete(pdf_obj *o)
                   pdf_free(o->value.s.buf);
                   break;
             case eName:
-                  pdf_free(o->value.k);
-                  break;
+#ifndef HASHMAP
+                pdf_free(o->value.k);
+#endif
+                break;
             case eArray:
                   free_array(o);
                   break;

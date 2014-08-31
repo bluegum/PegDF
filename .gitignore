@@ -1,5 +1,7 @@
 *.[doa]
 *~
+*.so
+*.so.*
 lib
 pdfread/pdf.c
 readpdf
@@ -19,3 +21,4 @@ peg/leg
 peg/peg
 pdfread/keywords_hash.c
 openssl/test
+pkgs/openssl

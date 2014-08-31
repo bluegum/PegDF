@@ -36,6 +36,7 @@
 #include "pdfmem.h"
 #include "pdfcrypto.h"
 #include "pdfhelper.h"
+#include "pdfname.h"
 #include "pdf.h"
 
 extern const char * pdf_keyword_find (register const char *str, register unsigned int len);
@@ -98,9 +99,18 @@ make_key(pdf_obj *o, char *s)
     }
     else
     {
+        char *namestr = pdfname_search(buf);
+        if (namestr)
+        {
+            o->value.k = namestr;
+        }
+        else
+        {
+            // memory leak happens here
+            o->value.k = pdf_malloc(len + 1);
+            memcpy(o->value.k, buf, len + 1);
+        }
         o->t = eName;
-        o->value.k = pdf_malloc(len + 1);
-        memcpy(o->value.k, buf, len + 1);
     }
     return o;
 }
@@ -182,13 +192,23 @@ pdf_obj pop(void)   { return parser_inst->stack[parser_inst->stackp--]; }
 // pop dict entries off stack and assemble a dict obj and push onto stack
 pdf_obj pop_dict(void)
 {
-    int i = 0;
+    int i = 0, j = 0;
     pdf_obj o, *a = NULL;
-    dict* d = dict_new(0);
+    dict* d;
 
     o.t = eDict;
-    o.value.d.dict = d;
     o.value.d.stm_offset = -1; // not a stream (yet)
+
+    // find the number of entries
+    i = parser_inst->stackp;
+    while (parser_inst->stack[i].t != eDictMarker)
+    {
+        j++;
+        i -= 2;
+    }
+    d = dict_new(j);
+    o.value.d.dict = d;
+    i = 0;
     while (parser_inst->stack[parser_inst->stackp--].t != eDictMarker)
     {
         if (i%2)
@@ -198,7 +218,9 @@ pdf_obj pop_dict(void)
             dict_insert(d, parser_inst->stack[parser_inst->stackp+1].value.k, a);
 #else
             dict_insert(d, parser_inst->stack[parser_inst->stackp+1].value.k, a);
+#ifndef HASHMAP
             name_free(&parser_inst->stack[parser_inst->stackp+1]);
+#endif
 #endif
         }
         else
@@ -1188,6 +1210,8 @@ pdf_open(char *in, pdf_doc **doc)
     parser_inst = parser_new(inf, f_getchar); // large stack size for large array, ouch!
     if (!parser_inst)
         return -1;
+    // setup names hashtable
+    pdfname_new();
     // configure parser
     init_filestream_parser_instance(parser_inst);
 
@@ -1451,6 +1475,7 @@ pdf_finish(pdf_doc *doc)
     }
     if (parser_inst)
         pdf_free(parser_inst);
+    pdfname_free();
 #ifdef DEBUG
     print_mem_tracking();
 #endif
