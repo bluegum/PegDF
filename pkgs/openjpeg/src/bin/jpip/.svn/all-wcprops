@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 37
+/svn/!svn/ver/2835/trunk/src/bin/jpip
+END
+opj_dec_server.c
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/2835/trunk/src/bin/jpip/opj_dec_server.c
+END
+opj_jpip_test.c
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/2835/trunk/src/bin/jpip/opj_jpip_test.c
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/2766/trunk/src/bin/jpip/CMakeLists.txt
+END
+README
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svn/!svn/ver/2009/trunk/src/bin/jpip/README
+END
+opj_jpip_transcode.c
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/2835/trunk/src/bin/jpip/opj_jpip_transcode.c
+END
+opj_server.c
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/2835/trunk/src/bin/jpip/opj_server.c
+END
+opj_jpip_addxml.c
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/2835/trunk/src/bin/jpip/opj_jpip_addxml.c
+END

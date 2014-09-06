@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 36
+/svn/!svn/ver/2873/trunk/src/bin/jp2
+END
+index.c
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svn/!svn/ver/2835/trunk/src/bin/jp2/index.c
+END
+windirent.h
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/1987/trunk/src/bin/jp2/windirent.h
+END
+opj_decompress.c
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/2862/trunk/src/bin/jp2/opj_decompress.c
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/2860/trunk/src/bin/jp2/CMakeLists.txt
+END
+index.h
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svn/!svn/ver/2835/trunk/src/bin/jp2/index.h
+END
+opj_dump.c
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/2849/trunk/src/bin/jp2/opj_dump.c
+END
+convert.c
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2873/trunk/src/bin/jp2/convert.c
+END
+opj_compress.c
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/2873/trunk/src/bin/jp2/opj_compress.c
+END
+convert.h
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2835/trunk/src/bin/jp2/convert.h
+END

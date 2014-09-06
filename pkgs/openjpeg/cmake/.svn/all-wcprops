@@ -1,0 +1,95 @@
+K 25
+svn:wc:ra_dav:version-url
+V 30
+/svn/!svn/ver/2815/trunk/cmake
+END
+FindLCMS.cmake
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/1987/trunk/cmake/FindLCMS.cmake
+END
+FindKAKADU.cmake
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/2371/trunk/cmake/FindKAKADU.cmake
+END
+OpenJPEGConfig.cmake.in
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/1987/trunk/cmake/OpenJPEGConfig.cmake.in
+END
+TestLargeFiles.c.cmake.in
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/1987/trunk/cmake/TestLargeFiles.c.cmake.in
+END
+openjpeg_valgrind.supp
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/1987/trunk/cmake/openjpeg_valgrind.supp
+END
+EnsureFileInclude.cmake
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/2304/trunk/cmake/EnsureFileInclude.cmake
+END
+FindFCGI.cmake
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/1987/trunk/cmake/FindFCGI.cmake
+END
+OpenJPEGCPack.cmake
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/2021/trunk/cmake/OpenJPEGCPack.cmake
+END
+TestWindowsFSeek.c
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/1987/trunk/cmake/TestWindowsFSeek.c
+END
+TestFileOffsetBits.c
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/2815/trunk/cmake/TestFileOffsetBits.c
+END
+TestLargeFiles.cmake
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/2301/trunk/cmake/TestLargeFiles.cmake
+END
+JPIPTestDriver.cmake
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/1987/trunk/cmake/JPIPTestDriver.cmake
+END
+FindCPPCHECK.cmake
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/1987/trunk/cmake/FindCPPCHECK.cmake
+END
+FindLCMS2.cmake
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/1987/trunk/cmake/FindLCMS2.cmake
+END
+CTestCustom.cmake.in
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/2679/trunk/cmake/CTestCustom.cmake.in
+END

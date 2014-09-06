@@ -1,0 +1,353 @@
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/svn/!svn/ver/2746/trunk/thirdparty/libtiff
+END
+tif_lzma.c
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_lzma.c
+END
+tif_ojpeg.c
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_ojpeg.c
+END
+tif_close.c
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_close.c
+END
+tif_luv.c
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_luv.c
+END
+tif_dumpmode.c
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_dumpmode.c
+END
+test_inline.c
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/2746/trunk/thirdparty/libtiff/test_inline.c
+END
+tif_extension.c
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_extension.c
+END
+tif_codec.c
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_codec.c
+END
+tif_flush.c
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_flush.c
+END
+tif_getimage.c
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_getimage.c
+END
+uvcode.h
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/739/trunk/thirdparty/libtiff/uvcode.h
+END
+tif_dirwrite.c
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_dirwrite.c
+END
+tif_error.c
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_error.c
+END
+libtiff.def
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/libtiff.def
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/1575/trunk/thirdparty/libtiff/CMakeLists.txt
+END
+tif_predict.c
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_predict.c
+END
+tif_swab.c
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_swab.c
+END
+tif_tile.c
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_tile.c
+END
+tif_predict.h
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_predict.h
+END
+tif_packbits.c
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_packbits.c
+END
+tif_fax3sm.c
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/739/trunk/thirdparty/libtiff/tif_fax3sm.c
+END
+tif_open.c
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_open.c
+END
+tif_fax3.c
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_fax3.c
+END
+tif_strip.c
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_strip.c
+END
+tiffiop.h
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tiffiop.h
+END
+tiffio.hxx
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tiffio.hxx
+END
+tif_warning.c
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_warning.c
+END
+tiffconf.h.in
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tiffconf.h.in
+END
+tif_fax3.h
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_fax3.h
+END
+tif_thunder.c
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_thunder.c
+END
+tif_dirread.c
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_dirread.c
+END
+tif_jbig.c
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_jbig.c
+END
+tif_read.c
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_read.c
+END
+tif_stream.cxx
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_stream.cxx
+END
+tif_lzw.c
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_lzw.c
+END
+tif_dir.c
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_dir.c
+END
+tif_color.c
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_color.c
+END
+tif_next.c
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_next.c
+END
+tif_config.h.in
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_config.h.in
+END
+tif_dir.h
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_dir.h
+END
+tif_unix.c
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_unix.c
+END
+tiffio.h
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tiffio.h
+END
+tiffconf.h.cmake.in
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tiffconf.h.cmake.in
+END
+tif_version.c
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_version.c
+END
+tif_jpeg.c
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_jpeg.c
+END
+tif_pixarlog.c
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_pixarlog.c
+END
+tif_jpeg_12.c
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_jpeg_12.c
+END
+tif_write.c
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_write.c
+END
+tif_dirinfo.c
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_dirinfo.c
+END
+t4.h
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/t4.h
+END
+tiffvers.h
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tiffvers.h
+END
+tif_compress.c
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_compress.c
+END
+tiff.h
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tiff.h
+END
+tif_print.c
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_print.c
+END
+tif_aux.c
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_aux.c
+END
+tif_config.h.cmake.in
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/!svn/ver/1586/trunk/thirdparty/libtiff/tif_config.h.cmake.in
+END
+tif_zip.c
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_zip.c
+END
+tif_win32.c
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/1553/trunk/thirdparty/libtiff/tif_win32.c
+END

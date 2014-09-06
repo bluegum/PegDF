@@ -6,9 +6,9 @@ VPATH          :=
 #
 LIB_TGT         =
 OBJ_DIR        := obj
-OUT_DIR         = bin
-BIN_DIR         = /usr/local/bin
+BIN_DIR         = bin
 LIB_DIR         = /usr/lib
+INC_DIR         = include
 DEPS_DIR        = deps
 LIB_OBJS       := pegdf
 OBJS           :=
@@ -18,8 +18,8 @@ TEST_TGTS      :=
 PKGS_DIR       := pkgs
 INCLUDE_ALL     = -I . -I include -I src -I $(PKGS_DIR)/openssl/include -I $(PKGS_DIR)/openssl/include/openssl -I $(PKGS_DIR)/openssl -I $(PKGS_DIR)/zlib
 CF_ALL          = -Wall -fPIC -I . $(INCLUDE_ALL)
-LF_ALL          = -lm -L pkgs/openssl -ldl
-LL_ALL          =
+LF_ALL          = -L pkgs/openssl
+LL_ALL          =  -lm -ldl
 OPENSSL_DEBUG   =
 INSTALL         = /usr/bin/install -c
 LIB_ALL         =
@@ -98,9 +98,9 @@ VPATH           := $(VPATH) tests utils src
 $(OBJ_DIR)/%.o:   %.c  | $(OBJ_DIR)
 	$(COMP)
 
-$(OUT_DIR)/% : %.o $(LIBS) | $(OUT_DIR)
+$(BIN_DIR)/% : %.o $(LIBS) | $(BIN_DIR)
 	@echo $(LIBS)
-	$(LINK) $(LIBS)
+	$(LINK) $(LIBS) $(LL_ALL)
 
 # Standard stuff
 .SUFFIXES:
@@ -127,8 +127,8 @@ $(OBJ_DIR)  :
 	mkdir -p $(OBJ_DIR)
 $(DEPS_DIR) :
 	mkdir -p $(DEPS_DIR)
-$(OUT_DIR) :
-	mkdir -p $(OUT_DIR)
+$(BIN_DIR) :
+	mkdir -p $(BIN_DIR)
 
 
 $(APP) : $(targets)
@@ -157,16 +157,16 @@ realclean : clean
 	$(MAKE) -C peg spotless
 
 
-$(BIN_DIR)/% : $(OUT_DIR)/%
+$(BIN_DIR)/% : $(BIN_DIR)/%
 	$(INSTALL)
 
 install :: $(LIB_TGT)
 	$(INSTALL) $^ $(LIB_DIR)
 
-install :: $(addprefix $(OUT_DIR)/, $(notdir $(APP)))
+install :: $(addprefix $(BIN_DIR)/, $(notdir $(APP)))
 	$(INSTALL) $^ $(BIN_DIR)
 
-install_strip   : $(addprefix $(OUT_DIR)/, $(notdir $(APP)))
+install_strip   : $(addprefix $(BIN_DIR)/, $(notdir $(APP)))
 	$(INSTALL) $^ $(BIN_DIR)
 	strip $^
 
@@ -184,7 +184,7 @@ check-syntax:
 $(LIB_TGT) : $(LIBS) $(LIB_CRYPTO)
 	@echo -n "Making shared object: "
 	@echo $@
-	$(CC) -shared -o $@ $(LL_ALL) -Wl,--whole-archive $(LIBS) -Wl,--no-whole-archive $(LIB_CRYPTO)  $(LIB_ALL) -lm
+	$(CC) -shared -o $@ -Wl,--whole-archive $(LIBS) -Wl,--no-whole-archive $(LIB_CRYPTO)  $(LIB_ALL) $(LL_ALL)
 
 $(APP)  : $(LIB_TGT)
 

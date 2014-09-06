@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/739/trunk/thirdparty/liblcms2/include
+END
+lcms2_plugin.h
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/!svn/ver/739/trunk/thirdparty/liblcms2/include/lcms2_plugin.h
+END
+lcms2.h
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/739/trunk/thirdparty/liblcms2/include/lcms2.h
+END

@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svn/!svn/ver/2804/trunk/tests/nonregression
+END
+checkmd5refs.cmake
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/2715/trunk/tests/nonregression/checkmd5refs.cmake
+END
+md5refs.txt
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/2713/trunk/tests/nonregression/md5refs.txt
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/2796/trunk/tests/nonregression/CMakeLists.txt
+END
+test_suite.ctest.in
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/!svn/ver/2804/trunk/tests/nonregression/test_suite.ctest.in
+END

@@ -1,0 +1,9 @@
+K 10
+svn:ignore
+V 81
+JPWL_image_to_j2k.ncb
+Debug
+LibOpenJPEG_JPWL___Win32_Debug
+JPWL_image_to_j2k.plg
+
+END

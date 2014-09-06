@@ -1,0 +1,53 @@
+K 25
+svn:wc:ra_dav:version-url
+V 37
+/svn/!svn/ver/2835/trunk/src/bin/jpwl
+END
+convert.h
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/2835/trunk/src/bin/jpwl/convert.h
+END
+index.c
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/2835/trunk/src/bin/jpwl/index.c
+END
+opj_jpwl_decompress.c
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/2835/trunk/src/bin/jpwl/opj_jpwl_decompress.c
+END
+windirent.h
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/2124/trunk/src/bin/jpwl/windirent.h
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/2315/trunk/src/bin/jpwl/CMakeLists.txt
+END
+index.h
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/2835/trunk/src/bin/jpwl/index.h
+END
+opj_jpwl_compress.c
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/2835/trunk/src/bin/jpwl/opj_jpwl_compress.c
+END
+convert.c
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/2835/trunk/src/bin/jpwl/convert.c
+END

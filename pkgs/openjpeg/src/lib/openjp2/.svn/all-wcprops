@@ -1,0 +1,347 @@
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/svn/!svn/ver/2875/trunk/src/lib/openjp2
+END
+pi.c
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/2837/trunk/src/lib/openjp2/pi.c
+END
+bio.c
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/bio.c
+END
+cio.c
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2847/trunk/src/lib/openjp2/cio.c
+END
+tcd.c
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2837/trunk/src/lib/openjp2/tcd.c
+END
+ppix_manager.c
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/ppix_manager.c
+END
+pi.h
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/pi.h
+END
+bio.h
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/bio.h
+END
+tpix_manager.c
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/tpix_manager.c
+END
+indexbox_manager.h
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/indexbox_manager.h
+END
+cio.h
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2861/trunk/src/lib/openjp2/cio.h
+END
+tcd.h
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/tcd.h
+END
+mqc.c
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/mqc.c
+END
+opj_intmath.h
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/opj_intmath.h
+END
+event.c
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/event.c
+END
+opj_includes.h
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/opj_includes.h
+END
+mct.c
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/mct.c
+END
+t1.c
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/t1.c
+END
+mqc.h
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/mqc.h
+END
+t2.c
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/2837/trunk/src/lib/openjp2/t2.c
+END
+event.h
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/event.h
+END
+mct.h
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/mct.h
+END
+raw.c
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/raw.c
+END
+t1.h
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/t1.h
+END
+t2.h
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/t2.h
+END
+opj_inttypes.h
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/opj_inttypes.h
+END
+tgt.c
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/tgt.c
+END
+raw.h
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/raw.h
+END
+dwt.c
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/dwt.c
+END
+t1_luts.h
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/2175/trunk/src/lib/openjp2/t1_luts.h
+END
+opj_config_private.h.cmake.in
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/!svn/ver/2320/trunk/src/lib/openjp2/opj_config_private.h.cmake.in
+END
+opj_clock.c
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/opj_clock.c
+END
+tgt.h
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/tgt.h
+END
+dwt.h
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/dwt.h
+END
+opj_config.h.cmake.in
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/2863/trunk/src/lib/openjp2/opj_config.h.cmake.in
+END
+openjpeg.c
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/2847/trunk/src/lib/openjp2/openjpeg.c
+END
+invert.c
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/invert.c
+END
+opj_clock.h
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/opj_clock.h
+END
+libopenjp2.pc.cmake.in
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/2404/trunk/src/lib/openjp2/libopenjp2.pc.cmake.in
+END
+openjpeg.h
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/2847/trunk/src/lib/openjp2/openjpeg.h
+END
+invert.h
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/invert.h
+END
+function_list.c
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/function_list.c
+END
+cidx_manager.c
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/cidx_manager.c
+END
+opj_stdint.h
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/opj_stdint.h
+END
+image.c
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/image.c
+END
+opj_malloc.h
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/opj_malloc.h
+END
+function_list.h
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/function_list.h
+END
+j2k.c
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2875/trunk/src/lib/openjp2/j2k.c
+END
+cidx_manager.h
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/cidx_manager.h
+END
+image.h
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/image.h
+END
+opj_codec.h
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/opj_codec.h
+END
+j2k.h
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2837/trunk/src/lib/openjp2/j2k.h
+END
+jp2.c
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/jp2.c
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/2860/trunk/src/lib/openjp2/CMakeLists.txt
+END
+jp2.h
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/jp2.h
+END
+phix_manager.c
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/phix_manager.c
+END
+t1_generate_luts.c
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/t1_generate_luts.c
+END
+thix_manager.c
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/2835/trunk/src/lib/openjp2/thix_manager.c
+END

@@ -1,0 +1,53 @@
+K 25
+svn:wc:ra_dav:version-url
+V 37
+/svn/!svn/ver/2835/trunk/src/bin/jp3d
+END
+convert.h
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/1990/trunk/src/bin/jp3d/convert.h
+END
+getopt.h
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/1990/trunk/src/bin/jp3d/getopt.h
+END
+windirent.h
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/1990/trunk/src/bin/jp3d/windirent.h
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/2077/trunk/src/bin/jp3d/CMakeLists.txt
+END
+opj_jp3d_decompress.c
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/2244/trunk/src/bin/jp3d/opj_jp3d_decompress.c
+END
+convert.c
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/2835/trunk/src/bin/jp3d/convert.c
+END
+getopt.c
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/1990/trunk/src/bin/jp3d/getopt.c
+END
+opj_jp3d_compress.c
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/2245/trunk/src/bin/jp3d/opj_jp3d_compress.c
+END

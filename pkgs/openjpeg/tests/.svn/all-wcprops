@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 30
+/svn/!svn/ver/2847/trunk/tests
+END
+test_tile_encoder.c
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/2847/trunk/tests/test_tile_encoder.c
+END
+compare_images.c
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/2754/trunk/tests/compare_images.c
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/2801/trunk/tests/CMakeLists.txt
+END
+ppm2rgb3.c
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/svn/!svn/ver/2785/trunk/tests/ppm2rgb3.c
+END
+compare_dump_files.c
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/2660/trunk/tests/compare_dump_files.c
+END
+test_tile_decoder.c
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/2847/trunk/tests/test_tile_decoder.c
+END
+compare_raw_files.c
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/2644/trunk/tests/compare_raw_files.c
+END
+j2k_random_tile_access.c
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/2847/trunk/tests/j2k_random_tile_access.c
+END
+pdf2jp2.c
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/svn/!svn/ver/2801/trunk/tests/pdf2jp2.c
+END

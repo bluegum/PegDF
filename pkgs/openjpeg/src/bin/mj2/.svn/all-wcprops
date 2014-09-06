@@ -1,0 +1,89 @@
+K 25
+svn:wc:ra_dav:version-url
+V 36
+/svn/!svn/ver/2835/trunk/src/bin/mj2
+END
+meta_out.c
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/1987/trunk/src/bin/mj2/meta_out.c
+END
+mj2_to_metadata.h
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/1987/trunk/src/bin/mj2/mj2_to_metadata.h
+END
+meta_out.h
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/1987/trunk/src/bin/mj2/meta_out.h
+END
+mj2_to_metadata.dtd
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/1987/trunk/src/bin/mj2/mj2_to_metadata.dtd
+END
+opj_mj2_decompress.c
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/2616/trunk/src/bin/mj2/opj_mj2_decompress.c
+END
+mj2_to_metadata.sln
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/1987/trunk/src/bin/mj2/mj2_to_metadata.sln
+END
+mj2_to_metadata_Notes.doc
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/1987/trunk/src/bin/mj2/mj2_to_metadata_Notes.doc
+END
+opj_mj2_wrap.c
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/2835/trunk/src/bin/mj2/opj_mj2_wrap.c
+END
+mj2_to_metadata.c
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/1987/trunk/src/bin/mj2/mj2_to_metadata.c
+END
+readme.txt
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/1987/trunk/src/bin/mj2/readme.txt
+END
+opj_mj2_extract.c
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/2835/trunk/src/bin/mj2/opj_mj2_extract.c
+END
+opj_mj2_compress.c
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/2616/trunk/src/bin/mj2/opj_mj2_compress.c
+END
+mj2_to_metadata.vcproj
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/1987/trunk/src/bin/mj2/mj2_to_metadata.vcproj
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/2685/trunk/src/bin/mj2/CMakeLists.txt
+END

@@ -1,0 +1,239 @@
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d
+END
+volume.c
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/volume.c
+END
+bio.c
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/bio.c
+END
+t1_3d.c
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/2269/trunk/src/lib/openjp3d/t1_3d.c
+END
+tcd.c
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/tcd.c
+END
+cio.c
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/cio.c
+END
+volume.h
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/volume.h
+END
+libopenjp3d.pc.cmake.in
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/!svn/ver/2348/trunk/src/lib/openjp3d/libopenjp3d.pc.cmake.in
+END
+bio.h
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/bio.h
+END
+cio.h
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/cio.h
+END
+t1_3d.h
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/2269/trunk/src/lib/openjp3d/t1_3d.h
+END
+tcd.h
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/tcd.h
+END
+mqc.c
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/mqc.c
+END
+event.c
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/event.c
+END
+openjp3d.c
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/openjp3d.c
+END
+mct.c
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/mct.c
+END
+mqc.h
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/mqc.h
+END
+event.h
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/event.h
+END
+openjp3d.h
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/openjp3d.h
+END
+mct.h
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/mct.h
+END
+raw.c
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/raw.c
+END
+fix.h
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/fix.h
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/2077/trunk/src/lib/openjp3d/CMakeLists.txt
+END
+dwt.c
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/dwt.c
+END
+raw.h
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/raw.h
+END
+tgt.c
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/tgt.c
+END
+jp3d.c
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/jp3d.c
+END
+dwt.h
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/dwt.h
+END
+tgt.h
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/tgt.h
+END
+jp3d.h
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/jp3d.h
+END
+pi.c
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/pi.c
+END
+pi.h
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/pi.h
+END
+opj_includes.h
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/opj_includes.h
+END
+t1.c
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/t1.c
+END
+t2.c
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/t2.c
+END
+jp3d_lib.c
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/jp3d_lib.c
+END
+t1.h
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/t1.h
+END
+t2.h
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/t2.h
+END
+jp3d_lib.h
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/jp3d_lib.h
+END
+int.h
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/2835/trunk/src/lib/openjp3d/int.h
+END

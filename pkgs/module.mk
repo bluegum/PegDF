@@ -5,26 +5,33 @@
 
 _pwd := $(PWD)
 
-LIBJPEG := $(_pwd)/obj/libturbojpeg.so.0.0.0
+LIBJPEG := $(BIN_DIR)/libturbojpeg.so
 make_libjpeg_turbo: $(LIBJPEG)
 
 $(LIBJPEG) :
 	cd pkgs/libjpeg-turbo;\
-	./configure; make;\
-	make install prefix=$(_pwd) libdir=$(_pwd)/obj/;\
+	./configure --prefix $(BIN_DIR);
+	make install; \
 	cd ../..
 
-LIBOPENJPEG := $(_pwd)/obj/libopenjp2.so.2.0.0
+#	make install prefix=$(INC_DIR) libdir=$(BIN_DIR);
+
+LIBOPENJPEG := $(BIN_DIR)/libopenjp2.so
 
 make_libopenjpeg : $(LIBOPENJPEG)
 
 $(LIBOPENJPEG) :
-	cd pkgs/openjpeg;\
-	cmake -DCMAKE_INSTALL_PREFIX=$(_pwd)/obj/ -DBUILD_THIRDPARTY:BOOL=YES .; \
-	make; make install; \
-	cp $(_pwd)/obj/lib/lib* $(_pwd)/obj/;\
-	cd ../..
+	cd pkgs/openjpeg/build;\
+	cmake -DCMAKE_INSTALL_PREFIX=$(BIN_DIR) -DBUILD_THIRDPARTY:BOOL=YES ..; \
+	DESTDIR=$(BIN_DIR);\
+    make install; \
+	cd ../../..
+
+#	cp $(_pwd)/obj/lib/lib* $(_pwd)/obj/;\
 
 PKG_CLEAN := $(PKGCLEAN) $(LIBJPEG) $(LIBOPENJPEG)
 
 include         pkgs/zlib/module.mk
+
+
+#LIBS      += $(LIBOPENJPEG) $(LIBJPEG)

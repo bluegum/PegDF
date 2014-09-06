@@ -1,0 +1,377 @@
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/svn/!svn/ver/2855/trunk/src/lib/openjpip
+END
+auxtrans_manager.h
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/auxtrans_manager.h
+END
+imgreg_manager.c
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/imgreg_manager.c
+END
+jp2k_encoder.c
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/jp2k_encoder.c
+END
+index_manager.h
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/index_manager.h
+END
+channel_manager.h
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/channel_manager.h
+END
+jpipstream_manager.c
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/jpipstream_manager.c
+END
+imgreg_manager.h
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/imgreg_manager.h
+END
+metadata_manager.c
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/metadata_manager.c
+END
+jp2k_encoder.h
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/jp2k_encoder.h
+END
+placeholder_manager.c
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/placeholder_manager.c
+END
+jpipstream_manager.h
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/jpipstream_manager.h
+END
+jpip_parser.c
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/jpip_parser.c
+END
+cachemodel_manager.c
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/cachemodel_manager.c
+END
+metadata_manager.h
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/metadata_manager.h
+END
+target_manager.c
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/target_manager.c
+END
+placeholder_manager.h
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/placeholder_manager.h
+END
+query_parser.c
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/query_parser.c
+END
+jpip_parser.h
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/jpip_parser.h
+END
+cachemodel_manager.h
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/cachemodel_manager.h
+END
+target_manager.h
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/target_manager.h
+END
+msgqueue_manager.c
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/msgqueue_manager.c
+END
+imgsock_manager.c
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/imgsock_manager.c
+END
+query_parser.h
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/query_parser.h
+END
+ihdrbox_manager.c
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/ihdrbox_manager.c
+END
+sock_manager.c
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/2855/trunk/src/lib/openjpip/sock_manager.c
+END
+msgqueue_manager.h
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/msgqueue_manager.h
+END
+boxheader_manager.c
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/boxheader_manager.c
+END
+imgsock_manager.h
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/imgsock_manager.h
+END
+jp2k_decoder.c
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/2852/trunk/src/lib/openjpip/jp2k_decoder.c
+END
+cache_manager.c
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/cache_manager.c
+END
+byte_manager.c
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/byte_manager.c
+END
+ihdrbox_manager.h
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/ihdrbox_manager.h
+END
+sock_manager.h
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/sock_manager.h
+END
+boxheader_manager.h
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/boxheader_manager.h
+END
+jp2k_decoder.h
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/jp2k_decoder.h
+END
+cache_manager.h
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/cache_manager.h
+END
+byte_manager.h
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/byte_manager.h
+END
+mhixbox_manager.c
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/mhixbox_manager.c
+END
+marker_manager.c
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/marker_manager.c
+END
+mhixbox_manager.h
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/mhixbox_manager.h
+END
+session_manager.c
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/session_manager.c
+END
+libopenjpip.pc.cmake.in
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/!svn/ver/2348/trunk/src/lib/openjpip/libopenjpip.pc.cmake.in
+END
+codestream_manager.c
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/codestream_manager.c
+END
+marker_manager.h
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/marker_manager.h
+END
+session_manager.h
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/session_manager.h
+END
+box_manager.c
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/box_manager.c
+END
+openjpip.c
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/openjpip.c
+END
+manfbox_manager.c
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/manfbox_manager.c
+END
+codestream_manager.h
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/codestream_manager.h
+END
+box_manager.h
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/box_manager.h
+END
+openjpip.h
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/openjpip.h
+END
+j2kheader_manager.c
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/j2kheader_manager.c
+END
+manfbox_manager.h
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/manfbox_manager.h
+END
+faixbox_manager.c
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/faixbox_manager.c
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/2122/trunk/src/lib/openjpip/CMakeLists.txt
+END
+dec_clientmsg_handler.c
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/dec_clientmsg_handler.c
+END
+j2kheader_manager.h
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/j2kheader_manager.h
+END
+auxtrans_manager.c
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/auxtrans_manager.c
+END
+faixbox_manager.h
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/faixbox_manager.h
+END
+index_manager.c
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/index_manager.c
+END
+dec_clientmsg_handler.h
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/dec_clientmsg_handler.h
+END
+channel_manager.c
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/2835/trunk/src/lib/openjpip/channel_manager.c
+END

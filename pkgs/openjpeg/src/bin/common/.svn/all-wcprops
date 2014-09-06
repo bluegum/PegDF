@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 39
+/svn/!svn/ver/2861/trunk/src/bin/common
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/2300/trunk/src/bin/common/CMakeLists.txt
+END
+color.c
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/2835/trunk/src/bin/common/color.c
+END
+format_defs.h
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/2835/trunk/src/bin/common/format_defs.h
+END
+opj_getopt.h
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/1987/trunk/src/bin/common/opj_getopt.h
+END
+color.h
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/2835/trunk/src/bin/common/color.h
+END
+opj_apps_config.h.cmake.in
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/!svn/ver/2861/trunk/src/bin/common/opj_apps_config.h.cmake.in
+END
+opj_getopt.c
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/2835/trunk/src/bin/common/opj_getopt.c
+END

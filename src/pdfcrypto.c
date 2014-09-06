@@ -3,9 +3,9 @@
 #include <assert.h>
 
 #if defined (USE_OPENSSL)
-  #include "evp.h"
+#include "evp.h"
 #else
-  #include "md5.h"
+#include "md5.h"
 #include "arc4.h"
 #include "aes.h"
 #endif

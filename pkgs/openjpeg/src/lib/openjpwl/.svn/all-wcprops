@@ -1,0 +1,65 @@
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/svn/!svn/ver/2835/trunk/src/lib/openjpwl
+END
+jpwl.h
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/2835/trunk/src/lib/openjpwl/jpwl.h
+END
+jpwl_lib.c
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/2835/trunk/src/lib/openjpwl/jpwl_lib.c
+END
+rs.c
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2835/trunk/src/lib/openjpwl/rs.c
+END
+crc.c
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/2835/trunk/src/lib/openjpwl/crc.c
+END
+libopenjpwl.pc.cmake.in
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/!svn/ver/2348/trunk/src/lib/openjpwl/libopenjpwl.pc.cmake.in
+END
+rs.h
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2835/trunk/src/lib/openjpwl/rs.h
+END
+README.txt
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/1987/trunk/src/lib/openjpwl/README.txt
+END
+crc.h
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/2835/trunk/src/lib/openjpwl/crc.h
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/2124/trunk/src/lib/openjpwl/CMakeLists.txt
+END
+jpwl.c
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/2835/trunk/src/lib/openjpwl/jpwl.c
+END

@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 28
+/svn/!svn/ver/2835/trunk/doc
+END
+jpip_architect.png
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/2006/trunk/doc/jpip_architect.png
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/svn/!svn/ver/2175/trunk/doc/CMakeLists.txt
+END
+mainpage.dox.in
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svn/!svn/ver/2835/trunk/doc/mainpage.dox.in
+END
+Doxyfile.dox.cmake.in
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/2259/trunk/doc/Doxyfile.dox.cmake.in
+END
+openjpip.dox.in
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svn/!svn/ver/2835/trunk/doc/openjpip.dox.in
+END
+jpip_protocol.png
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2006/trunk/doc/jpip_protocol.png
+END

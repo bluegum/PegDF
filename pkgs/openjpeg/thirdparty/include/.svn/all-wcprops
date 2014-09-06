@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/svn/!svn/ver/739/trunk/thirdparty/include
+END
+zconf.h
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/739/trunk/thirdparty/include/zconf.h
+END
+zlib.h
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/739/trunk/thirdparty/include/zlib.h
+END
+zconf.h.cmake.msvc
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/!svn/ver/739/trunk/thirdparty/include/zconf.h.cmake.msvc
+END

@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/2835/trunk/wrapping/java/openjp2
+END
+index.c
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/2835/trunk/wrapping/java/openjp2/index.c
+END
+JavaOpenJPEG.c
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/!svn/ver/2835/trunk/wrapping/java/openjp2/JavaOpenJPEG.c
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/!svn/ver/2106/trunk/wrapping/java/openjp2/CMakeLists.txt
+END
+index.h
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/2835/trunk/wrapping/java/openjp2/index.h
+END
+org_openJpeg_OpenJPEGJavaEncoder.h
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/!svn/ver/1987/trunk/wrapping/java/openjp2/org_openJpeg_OpenJPEGJavaEncoder.h
+END
+JavaOpenJPEGDecoder.c
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/!svn/ver/2835/trunk/wrapping/java/openjp2/JavaOpenJPEGDecoder.c
+END
+org_openJpeg_OpenJPEGJavaDecoder.h
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/!svn/ver/1987/trunk/wrapping/java/openjp2/org_openJpeg_OpenJPEGJavaDecoder.h
+END

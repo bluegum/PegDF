@@ -1,0 +1,161 @@
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/739/trunk/thirdparty/liblcms2/src
+END
+cmsgmt.c
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/739/trunk/thirdparty/liblcms2/src/cmsgmt.c
+END
+cmsio0.c
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/739/trunk/thirdparty/liblcms2/src/cmsio0.c
+END
+cmserr.c
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/739/trunk/thirdparty/liblcms2/src/cmserr.c
+END
+cmsio1.c
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/739/trunk/thirdparty/liblcms2/src/cmsio1.c
+END
+lcms2.def
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/739/trunk/thirdparty/liblcms2/src/lcms2.def
+END
+cmsmtrx.c
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/739/trunk/thirdparty/liblcms2/src/cmsmtrx.c
+END
+cmsxform.c
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/739/trunk/thirdparty/liblcms2/src/cmsxform.c
+END
+cmsintrp.c
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/739/trunk/thirdparty/liblcms2/src/cmsintrp.c
+END
+cmscnvrt.c
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/739/trunk/thirdparty/liblcms2/src/cmscnvrt.c
+END
+cmsplugin.c
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/739/trunk/thirdparty/liblcms2/src/cmsplugin.c
+END
+cmssamp.c
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/739/trunk/thirdparty/liblcms2/src/cmssamp.c
+END
+cmscgats.c
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/739/trunk/thirdparty/liblcms2/src/cmscgats.c
+END
+cmsopt.c
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/739/trunk/thirdparty/liblcms2/src/cmsopt.c
+END
+cmscam02.c
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/739/trunk/thirdparty/liblcms2/src/cmscam02.c
+END
+cmslut.c
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/739/trunk/thirdparty/liblcms2/src/cmslut.c
+END
+cmstypes.c
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/739/trunk/thirdparty/liblcms2/src/cmstypes.c
+END
+cmsps2.c
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/739/trunk/thirdparty/liblcms2/src/cmsps2.c
+END
+cmswtpnt.c
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/739/trunk/thirdparty/liblcms2/src/cmswtpnt.c
+END
+lcms2_internal.h
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/!svn/ver/739/trunk/thirdparty/liblcms2/src/lcms2_internal.h
+END
+cmspack.c
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/739/trunk/thirdparty/liblcms2/src/cmspack.c
+END
+cmssm.c
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/739/trunk/thirdparty/liblcms2/src/cmssm.c
+END
+cmsgamma.c
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/739/trunk/thirdparty/liblcms2/src/cmsgamma.c
+END
+cmsnamed.c
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/739/trunk/thirdparty/liblcms2/src/cmsnamed.c
+END
+cmsvirt.c
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/739/trunk/thirdparty/liblcms2/src/cmsvirt.c
+END
+cmsmd5.c
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/739/trunk/thirdparty/liblcms2/src/cmsmd5.c
+END
+cmspcs.c
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/739/trunk/thirdparty/liblcms2/src/cmspcs.c
+END

@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 35
+/svn/!svn/ver/2847/trunk/tests/unit
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/2492/trunk/tests/unit/CMakeLists.txt
+END
+testempty0.c
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/2548/trunk/tests/unit/testempty0.c
+END
+testempty1.c
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/2847/trunk/tests/unit/testempty1.c
+END
+testempty2.c
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/2847/trunk/tests/unit/testempty2.c
+END

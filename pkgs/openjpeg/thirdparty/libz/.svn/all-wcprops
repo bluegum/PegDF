@@ -1,0 +1,173 @@
+K 25
+svn:wc:ra_dav:version-url
+V 39
+/svn/!svn/ver/739/trunk/thirdparty/libz
+END
+deflate.h
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/739/trunk/thirdparty/libz/deflate.h
+END
+crc32.c
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/739/trunk/thirdparty/libz/crc32.c
+END
+zutil.h
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/739/trunk/thirdparty/libz/zutil.h
+END
+gzread.c
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/739/trunk/thirdparty/libz/gzread.c
+END
+inftrees.c
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/739/trunk/thirdparty/libz/inftrees.c
+END
+crc32.h
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/739/trunk/thirdparty/libz/crc32.h
+END
+trees.c
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/739/trunk/thirdparty/libz/trees.c
+END
+inflate.c
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/739/trunk/thirdparty/libz/inflate.c
+END
+uncompr.c
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/739/trunk/thirdparty/libz/uncompr.c
+END
+inftrees.h
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/739/trunk/thirdparty/libz/inftrees.h
+END
+minigzip.c
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/739/trunk/thirdparty/libz/minigzip.c
+END
+trees.h
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/739/trunk/thirdparty/libz/trees.h
+END
+inflate.h
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/739/trunk/thirdparty/libz/inflate.h
+END
+gzguts.h
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/739/trunk/thirdparty/libz/gzguts.h
+END
+inffast.c
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/739/trunk/thirdparty/libz/inffast.c
+END
+compress.c
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/739/trunk/thirdparty/libz/compress.c
+END
+gzwrite.c
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/739/trunk/thirdparty/libz/gzwrite.c
+END
+example.c
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/739/trunk/thirdparty/libz/example.c
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/739/trunk/thirdparty/libz/CMakeLists.txt
+END
+adler32.c
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/739/trunk/thirdparty/libz/adler32.c
+END
+infback.c
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/739/trunk/thirdparty/libz/infback.c
+END
+inffast.h
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/739/trunk/thirdparty/libz/inffast.h
+END
+inffixed.h
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/739/trunk/thirdparty/libz/inffixed.h
+END
+deflate.c
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/739/trunk/thirdparty/libz/deflate.c
+END
+zlib.h
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/739/trunk/thirdparty/libz/zlib.h
+END
+gzclose.c
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/739/trunk/thirdparty/libz/gzclose.c
+END
+gzlib.c
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/739/trunk/thirdparty/libz/gzlib.c
+END
+zutil.c
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/739/trunk/thirdparty/libz/zutil.c
+END
