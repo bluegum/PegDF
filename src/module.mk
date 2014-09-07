@@ -3,12 +3,6 @@ d	:= src
 KEYWORDS_HASH   := keywords_hash.c
 KEYWORDS_HASH_OUT := $(d)/keywords_hash.c
 
-$(OBJ_DIR)/%.o: $(d)/%.c | $(LIB_CRYPTO) $(OBJ_DIR) $(KEYWORDS_HASH_OUT) $(DEPS_DIR)
-	$(CC) -c $(INCLUDE_ALL) -o $@ $< $(CF_ALL)
-$(DEPS_DIR)/%.d: $(d)/%.c | $(DEPS_DIR)
-	-@rm -f $@
-	$(CC) -MM -MT $(subst .c,.o,$(subst src/, $(OBJ_DIR)/, $<)) $(INCLUDE_ALL) $< >> $@
-
 GLYPH_NAME_TO_UNI := glyph_name_to_uni.c
 
 LOCAL_LIB	:= $(OBJ_DIR)/libpdfdoc.a
@@ -58,8 +52,6 @@ $(d)/pdf.c  : $(d)/pdf.peg peg/peg
 	peg/peg -v -o $(@) $(<)
 peg/peg    :
 	$(MAKE) -C peg peg
-
-$(KEYWORDS_HASH) : $(KEYWORDS_HASH_OUT)
 
 $(KEYWORDS_HASH_OUT) : $(d)/keywords.txt
 	sort $< | uniq | gperf -CGD -L ANSI-C -e ';' -N pdf_keyword_find --output-file=$(KEYWORDS_HASH_OUT)

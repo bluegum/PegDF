@@ -8,7 +8,7 @@ LIB_TGT         =
 OBJ_DIR        := obj
 BIN_DIR         = bin
 LIB_DIR         = /usr/lib
-INC_DIR         = include
+INC_DIR         = . include src
 DEPS_DIR        = deps
 LIB_OBJS       := pegdf
 OBJS           :=
@@ -16,8 +16,7 @@ TEST_TGTS      :=
 ### Build flags for all targets
 #
 PKGS_DIR       := pkgs
-INCLUDE_ALL     = -I . -I include -I src -I $(PKGS_DIR)/openssl/include -I $(PKGS_DIR)/openssl/include/openssl -I $(PKGS_DIR)/openssl -I $(PKGS_DIR)/zlib
-CF_ALL          = -Wall -fPIC -I . $(INCLUDE_ALL)
+CF_ALL          = -Wall -fPIC $(foreach inc, $(INC_DIR), -I$(inc))
 LF_ALL          = -L pkgs/openssl
 LL_ALL          =  -lm -ldl
 OPENSSL_DEBUG   =
@@ -56,24 +55,22 @@ CF_ALL += -DUSE_OPENSSL
 ### Build tools
 #
 CC              = gcc
-COMP            = $(CC) $(CF_ALL) $(CF_TGT) -o $@ -c $<
+COMP            = $(CC) $(CF_ALL) -o $@ -c $<
 LINK            = $(CC) -o $@ $< $(LIBS)  $(LF_ALL)
-COMPLINK        = $(CC) $(CF_ALL) $(CF_TGT) $(LF_ALL) $(LF_TGT) -o $@ $< $(LL_TGT)
+COMPLINK        = $(CC) $(CF_ALL) $(LF_ALL) $(LF_TGT) -o $@ $< $(LL_TGT)
 ARCHIVE         = $(AR) $(ARFLAGS) $@ $^
 MAKE            = make
 #
 vpath           %.h . src pkgs/zlib
 # GLOBALS TARGETS
-LIB_CRYPTO      = pkgs/openssl/libcrypto.a
+LIB_CRYPTO      = $(PKGS_DIR)/openssl/libcrypto.a
 LIBS	       :=
 APP             =
 CLEAN          :=
 PKG_CLEAN       =
 COMMON_HEADERS := *.h
-
 LIBS           += $(LIB_CRYPTO)
-
-LIB_TGT         += $(addprefix $(OBJ_DIR)/,$(addprefix $(LIB_PREFIX),$(addsuffix $(LIB_SUFFIX),$(LIB_OBJS))))
+LIB_TGT        += $(addprefix $(OBJ_DIR)/,$(addprefix $(LIB_PREFIX),$(addsuffix $(LIB_SUFFIX),$(LIB_OBJS))))
 
 CLEAN          += $(LIB_TGT)
 #######
@@ -94,6 +91,10 @@ CLEAN          += $(LIB_TGT)
 	$(AR) r $% $*.o
 
 VPATH           := $(VPATH) tests utils src
+
+$(DEPS_DIR)/%.d: %.c | $(DEPS_DIR)
+	-@rm -f $@
+	$(CC) -MM -MT $(subst .c,.o,$(subst src/, $(OBJ_DIR)/, $<)) $(foreach inc, $(INC_DIR), -I$(inc)) $< >> $@
 
 $(OBJ_DIR)/%.o:   %.c  | $(OBJ_DIR)
 	$(COMP)
@@ -116,8 +117,8 @@ release: CF_ALL += -O3
 
 # Subdirectories, in random order
 
-include         src/module.mk
 include         pkgs/module.mk
+include         src/module.mk
 include         utils/module.mk
 include         tests/module.mk
 
@@ -144,11 +145,6 @@ test	:	$(APP)
 	bin/picker -io X examples/Google.pdf
 	@if [ "$$?" -eq 0 ] ; then echo "passed test"; else echo "failed test"; fi
 
-## openssl/libcrypto.a
-$(LIB_CRYPTO) :  $(PKGS_DIR)/openssl/include/openssl/evp.h
-	@cd $(PKGS_DIR)/openssl; $(MAKE) clean; ./config shared no-dso $(OPENSSL_DEBUG);  $(MAKE) depend; $(MAKE) build_crypto; cd ..;
-$(PKGS_DIR)/openssl/include/openssl/evp.h :
-	@cd openssl; ./config shared $(OPENSSL_DEBUG); $(MAKE) build_crypto; cd ..;
 
 realclean : clean
 	- @cd $(PKGS_DIR)/openssl; if test -e Makefile ; then $(MAKE) clean; rm -f Makefile; rm crypto/opensslconf.h; rm include/openssl/evp.h; fi; cd ..;

@@ -26,5 +26,20 @@ PKG_CLEAN := $(PKGCLEAN) $(LIBJPEG) $(LIBOPENJPEG)
 
 include         pkgs/zlib/module.mk
 
-
+INC_DIR   += $(BIN_DIR)/include
+INC_DIR   += $(BIN_DIR)/include/openjpeg-2.1
 LIBS      += $(LIBOPENJPEG) $(LIBJPEG)
+
+#
+# openssl/libcrypto
+#
+
+$(LIB_CRYPTO) :  $(PKGS_DIR)/openssl/include/openssl/evp.h
+	@cd $(PKGS_DIR)/openssl; $(MAKE) clean; ./config shared no-dso $(OPENSSL_DEBUG);  $(MAKE) depend; $(MAKE) build_crypto; cd ..;
+
+$(PKGS_DIR)/openssl/include/openssl/evp.h :
+	@cd openssl; ./config shared $(OPENSSL_DEBUG); $(MAKE) build_crypto; cd ..;
+
+INC_DIR   += $(PKGS_DIR)/openssl/include
+INC_DIR   += $(PKGS_DIR)/openssl/include/openssl
+INC_DIR   += $(PKGS_DIR)/openssl
