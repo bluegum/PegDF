@@ -315,4 +315,7 @@ pdf_array_build(int n)
     return a;
 }
 
+extern pdf_obj* pdf_obj_full_copy(pdf_obj *o);
+extern pdf_obj* pdf_hstring_new(char *s, int len);
+
 #endif

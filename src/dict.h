@@ -89,5 +89,6 @@ extern void dict_each(dict *d, void (*call()), void *a);
 extern void pdf_dict_insert_string(dict *d, char *k, char *s, int n);
 extern void* dict_entry_delete(dict *d, char *k);
 extern void dict_delete(dict *d);
+extern pdf_obj* pdf_dict_new(int n);
 
 #endif
