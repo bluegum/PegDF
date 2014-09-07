@@ -1408,7 +1408,14 @@ pdf_page_obj_write(pdf_page *page, int pgidx, pdf_xref_internal *x, pdfcrypto_pr
     v = dict_entry_delete(d, "Contents");
     if (v)
     {
-        pdf_free(v);
+        if (v->t == eArray)
+        {
+            pdf_array_delete(v);
+        }
+        else
+        {
+            pdf_free(v);
+        }
     }
     v = dict_entry_delete(d, "MediaBox");
     if (v)
@@ -1424,6 +1431,12 @@ pdf_page_obj_write(pdf_page *page, int pgidx, pdf_xref_internal *x, pdfcrypto_pr
     }
     v = dict_entry_delete(d, "Type");
     pdf_free(v);
+    v = dict_entry_delete(d, "Group");
+    if (v)
+    {
+        pdf_obj_delete(v);
+        pdf_free(v);
+    }
     dict_delete(d);
     pdf_free(tmp);
 }

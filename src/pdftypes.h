@@ -315,6 +315,14 @@ pdf_array_build(int n)
     return a;
 }
 
+static inline
+void
+pdf_array_delete(pdf_obj *a)
+{
+    pdf_free(a->value.a.items);
+    pdf_free(a);
+}
+
 extern pdf_obj* pdf_obj_full_copy(pdf_obj *o);
 extern pdf_obj* pdf_hstring_new(char *s, int len);
 
