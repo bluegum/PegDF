@@ -785,11 +785,10 @@ hash_map_find(hash_map *h, unsigned char *k, int key_len)
     return NULL;
 }
 
-typedef void (*free_hash_map_entry)(void*);
-
-void
-hash_map_delete(hash_map *h, unsigned char *k, int key_len, free_hash_map_entry fn)
+void *
+hash_map_delete_entry(hash_map *h, unsigned char *k, int key_len)
 {
+    void *v = NULL;
     int i;
     struct hash_map_entry *e, **last;
 
@@ -808,12 +807,14 @@ hash_map_delete(hash_map *h, unsigned char *k, int key_len, free_hash_map_entry 
         {
             // Only removed the entry from the hashmap
             // keys and values are not freed yet
+            v = e->v;
             (*last)->next = e->next;
             break;
         }
         last = &e;
         e = e->next;
     }
+    return v;
 }
 
 void
@@ -823,7 +824,7 @@ hash_map_copy(hash_map *in, hash_map *out, void (*fn)() )
 }
 
 void
-hash_map_free(hash_map *h)
+hash_map_delete(hash_map *h)
 {
     int i;
 

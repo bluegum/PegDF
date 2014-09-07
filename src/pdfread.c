@@ -1091,8 +1091,15 @@ pdf_trailer_load(trailer *tr, pdf_trailer ** out)
     a = pdf_dict_get(o, "ID");
     if (a && a->t == eArray)
     {
+        (*out)->id[0] = pdf_malloc(16);
+        (*out)->id[1] = pdf_malloc(16);
         memcpy((*out)->id[0], a->value.a.items[0].value.s.buf, 16);
         memcpy((*out)->id[1], a->value.a.items[1].value.s.buf, 16);
+    }
+    else
+    {
+        (*out)->id[0] = NULL;
+        (*out)->id[1] = NULL;
     }
     /// xrefstream entries
     a = pdf_dict_get(o, "Index");

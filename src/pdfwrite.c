@@ -455,26 +455,26 @@ pdf_trailer_create(pdf_xref_internal *x, char *id1, char *id2, void *encrypto, i
 {
     pdf_obj *o = pdf_dict_new(3);
     dict *d = o->value.d.dict;
-    pdf_obj *id = pdf_array_build(2);
     pdf_obj *tmp;
 
-    if (id1)
+    if (id1 && id2)
     {
+        pdf_obj *id = pdf_array_build(2);
+
         tmp = pdf_hstring_new(id1, 16);
         id->value.a.items[0] = *tmp;
         pdf_free(tmp);
-    }
-    if (id2)
-    {
+
         tmp = pdf_hstring_new(id2, 16);
         id->value.a.items[1] = *tmp;
         pdf_free(tmp);
+
+        dict_insert(d, "ID", id);
     }
 
     bpt_insert(x->entry, x->xref->cur, 2);
     pdf_dict_insert_int(d, "Size", x->xref->cur);
     pdf_dict_insert_ref(d, "Root", x->xref->cur, 0);
-    dict_insert(d, "ID", id);
     if (encrypto)
     {
         pdf_dict_insert_ref(d, "Encrypt", encrypt_num, 0);
@@ -484,12 +484,12 @@ pdf_trailer_create(pdf_xref_internal *x, char *id1, char *id2, void *encrypto, i
 
 static
 void
-pdf_trailer_write(pdf_xref_internal *x, int startxref, char *ids, void *encrypt, int encrypt_num, pdf_stream *o)
+pdf_trailer_write(pdf_xref_internal *x, int startxref, char *ids[2], void *encrypt, int encrypt_num, pdf_stream *o)
 {
     pdf_err e;
     pdf_obj *tmp;
 
-    tmp = pdf_trailer_create(x, ids, ids, encrypt, encrypt_num);
+    tmp = pdf_trailer_create(x, ids[0], ids[1], encrypt, encrypt_num);
 
     if (!tmp)
         return;
@@ -507,7 +507,7 @@ pdf_trailer_write(pdf_xref_internal *x, int startxref, char *ids, void *encrypt,
     pdf_stream_puti(startxref, o);
     pdf_stream_putc('\n', o);
     pdf_stream_puts("%%EOF", o);
-    dict_free(tmp->value.d.dict);
+    pdf_obj_delete(tmp);
     pdf_free(tmp);
 }
 
@@ -1312,7 +1312,7 @@ pdf_page_obj_write(pdf_page *page, int pgidx, pdf_xref_internal *x, pdfcrypto_pr
     int content_ref_arr[1024];
     pdf_obj *tmp, *mediabox;
     dict *d;
-    pdf_obj *contents = 0;
+    pdf_obj *contents = 0, *v;
 
     if (!page)
         return;
@@ -1416,7 +1416,26 @@ pdf_page_obj_write(pdf_page *page, int pgidx, pdf_xref_internal *x, pdfcrypto_pr
     pdf_obj_full_write(tmp, x->xref->cur-1, 0, x, out, crypto, 0, write_flag);
 
   error_content:
-    pdf_obj_delete(tmp);
+    v = dict_entry_delete(d, "Contents");
+    if (v)
+    {
+        pdf_free(v);
+    }
+    v = dict_entry_delete(d, "MediaBox");
+    if (v)
+    {
+        pdf_obj_delete(v);
+        pdf_free(v);
+    }
+    v = dict_entry_delete(d, "Resources");
+    if (v)
+    {
+        dict_delete(v->value.d.dict);
+        pdf_free(v);
+    }
+    v = dict_entry_delete(d, "Type");
+    pdf_free(v);
+    dict_delete(d);
     pdf_free(tmp);
 }
 
@@ -1527,9 +1546,12 @@ pdf_err
 pdf_page_save(pdf_doc *doc, int i/* pg# */, pdfcrypto_priv *crypto, char *ofile, pdf_writer_options *options)
 {
     pdf_stream* out = 0;
+    pdf_obj* info_obj = NULL;
     int startxref;
     pdf_xref_internal *x = 0;
     num_range range;
+    char *idstrings[2];
+    char idstring[16];
 
     out = pdf_stream_file_open(ofile);
     if (!out)
@@ -1549,7 +1571,16 @@ pdf_page_save(pdf_doc *doc, int i/* pg# */, pdfcrypto_priv *crypto, char *ofile,
     pdf_pages_obj_write(x, &range, 1, out);
     // write xref table
     startxref = pdf_xref_write(x, out);
-    pdf_trailer_write(x, startxref, 0,
+
+    info_obj = pdf_info_create(0);
+    pdf_id_create(ofile, rand(), info_obj, idstring);
+    idstrings[1] = idstring;
+    if (doc->trailer->id[0])
+        idstrings[0] = doc->trailer->id[0];
+    else
+        idstrings[0] = idstring;
+
+    pdf_trailer_write(x, startxref, idstrings,
                       0, 0, // encrypto inst, and encrypt obj num
                       out);
     // done
@@ -1557,6 +1588,11 @@ pdf_page_save(pdf_doc *doc, int i/* pg# */, pdfcrypto_priv *crypto, char *ofile,
     if (x)
 	    pdf_xref_internal_free(x);
     pdf_stream_close(out);
+    if (info_obj)
+    {
+        pdf_obj_delete(info_obj);
+        pdf_free(info_obj);
+    }
     return pdf_ok;
 }
 
@@ -1576,7 +1612,7 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, pdf_writer_options *optio
     {
         page_ranges = pr;
         pr->bgn = 1;
-        pr->end = doc->count;
+        pr->end = doc->count - 1;
         nr = 1;
     }
     else
@@ -1821,8 +1857,13 @@ pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, pdf_writer_options *optio
 
 	    // write xref table
 	    startxref = pdf_xref_write(x, s);
-	    pdf_trailer_write(x, startxref, idstring, encrypto, enc_obj_num, s);
-	    // done
+        {
+            char *idstrs[2];
+            idstrs[0] = idstring;
+            idstrs[1] = idstring;
+            pdf_trailer_write(x, startxref, idstring, encrypto, enc_obj_num, s);
+        }
+
       done:
 	    if (x)
             pdf_xref_internal_free(x);

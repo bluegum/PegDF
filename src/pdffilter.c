@@ -9,7 +9,7 @@
 #include "pdfdoc.h"
 #include "lzw_decomp.h"
 #include "openjpeg.h"
-#include "jpeglib.h"
+#include "turbojpeg.h"
 
 static int pdf_filter_aes_read(pdf_filter *f, unsigned char *obuf, int request);
 

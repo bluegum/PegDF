@@ -4,6 +4,7 @@
 #include "pdftypes.h"
 #include "dict.h"
 #include "pdfmem.h"
+#include "hash_map.h"
 
 extern const char * pdf_keyword_find (register const char *str, register unsigned int len);
 static void dict_free_val(char *key, void *val, void *x);
@@ -340,7 +341,7 @@ void  dict_free(dict* d)
                 hash_map_iterator_next(i);
             }
             hash_map_iterator_free(i);
-            hash_map_free(d->dict);
+            hash_map_delete(d->dict);
 #else
             tst_print_reset(1);
             tst_traverse(d->dict, dict_free_val, NULL);
@@ -356,6 +357,30 @@ void  dict_free(dict* d)
     }
     return;
 }
+
+void *
+dict_entry_delete(dict *d, char *k)
+{
+    void *v;
+    if (!d || !d->dict)
+        return;
+#if defined (HASHMAP)
+    v = hash_map_delete_entry((hash_map*)d->dict, k, strlen(k));
+    return v;
+#endif
+}
+
+void
+dict_delete(dict *d)
+{
+    if (!d || !d->dict)
+        return;
+#if defined (HASHMAP)
+    hash_map_delete(d->dict);
+    pdf_free(d);
+#endif
+}
+
 
 void dict_dump(dict* d)
 {

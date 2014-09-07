@@ -338,7 +338,7 @@ struct pdf_trailer_s
     pdf_obj * root_obj;
     pdf_encrypt *encrypt;
     pdf_info *info;
-    unsigned char id[2][32];
+    unsigned char* id[2];
     // xrefstream entries
     int index[128];
     int w[3];

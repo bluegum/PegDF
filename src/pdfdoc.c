@@ -952,6 +952,10 @@ pdf_doc_trailer_free(pdf_trailer * tr)
         {
             pdf_encrypt_free(tr->encrypt);
         }
+        if (tr->id[0])
+            pdf_free(tr->id[0]);
+        if (tr->id[1])
+            pdf_free(tr->id[1]);
         last = tr->last;
         pdf_free(tr);
         tr = last;
