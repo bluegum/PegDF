@@ -1063,22 +1063,6 @@ pdf_page_contents_write(pdf_obj *content, unsigned long write_flag, pdf_xref_int
 
 static
 pdf_obj*
-_copy_dict_only(pdf_obj* in)
-{
-    pdf_obj *out;
-    if (in->t == eDict)
-    {
-        out = pdf_malloc(sizeof(pdf_obj));
-        out->value.d.dict = dict_copy(in->value.d.dict);
-        out->t = eDict;
-    }
-    else
-        out = in;
-    return out;
-}
-
-static
-pdf_obj*
 pdf_group_write(pdf_group *g, pdf_xref_internal *x, pdfcrypto_priv *crypto)
 {
     pdf_obj *tmp = pdf_malloc(sizeof(pdf_obj));
@@ -1119,37 +1103,36 @@ pdf_resources_write(pdf_resources *r, pdf_xref_internal *x, pdfcrypto_priv *cryp
         return 0;
     tmp->t = eDict;
     tmp->value.d.dict = d;
-#if 1
+
     if (r->extgstate)
     {
-        dict_insert(d, "ExtGState", _copy_dict_only(r->extgstate));
+        dict_insert(d, "ExtGState", (r->extgstate));
     }
     if (r->font)
     {
-        dict_insert(d, "Font", _copy_dict_only(r->font));
+        dict_insert(d, "Font", (r->font));
     }
     if (r->xobject)
     {
-        dict_insert(d, "XObject", _copy_dict_only(r->xobject));
+        dict_insert(d, "XObject", (r->xobject));
     }
     if (r->colorspace)
     {
-        dict_insert(d, "ColorSpace", _copy_dict_only(r->colorspace));
+        dict_insert(d, "ColorSpace", (r->colorspace));
     }
     if (r->shading)
     {
-        dict_insert(d, "Shading", _copy_dict_only(r->shading));
+        dict_insert(d, "Shading", (r->shading));
     }
     if (r->pattern)
     {
-        dict_insert(d, "Pattern", _copy_dict_only(r->pattern));
+        dict_insert(d, "Pattern", (r->pattern));
     }
     if (r->properties)
     {
-        dict_insert(d, "Properties", _copy_dict_only(r->properties));
+        dict_insert(d, "Properties", (r->properties));
     }
-#endif
-    // end resources
+
     return tmp;
 }
 
