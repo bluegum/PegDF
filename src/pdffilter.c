@@ -1263,7 +1263,7 @@ filter_png(int predictor, int stride, byte *in, byte *out)
                 t[1] = tt;
             }
         }
-            break;
+        break;
         default:
             fprintf(stderr, "PNG predictor algorithm is illegal");
             break;
@@ -1320,12 +1320,16 @@ pdf_predictor_read(pdf_filter *f, unsigned char *obuf, int request)
     {
         f->eof = 1;
         stride -= row;
+        if (stride <= 0)
+        {
+            return 0;
+        }
     }
 
     switch (p->predictor)
     {
         case 1:
-            fprintf(stderr, "Error, should reach here\n");
+            fprintf(stderr, "Error, should not reach here\n");
             break;
         case 2:
             fprintf(stderr, "TIFF predictor is not implemented\n");

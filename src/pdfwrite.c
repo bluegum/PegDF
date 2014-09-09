@@ -1608,7 +1608,7 @@ pdf_page_save(pdf_doc *doc, int i/* pg# */, pdfcrypto_priv *crypto, char *ofile,
 }
 
 pdf_err
-pdf_write_pdf(pdf_doc *doc, char* infile, char *ofile, pdf_writer_options *options)
+pdf_doc_write(pdf_doc *doc, char* infile, char *ofile, pdf_writer_options *options)
 {
     pdf_err e = pdf_ok;
     char linebuf[1024];

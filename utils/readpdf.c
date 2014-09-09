@@ -350,7 +350,7 @@ int main(int argc, char **argv)
             fclose(outf);
             outf = 0;
 	    }
-	    pdf_write_pdf(doc, in, out, &wo);
+	    pdf_doc_write(doc, in, out, &wo);
     }
 
   done:
